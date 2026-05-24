@@ -1,0 +1,47 @@
+# Dependencies
+node_modules/
+
+# Build output
+frontend/.next/
+frontend/out/
+backend/dist/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+npm-debug.log*
+
+# Docker volumes
+postgres/data/
+minio/data/
+redis/data/
+
+# Temp
+*.tmp
+*.bak
+
+# Stitch HTML exports (reference only)
+noctcom-pages/
+
+# Claude Code / MCP config
+.claude/
+.mcp.json
+settings.local.json
+
+# Private notes
+dominios.txt

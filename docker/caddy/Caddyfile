@@ -1,0 +1,47 @@
+{
+	email {$CADDY_EMAIL}
+	servers {
+		protocols h1 h2 h3
+	}
+}
+
+# ─── Frontend ───────────────────────────────────────────────────
+app.{$CADDY_DOMAIN} {
+	encode zstd gzip
+	reverse_proxy frontend:3000
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "no-referrer"
+		Permissions-Policy "geolocation=(), microphone=(), camera=()"
+		# CSP estricto para una SPA zero-knowledge
+		Content-Security-Policy "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' https://api.{$CADDY_DOMAIN} wss://api.{$CADDY_DOMAIN}; frame-ancestors 'none'; base-uri 'self'"
+		-Server
+	}
+}
+
+# ─── API ────────────────────────────────────────────────────────
+api.{$CADDY_DOMAIN} {
+	encode zstd gzip
+	reverse_proxy backend:3000
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "no-referrer"
+		-Server
+	}
+
+	@websocket {
+		header Connection *Upgrade*
+		header Upgrade websocket
+	}
+	reverse_proxy @websocket backend:3000
+}
+
+# ─── MinIO console (admin) ──────────────────────────────────────
+minio.{$CADDY_DOMAIN} {
+	reverse_proxy minio:9001
+}

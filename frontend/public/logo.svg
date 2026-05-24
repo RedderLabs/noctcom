@@ -1,0 +1,52 @@
+<!--
+  Noctcom logo mark
+  Concepto: hexágono (marco técnico, célula, escudo) que contiene
+  una luna creciente formada por la sustracción de un círculo desplazado.
+  La forma resultante también puede leerse como una "N" estilizada
+  o un punto de mira de comunicaciones cifradas.
+-->
+<svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Noctcom">
+  <title>Noctcom</title>
+  <desc>Luna creciente dentro de un hexágono violeta — símbolo de comando nocturno cifrado.</desc>
+
+  <defs>
+    <linearGradient id="ncFill" x1="0" y1="0" x2="48" y2="48" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#8b5cf6"/>
+      <stop offset="1" stop-color="#6d28d9"/>
+    </linearGradient>
+    <linearGradient id="ncMoon" x1="14" y1="14" x2="34" y2="34" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#f5f3ff"/>
+      <stop offset="1" stop-color="#c4b5fd"/>
+    </linearGradient>
+    <mask id="ncMoonMask">
+      <rect width="48" height="48" fill="black"/>
+      <circle cx="24" cy="24" r="10" fill="white"/>
+      <circle cx="29" cy="20" r="9" fill="black"/>
+    </mask>
+  </defs>
+
+  <!-- Hexágono base -->
+  <path
+    d="M24 2 L42 12 L42 36 L24 46 L6 36 L6 12 Z"
+    fill="url(#ncFill)"
+    stroke="#a78bfa"
+    stroke-width="0.5"
+    stroke-opacity="0.4"
+  />
+
+  <!-- Glow interno sutil (anillo) -->
+  <path
+    d="M24 2 L42 12 L42 36 L24 46 L6 36 L6 12 Z"
+    fill="none"
+    stroke="#c4b5fd"
+    stroke-width="0.5"
+    stroke-opacity="0.18"
+    transform="scale(0.92) translate(2.1 2.1)"
+  />
+
+  <!-- Luna creciente -->
+  <rect width="48" height="48" fill="url(#ncMoon)" mask="url(#ncMoonMask)"/>
+
+  <!-- Punto técnico (estrella/satélite) -->
+  <circle cx="34" cy="15" r="1" fill="#ede9fe" opacity="0.9"/>
+</svg>

@@ -1,0 +1,123 @@
+name: Security audit
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: '0 6 * * *'    # diario a las 06:00 UTC
+
+jobs:
+  # ═══════════════════════════════════════════════════════════════
+  # npm audit — vulnerabilidades conocidas en deps
+  # ═══════════════════════════════════════════════════════════════
+  npm-audit:
+    name: npm audit — ${{ matrix.target }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [backend, frontend]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run npm audit
+        working-directory: ${{ matrix.target }}
+        run: |
+          # Falla en high y critical, pero permite moderate (alerta pero no bloquea)
+          npm audit --audit-level=high
+
+  # ═══════════════════════════════════════════════════════════════
+  # OSV-Scanner — base de datos de vulnerabilidades open source
+  # (más completa que npm audit en algunos casos)
+  # ═══════════════════════════════════════════════════════════════
+  osv-scan:
+    name: OSV Scanner
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: google/osv-scanner-action/osv-scanner-action@v1.9.0
+        with:
+          scan-args: |-
+            --recursive
+            --skip-git
+            ./
+
+  # ═══════════════════════════════════════════════════════════════
+  # Trivy — scan de Dockerfiles y secretos
+  # ═══════════════════════════════════════════════════════════════
+  trivy-fs:
+    name: Trivy filesystem scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run Trivy
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH'
+          exit-code: '1'
+      - name: Upload to GitHub Security tab
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+  # ═══════════════════════════════════════════════════════════════
+  # Gitleaks — detectar secretos accidentalmente comiteados
+  # ═══════════════════════════════════════════════════════════════
+  gitleaks:
+    name: Gitleaks — secret detection
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # ═══════════════════════════════════════════════════════════════
+  # Semgrep — análisis estático buscando patrones inseguros
+  # ═══════════════════════════════════════════════════════════════
+  semgrep:
+    name: Semgrep SAST
+    runs-on: ubuntu-latest
+    container: returntocorp/semgrep
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          semgrep \
+            --config=p/typescript \
+            --config=p/javascript \
+            --config=p/owasp-top-ten \
+            --config=p/jwt \
+            --config=p/secrets \
+            --error \
+            --severity=ERROR \
+            --severity=WARNING
+
+  # ═══════════════════════════════════════════════════════════════
+  # CodeQL — análisis profundo de GitHub
+  # ═══════════════════════════════════════════════════════════════
+  codeql:
+    name: CodeQL Analysis
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+    strategy:
+      matrix:
+        language: ['javascript-typescript']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          queries: security-extended,security-and-quality
+      - uses: github/codeql-action/analyze@v3

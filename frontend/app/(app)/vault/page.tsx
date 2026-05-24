@@ -1,0 +1,418 @@
+'use client';
+
+import { useState, useRef, useEffect, useMemo } from 'react';
+import { useDropzone } from 'react-dropzone';
+import {
+  DndContext, useDraggable, useDroppable, DragOverlay,
+  type DragEndEvent, type DragStartEvent,
+} from '@dnd-kit/core';
+import {
+  FileText, File, Image, Video, Music, Archive, FileCode,
+  ChevronRight, MoreVertical, Star, Download, Trash2, Share2, Edit3,
+  Upload, FolderPlus, Grid3x3, List, Filter, ChevronLeft,
+} from 'lucide-react';
+import { toast } from 'sonner';
+import { Button } from '@/components/ui/Button';
+import { FOLDER_ICONS, type FolderIconKey, getFolderColor, type FolderColorKey } from '@/components/vault/folder-icons';
+import { NewFolderModal } from '@/components/vault/NewFolderModal';
+import { cn } from '@/lib/utils';
+
+// ─── Mock data — sustituir por hook que consuma /api/v1/nodes ────
+interface VaultNode {
+  id: string;
+  kind: 'folder' | 'file';
+  name: string;
+  icon?: FolderIconKey;
+  color?: FolderColorKey;
+  size?: number;
+  mimeType?: string;
+  starred?: boolean;
+  updatedAt: string;
+}
+
+const MOCK_NODES: VaultNode[] = [
+  { id: '1', kind: 'folder', name: 'Documentos personales', icon: 'folder-lock', color: 'violet', updatedAt: '2026-05-20T12:00:00Z' },
+  { id: '2', kind: 'folder', name: 'Proyectos 2026', icon: 'folder-kanban', color: 'blue', updatedAt: '2026-05-19T10:00:00Z', starred: true },
+  { id: '3', kind: 'folder', name: 'Fotos viaje Japón', icon: 'camera', color: 'rose', updatedAt: '2026-05-18T08:00:00Z' },
+  { id: '4', kind: 'folder', name: 'Finanzas', icon: 'wallet', color: 'emerald', updatedAt: '2026-05-17T15:00:00Z' },
+  { id: '5', kind: 'folder', name: 'Código', icon: 'code', color: 'cyan', updatedAt: '2026-05-16T11:00:00Z' },
+  { id: '6', kind: 'file', name: 'Contrato_2026.pdf', size: 2_400_000, mimeType: 'application/pdf', updatedAt: '2026-05-15T14:00:00Z', starred: true },
+  { id: '7', kind: 'file', name: 'Plan_Q3.docx', size: 480_000, mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', updatedAt: '2026-05-14T09:00:00Z' },
+  { id: '8', kind: 'file', name: 'foto_perfil.jpg', size: 1_200_000, mimeType: 'image/jpeg', updatedAt: '2026-05-13T16:00:00Z' },
+  { id: '9', kind: 'file', name: 'demo_app.mp4', size: 25_600_000, mimeType: 'video/mp4', updatedAt: '2026-05-12T13:00:00Z' },
+  { id: '10', kind: 'file', name: 'archivo.zip', size: 8_900_000, mimeType: 'application/zip', updatedAt: '2026-05-11T17:00:00Z' },
+  { id: '11', kind: 'file', name: 'notas.md', size: 4_800, mimeType: 'text/markdown', updatedAt: '2026-05-10T07:00:00Z' },
+  { id: '12', kind: 'file', name: 'cancion.mp3', size: 5_400_000, mimeType: 'audio/mpeg', updatedAt: '2026-05-09T18:00:00Z' },
+];
+
+const PAGE_SIZE = 24;
+
+function fileIcon(mime?: string) {
+  if (!mime) return File;
+  if (mime.startsWith('image/')) return Image;
+  if (mime.startsWith('video/')) return Video;
+  if (mime.startsWith('audio/')) return Music;
+  if (mime.includes('zip') || mime.includes('archive')) return Archive;
+  if (mime.includes('pdf') || mime.includes('word') || mime.includes('text')) return FileText;
+  if (mime.includes('code') || mime.includes('json')) return FileCode;
+  return File;
+}
+
+function formatSize(bytes?: number) {
+  if (!bytes) return '—';
+  const units = ['B', 'KB', 'MB', 'GB'];
+  let i = 0;
+  let n = bytes;
+  while (n >= 1024 && i < units.length - 1) { n /= 1024; i++; }
+  return `${n.toFixed(n < 10 && i > 0 ? 1 : 0)} ${units[i]}`;
+}
+
+function formatDate(iso: string) {
+  const d = new Date(iso);
+  const now = new Date();
+  const diff = (now.getTime() - d.getTime()) / 1000 / 60 / 60 / 24;
+  if (diff < 1) return 'Hoy';
+  if (diff < 2) return 'Ayer';
+  if (diff < 7) return `Hace ${Math.floor(diff)} días`;
+  return d.toLocaleDateString('es', { day: 'numeric', month: 'short', year: d.getFullYear() !== now.getFullYear() ? 'numeric' : undefined });
+}
+
+// ─── Carpeta como drop target + draggable ────────────────────────
+function FolderCard({ node, isDragging }: { node: VaultNode; isDragging?: boolean }) {
+  const { attributes, listeners, setNodeRef: setDragRef } = useDraggable({ id: node.id });
+  const { isOver, setNodeRef: setDropRef } = useDroppable({ id: `drop-${node.id}` });
+  const color = getFolderColor(node.color);
+  const IconComp = FOLDER_ICONS[node.icon ?? 'folder'].Icon;
+
+  return (
+    <div
+      ref={(el) => { setDragRef(el); setDropRef(el); }}
+      {...listeners}
+      {...attributes}
+      className={cn(
+        'group relative p-4 rounded-xl border bg-[var(--color-bg-surface)]',
+        'hover:bg-[var(--color-bg-surface-2)] hover:border-[var(--color-border-strong)]',
+        'transition-all duration-150 cursor-pointer select-none',
+        'border-[var(--color-border-faint)]',
+        isOver && 'border-violet-500/60 bg-violet-500/5 shadow-[0_0_0_3px_rgba(139,92,246,0.15)] scale-[1.02]',
+        isDragging && 'opacity-30',
+      )}
+    >
+      <div className="flex items-start justify-between mb-3">
+        <div className={cn(
+          'size-11 rounded-lg grid place-items-center border',
+          color.bg, color.border,
+        )}>
+          <IconComp className={cn('size-5', color.text)} />
+        </div>
+        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          {node.starred && <Star className="size-3.5 fill-amber-400 text-amber-400" />}
+          <button type="button" className="p-1 rounded hover:bg-[var(--color-bg-surface-3)]" aria-label="Más opciones">
+            <MoreVertical className="size-3.5 text-[var(--color-text-tertiary)]" />
+          </button>
+        </div>
+      </div>
+      <h3 className="text-sm font-medium truncate mb-0.5">{node.name}</h3>
+      <p className="text-[10px] text-[var(--color-text-tertiary)] uppercase tracking-wider">
+        {formatDate(node.updatedAt)}
+      </p>
+    </div>
+  );
+}
+
+function FileCard({ node, isDragging }: { node: VaultNode; isDragging?: boolean }) {
+  const { attributes, listeners, setNodeRef } = useDraggable({ id: node.id });
+  const FileIcon = fileIcon(node.mimeType);
+
+  return (
+    <div
+      ref={setNodeRef}
+      {...listeners}
+      {...attributes}
+      className={cn(
+        'group relative p-4 rounded-xl border border-[var(--color-border-faint)] bg-[var(--color-bg-surface)]',
+        'hover:bg-[var(--color-bg-surface-2)] hover:border-[var(--color-border-strong)]',
+        'transition-all duration-150 cursor-pointer select-none',
+        isDragging && 'opacity-30',
+      )}
+    >
+      <div className="flex items-start justify-between mb-3">
+        <div className="size-11 rounded-lg grid place-items-center bg-[var(--color-bg-surface-2)] border border-[var(--color-border-faint)]">
+          <FileIcon className="size-5 text-[var(--color-text-secondary)]" />
+        </div>
+        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          {node.starred && <Star className="size-3.5 fill-amber-400 text-amber-400" />}
+          <button type="button" className="p-1 rounded hover:bg-[var(--color-bg-surface-3)]" aria-label="Más opciones">
+            <MoreVertical className="size-3.5 text-[var(--color-text-tertiary)]" />
+          </button>
+        </div>
+      </div>
+      <h3 className="text-sm font-medium truncate mb-0.5">{node.name}</h3>
+      <p className="text-[10px] text-[var(--color-text-tertiary)] uppercase tracking-wider">
+        {formatSize(node.size)} · {formatDate(node.updatedAt)}
+      </p>
+    </div>
+  );
+}
+
+// ─── Página principal ───────────────────────────────────────────
+export default function VaultPage() {
+  const [view, setView] = useState<'grid' | 'list'>('grid');
+  const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const [draggedId, setDraggedId] = useState<string | null>(null);
+  const [newFolderOpen, setNewFolderOpen] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Listener del botón "Nuevo" en sidebar
+  useEffect(() => {
+    const handler = () => setNewFolderOpen(true);
+    window.addEventListener('noctcom:new-action', handler);
+    return () => window.removeEventListener('noctcom:new-action', handler);
+  }, []);
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return MOCK_NODES;
+    return MOCK_NODES.filter((n) => n.name.toLowerCase().includes(q));
+  }, [search]);
+
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  const pageNodes = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const folders = pageNodes.filter((n) => n.kind === 'folder');
+  const files = pageNodes.filter((n) => n.kind === 'file');
+
+  // ─── Drag & drop entre nodos ────────────────────────────
+  function handleDragStart(e: DragStartEvent) {
+    setDraggedId(e.active.id as string);
+  }
+  function handleDragEnd(e: DragEndEvent) {
+    setDraggedId(null);
+    if (e.over && e.over.id !== e.active.id) {
+      const targetId = (e.over.id as string).replace('drop-', '');
+      const target = MOCK_NODES.find((n) => n.id === targetId);
+      const moved = MOCK_NODES.find((n) => n.id === e.active.id);
+      if (target && moved) {
+        toast.success(`«${moved.name}» movido a «${target.name}»`);
+      }
+    }
+  }
+  const draggedNode = draggedId ? MOCK_NODES.find((n) => n.id === draggedId) : null;
+
+  // ─── Drag & drop de archivos desde el SO ──────────────────
+  const { getRootProps, isDragActive } = useDropzone({
+    noClick: true,
+    noKeyboard: true,
+    onDrop: (acceptedFiles) => {
+      if (acceptedFiles.length === 0) return;
+      toast.success(`${acceptedFiles.length} archivo(s) listos para cifrar y subir`);
+      // TODO: invocar uploader real (encryptFileChunks + presigned URLs)
+    },
+  });
+
+  return (
+    <div {...getRootProps()} className="relative h-full">
+      {/* Overlay de drop ────────────────────────────────────── */}
+      {isDragActive && (
+        <div className="absolute inset-0 z-50 bg-violet-500/10 backdrop-blur-sm border-2 border-dashed border-violet-500/60 grid place-items-center pointer-events-none">
+          <div className="text-center space-y-3">
+            <div className="size-16 rounded-full bg-violet-500/20 grid place-items-center mx-auto animate-pulse">
+              <Upload className="size-7 text-violet-300" />
+            </div>
+            <p className="text-lg font-display font-light text-violet-100">Suelta para cifrar y subir</p>
+            <p className="text-xs text-violet-200/70 font-mono">XChaCha20-Poly1305 · 4 MiB chunks</p>
+          </div>
+        </div>
+      )}
+
+      <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+        <div className="px-8 py-6 max-w-7xl mx-auto">
+          {/* ─── Breadcrumb + acciones ──────────────────────── */}
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-2 text-sm">
+              <span className="text-[var(--color-text-secondary)]">Mi bóveda</span>
+              <ChevronRight className="size-3.5 text-[var(--color-text-tertiary)]" />
+              <span className="text-[var(--color-text-primary)] font-medium">Inicio</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                className="hidden"
+                onChange={(e) => {
+                  if (e.target.files?.length) {
+                    toast.success(`${e.target.files.length} archivo(s) listos para cifrar`);
+                  }
+                }}
+              />
+              <Button
+                variant="secondary"
+                size="sm"
+                leftIcon={<FolderPlus className="size-3.5" />}
+                onClick={() => setNewFolderOpen(true)}
+              >
+                Nueva carpeta
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                leftIcon={<Upload className="size-3.5" />}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                Subir archivos
+              </Button>
+            </div>
+          </div>
+
+          {/* ─── Search + filtros ────────────────────────────── */}
+          <div className="flex items-center gap-3 mb-6">
+            <div className="flex-1 max-w-md relative">
+              <input
+                type="search"
+                value={search}
+                onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+                placeholder="Filtrar por nombre…"
+                className="w-full h-9 px-3 bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] rounded-md text-sm placeholder:text-[var(--color-text-muted)] focus:outline-none focus:border-violet-500/60"
+              />
+            </div>
+            <button
+              type="button"
+              className="h-9 px-3 flex items-center gap-1.5 bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] rounded-md text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-surface-2)]"
+            >
+              <Filter className="size-3.5" />
+              Filtros
+            </button>
+            <div className="flex bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] rounded-md p-0.5">
+              <button
+                type="button"
+                onClick={() => setView('grid')}
+                className={cn(
+                  'h-8 px-2.5 rounded text-xs flex items-center gap-1.5',
+                  view === 'grid' ? 'bg-violet-500/20 text-violet-200' : 'text-[var(--color-text-tertiary)]',
+                )}
+              >
+                <Grid3x3 className="size-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setView('list')}
+                className={cn(
+                  'h-8 px-2.5 rounded text-xs flex items-center gap-1.5',
+                  view === 'list' ? 'bg-violet-500/20 text-violet-200' : 'text-[var(--color-text-tertiary)]',
+                )}
+              >
+                <List className="size-3.5" />
+              </button>
+            </div>
+          </div>
+
+          {/* ─── Carpetas ─────────────────────────────────── */}
+          {folders.length > 0 && (
+            <section className="mb-8">
+              <h2 className="text-[10px] uppercase tracking-widest text-[var(--color-text-tertiary)] mb-3">
+                Carpetas · {folders.length}
+              </h2>
+              <div className={cn(
+                view === 'grid'
+                  ? 'grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3'
+                  : 'space-y-1',
+              )}>
+                {folders.map((n) => (
+                  <FolderCard key={n.id} node={n} isDragging={draggedId === n.id} />
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* ─── Archivos ─────────────────────────────────── */}
+          {files.length > 0 && (
+            <section>
+              <h2 className="text-[10px] uppercase tracking-widest text-[var(--color-text-tertiary)] mb-3">
+                Archivos · {files.length}
+              </h2>
+              <div className={cn(
+                view === 'grid'
+                  ? 'grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3'
+                  : 'space-y-1',
+              )}>
+                {files.map((n) => (
+                  <FileCard key={n.id} node={n} isDragging={draggedId === n.id} />
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* ─── Empty state ──────────────────────────────── */}
+          {pageNodes.length === 0 && (
+            <div className="py-24 text-center">
+              <div className="size-16 rounded-full bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] grid place-items-center mx-auto mb-4">
+                <Upload className="size-6 text-[var(--color-text-tertiary)]" />
+              </div>
+              <h3 className="font-display text-lg mb-1">Nada por aquí todavía</h3>
+              <p className="text-sm text-[var(--color-text-tertiary)] mb-4">
+                Arrastra archivos a esta ventana o crea una carpeta para empezar
+              </p>
+            </div>
+          )}
+
+          {/* ─── Paginación ───────────────────────────────── */}
+          {totalPages > 1 && (
+            <div className="mt-8 flex items-center justify-between text-sm">
+              <span className="text-[var(--color-text-tertiary)] text-xs">
+                Página {page} de {totalPages} · {filtered.length} elementos
+              </span>
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  disabled={page === 1}
+                  onClick={() => setPage((p) => p - 1)}
+                  className="h-8 w-8 grid place-items-center rounded-md text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-surface)] disabled:opacity-30 disabled:hover:bg-transparent"
+                >
+                  <ChevronLeft className="size-4" />
+                </button>
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+                  <button
+                    key={p}
+                    type="button"
+                    onClick={() => setPage(p)}
+                    className={cn(
+                      'h-8 min-w-8 px-2 rounded-md text-xs font-mono',
+                      p === page
+                        ? 'bg-violet-500/20 text-violet-200 border border-violet-500/30'
+                        : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-surface)]',
+                    )}
+                  >
+                    {p}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  disabled={page === totalPages}
+                  onClick={() => setPage((p) => p + 1)}
+                  className="h-8 w-8 grid place-items-center rounded-md text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-surface)] disabled:opacity-30 disabled:hover:bg-transparent"
+                >
+                  <ChevronRight className="size-4" />
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* ─── Drag overlay ───────────────────────────────── */}
+        <DragOverlay>
+          {draggedNode && (
+            <div className="p-4 rounded-xl bg-[var(--color-bg-surface-3)] border border-violet-500/40 shadow-[0_8px_32px_-4px_rgba(0,0,0,0.6)] rotate-2 w-48">
+              <p className="text-sm font-medium truncate">{draggedNode.name}</p>
+              <p className="text-[10px] text-[var(--color-text-tertiary)] uppercase tracking-wider">
+                {draggedNode.kind === 'folder' ? 'Carpeta' : formatSize(draggedNode.size)}
+              </p>
+            </div>
+          )}
+        </DragOverlay>
+      </DndContext>
+
+      <NewFolderModal open={newFolderOpen} onClose={() => setNewFolderOpen(false)} />
+    </div>
+  );
+}
