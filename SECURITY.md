@@ -7,19 +7,18 @@
 - 📬 Reporta a: **security@noctcom.com** (cifra con la PGP de abajo)
 - ⏱️ Respuesta inicial: **menos de 72 horas**
 - 🤝 Disclosure coordinado: **90 días o cuando publiquemos el parche**
-- 💰 Recompensas: ver tabla más abajo
 - 🛑 No: pentesting agresivo contra usuarios reales sin permiso explícito
 
 ## Qué consideramos una vulnerabilidad
 
-| Severidad | Ejemplos | Recompensa |
-|-----------|----------|------------|
-| **Crítica** | RCE en backend · bypass de cifrado E2E · acceso al plaintext de archivos ajenos · auth bypass que permita leer cualquier bóveda | $2,000 – $5,000 |
-| **Alta** | Privilege escalation · leak de claves privadas wrappeadas · stored XSS con acceso a MK en memoria · IDOR en archivos ajenos | $500 – $2,000 |
-| **Media** | CSRF en operaciones sensibles · información leak en metadatos · race conditions explotables | $100 – $500 |
-| **Baja** | Reflected XSS sin acceso a sesión · headers de seguridad faltantes · rate limiting bypass no crítico | $50 – $100 |
+| Severidad | Ejemplos |
+|-----------|----------|
+| **Crítica** | RCE en backend · bypass de cifrado E2E · acceso al plaintext de archivos ajenos · auth bypass que permita leer cualquier bóveda |
+| **Alta** | Privilege escalation · leak de claves privadas wrappeadas · stored XSS con acceso a MK en memoria · IDOR en archivos ajenos |
+| **Media** | CSRF en operaciones sensibles · información leak en metadatos · race conditions explotables |
+| **Baja** | Reflected XSS sin acceso a sesión · headers de seguridad faltantes · rate limiting bypass no crítico |
 
-> Las recompensas se activan cuando tengamos programa formal en HackerOne (objetivo: Q4 2026). Hasta entonces ofrecemos crédito público y agradecimiento en `HALL_OF_FAME.md` + swag.
+> Actualmente ofrecemos crédito público en `HALL_OF_FAME.md`. El programa de recompensas económicas se activará cuando el proyecto cuente con patrocinios o financiación.
 
 ## Qué NO consideramos vulnerabilidad
 
@@ -53,7 +52,7 @@ Incluye:
 
 ### Opción B — GitHub Security Advisories
 
-Si prefieres no usar PGP: abre un [Private Vulnerability Report](https://github.com/noctcom/noctcom/security/advisories/new) en el repo. Solo nuestro equipo lo verá.
+Si prefieres no usar PGP: abre un [Private Vulnerability Report](https://github.com/RedderLabs/noctcom/security/advisories/new) en el repo. Solo nuestro equipo lo verá.
 
 ### Opción C — Signal
 
@@ -89,14 +88,14 @@ T+90d Disclosure público + CVE + crédito
 
 Si el bug está siendo explotado activamente, aceleramos. Si necesitas más tiempo para coordinar (porque afecta a otros proyectos), lo acordamos.
 
-## Bug bounty: estado actual
+## Reconocimiento y colaboración
 
 | Estado | Cuándo |
 |--------|--------|
 | Hall of fame + crédito público | Disponible ahora |
-| Pagos en USD/EUR/BTC | Cuando lleguemos a 1.000 usuarios pagantes |
-| Programa formal HackerOne | Q4 2026 (objetivo) |
-| Auditoría externa Trail of Bits/Cure53 | 2027 (objetivo) |
+| Posibilidad de unirte al equipo | Si tu reporte demuestra talento, hablemos |
+| Programa formal de recompensas | Cuando haya patrocinios o financiación |
+| Auditoría externa | Cuando el proyecto lo permita |
 
 ## Hall of fame
 
@@ -121,7 +120,7 @@ Firmado: [PGP signature]
 
 ## Contacto general (no de seguridad)
 
-Para bugs no relacionados con seguridad → [GitHub Issues](https://github.com/noctcom/noctcom/issues)
+Para bugs no relacionados con seguridad → [GitHub Issues](https://github.com/RedderLabs/noctcom/issues)
 
 Para consultas comerciales → `hello@noctcom.com`
 
