@@ -411,8 +411,8 @@ export default function SettingsPage() {
                   </div>
                   <p className="text-xs text-[var(--color-text-tertiary)] mt-0.5 font-mono">{vol.path}</p>
                   {vol.totalBytes > 0 && (
-                    <>
-                      <div className="flex items-center gap-2 mt-1.5">
+                    <div className="mt-2 p-2 rounded-lg bg-[var(--color-bg-surface-2)] border border-[var(--color-border-faint)]">
+                      <div className="flex items-center gap-2 mb-1.5">
                         <div className="flex-1 h-1.5 bg-[var(--color-bg-surface-3)] rounded-full overflow-hidden">
                           <div
                             className={cn(
@@ -426,10 +426,21 @@ export default function SettingsPage() {
                           {((vol.usedBytes / vol.totalBytes) * 100).toFixed(0)}%
                         </span>
                       </div>
-                      <p className="text-[10px] text-[var(--color-text-muted)] font-mono mt-0.5">
-                        {fmtSize(vol.freeBytes)} libre de {fmtSize(vol.totalBytes)} · {fmtSize(vol.usedBytes)} usado
-                      </p>
-                    </>
+                      <div className="grid grid-cols-3 gap-1 text-center">
+                        <div>
+                          <p className="text-[10px] text-[var(--color-text-muted)] uppercase">Total</p>
+                          <p className="text-xs font-mono font-medium">{fmtSize(vol.totalBytes)}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-[var(--color-text-muted)] uppercase">Usado</p>
+                          <p className="text-xs font-mono font-medium text-amber-400">{fmtSize(vol.usedBytes)}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-[var(--color-text-muted)] uppercase">Libre</p>
+                          <p className="text-xs font-mono font-medium text-emerald-400">{fmtSize(vol.freeBytes)}</p>
+                        </div>
+                      </div>
+                    </div>
                   )}
                 </div>
                 <div className="flex gap-1">
@@ -490,23 +501,40 @@ export default function SettingsPage() {
                       )}
                     </div>
                     <p className="text-xs text-[var(--color-text-tertiary)] mt-0.5 font-mono">{disk.path}</p>
-                    <div className="flex items-center gap-2 mt-1.5">
-                      <div className="flex-1 h-1.5 bg-[var(--color-bg-surface-3)] rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-[var(--color-text-tertiary)] rounded-full"
-                          style={{ width: `${disk.totalBytes > 0 ? Math.min(100, ((disk.totalBytes - disk.freeBytes) / disk.totalBytes) * 100) : 0}%` }}
-                        />
+                    <div className="mt-2 p-2 rounded-lg bg-[var(--color-bg-surface-2)] border border-[var(--color-border-faint)]">
+                      <div className="flex items-center gap-2 mb-1.5">
+                        <div className="flex-1 h-1.5 bg-[var(--color-bg-surface-3)] rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-[var(--color-text-tertiary)] rounded-full"
+                            style={{ width: `${disk.totalBytes > 0 ? Math.min(100, ((disk.totalBytes - disk.freeBytes) / disk.totalBytes) * 100) : 0}%` }}
+                          />
+                        </div>
+                        <span className="text-[10px] text-[var(--color-text-muted)] font-mono shrink-0">
+                          {disk.totalBytes > 0 ? ((1 - disk.freeBytes / disk.totalBytes) * 100).toFixed(0) : 0}%
+                        </span>
                       </div>
-                      <span className="text-[10px] text-[var(--color-text-muted)] font-mono shrink-0">
-                        {disk.totalBytes > 0 ? ((1 - disk.freeBytes / disk.totalBytes) * 100).toFixed(0) : 0}%
-                      </span>
+                      <div className="grid grid-cols-3 gap-1 text-center">
+                        <div>
+                          <p className="text-[10px] text-[var(--color-text-muted)] uppercase">Total</p>
+                          <p className="text-xs font-mono font-medium">{fmtSize(disk.totalBytes)}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-[var(--color-text-muted)] uppercase">Usado</p>
+                          <p className="text-xs font-mono font-medium text-amber-400">{fmtSize(disk.totalBytes - disk.freeBytes)}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-[var(--color-text-muted)] uppercase">Libre</p>
+                          <p className="text-xs font-mono font-medium text-emerald-400">{fmtSize(disk.freeBytes)}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-center gap-2 mt-1.5 pt-1.5 border-t border-[var(--color-border-faint)]">
+                        <span className={cn('text-[10px] font-mono uppercase', disk.needsFormat ? 'text-amber-400' : 'text-[var(--color-text-muted)]')}>
+                          {disk.filesystem || 'sin formato'}
+                        </span>
+                        {disk.needsFormat && <span className="text-[10px] text-amber-400 font-medium">(incompatible)</span>}
+                        {!disk.removable && <span className="text-[10px] text-[var(--color-text-muted)]">· Interno</span>}
+                      </div>
                     </div>
-                    <p className="text-[10px] text-[var(--color-text-muted)] font-mono mt-0.5">
-                      {fmtSize(disk.freeBytes)} libre de {fmtSize(disk.totalBytes)} ·{' '}
-                      <span className={disk.needsFormat ? 'text-amber-400' : ''}>{disk.filesystem}</span>
-                      {disk.needsFormat && <span className="text-amber-400"> (incompatible)</span>}
-                      {!disk.removable ? ' · Interno' : ''}
-                    </p>
                   </div>
                   {disk.needsFormat ? (
                     <Button variant="danger" size="sm" onClick={() => {
