@@ -1,6 +1,6 @@
-# CryptVault
+# Noctcom
 
-Almacenamiento tipo Nextcloud con **encriptación de conocimiento cero**.
+Almacenamiento privado con **encriptación de conocimiento cero**.
 El servidor no puede leer ni nombres de archivo, ni contenido, ni metadatos.
 
 ## Garantías criptográficas
