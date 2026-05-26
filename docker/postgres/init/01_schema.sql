@@ -143,14 +143,27 @@ ALTER TABLE nodes
 -- CHUNKS — archivos se trocean en chunks de ~4 MiB cifrados
 -- Cada chunk vive en MinIO bajo s3_key. El servidor NO puede leerlos.
 -- ───────────────────────────────────────────────────────────────
+-- STORAGE VOLUMES — discos físicos configurados para almacenamiento
+-- ───────────────────────────────────────────────────────────────
+CREATE TABLE storage_volumes (
+    id         UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    path       TEXT NOT NULL UNIQUE,
+    label      TEXT NOT NULL,
+    active     BOOLEAN NOT NULL DEFAULT true,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- ───────────────────────────────────────────────────────────────
 CREATE TABLE chunks (
     id                   UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     version_id           UUID NOT NULL REFERENCES file_versions(id) ON DELETE CASCADE,
     chunk_index          INTEGER NOT NULL,
-    s3_key               TEXT   NOT NULL,               -- random opaque key en MinIO
+    s3_key               TEXT   NOT NULL,               -- random opaque key en MinIO o disco
     ciphertext_size      BIGINT NOT NULL,
     chunk_nonce          BYTEA NOT NULL,                -- nonce XChaCha20-Poly1305
     chunk_auth_tag       BYTEA NOT NULL,                -- tag Poly1305
+    storage_type         TEXT   NOT NULL DEFAULT 's3',  -- 's3' | 'disk'
+    volume_id            UUID   REFERENCES storage_volumes(id),
     UNIQUE (version_id, chunk_index)
 );
 CREATE INDEX chunks_version_idx ON chunks(version_id, chunk_index);

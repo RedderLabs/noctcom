@@ -1,0 +1,11 @@
+services:
+  postgres:
+    ports:
+      - "15432:5432"
+  redis:
+    ports:
+      - "16379:6379"
+  minio:
+    ports:
+      - "19000:9000"
+      - "19001:9001"

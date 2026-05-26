@@ -160,13 +160,31 @@ Asumimos que las siguientes primitivas son seguras durante la vida útil esperad
 
 Si alguna de estas se rompe (ej. quantum computing real), **migraremos a primitivas post-quantum** (Kyber, Dilithium) mediante re-encryption masivo + rotación de claves. Es un evento de varios meses, no instantáneo.
 
-## 7. Cambios al modelo de amenaza
+## 7. Notas de implementación (Fases 10-11)
+
+### Multi-dispositivo (Fase 10)
+- Cada dispositivo genera su propio keypair X25519
+- La clave privada del dispositivo se almacena localmente en localStorage (wrapped con MK)
+- Los dispositivos se pueden revocar desde settings, lo que invalida todas sus sesiones
+- Las vault keys se sincronizan via contraseña (password → MK → vault wrap key), no requieren transferencia device-to-device
+- Nuevos dispositivos se notifican por WebSocket a los existentes
+
+### Rate limiting distribuido (Fase 11)
+- Rate limiting usa Redis como store compartido (fallback a in-memory si Redis no disponible)
+- Contramedida contra ataques de fuerza bruta distribuidos
+
+### Health check
+- `GET /health` expone el estado de DB, Redis y S3
+- Este endpoint es público y podría revelar información sobre la infraestructura a un adversario
+- Mitigación: solo devuelve booleanos (up/down), no versiones ni detalles de conexión
+
+## 8. Cambios al modelo de amenaza
 
 Cualquier cambio significativo a este documento se anunciará con 30 días de antelación a usuarios activos. Histórico de versiones en `docs/THREAT_MODEL_CHANGELOG.md`.
 
-**Versión actual:** v1.0
-**Última revisión:** 24 de mayo de 2026
-**Próxima revisión programada:** 24 de noviembre de 2026
+**Versión actual:** v1.1
+**Última revisión:** 25 de mayo de 2026
+**Próxima revisión programada:** 25 de noviembre de 2026
 
 ---
 

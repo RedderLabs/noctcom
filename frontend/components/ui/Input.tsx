@@ -1,6 +1,6 @@
 'use client';
 
-import { forwardRef, useState, type InputHTMLAttributes, type ReactNode } from 'react';
+import { forwardRef, useState, useId, type InputHTMLAttributes, type ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 import { Eye, EyeOff } from 'lucide-react';
 
@@ -20,14 +20,15 @@ export const Input = forwardRef<HTMLInputElement, Props>(function Input(
   const isPassword = type === 'password';
   const inputType = isPassword && showPassword ? 'text' : type;
 
-  const inputId = id ?? `in-${Math.random().toString(36).slice(2, 8)}`;
+  const generatedId = useId();
+  const inputId = id ?? generatedId;
 
   return (
     <div className="w-full">
       {label && (
         <label
           htmlFor={inputId}
-          className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1.5 tracking-wide uppercase"
+          className="block text-xs font-medium text-[var(--color-text-primary)] opacity-75 mb-1.5 tracking-wide uppercase"
         >
           {label}
         </label>

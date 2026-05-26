@@ -1,37 +1,33 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Share2, Link2, Users, Clock, MoreVertical, Copy, Trash2,
-  FileText, Image, File, ExternalLink, Shield, ChevronRight,
+  FileText, Image, File, ExternalLink, Shield,
+  Loader2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/Button';
+import { useVault } from '@/lib/vault-store';
 import { cn } from '@/lib/utils';
 
 type ShareDirection = 'outgoing' | 'incoming';
 
-interface SharedItem {
+interface ShareItem {
   id: string;
-  name: string;
-  type: 'file' | 'folder';
-  mimeType?: string;
-  sharedWith?: string;
-  sharedBy?: string;
-  direction: ShareDirection;
-  accessLevel: 'view' | 'edit';
-  expiresAt?: string;
+  nodeId: string;
+  kind?: string;
+  permission: string;
+  sealedKey?: string;
+  sharedByUsername?: string;
+  sharedWithUsername?: string;
+  nameEncrypted?: string;
+  nameNonce?: string;
+  ciphertextSize?: number;
+  currentVersionId?: string;
   createdAt: string;
-  size?: number;
+  expiresAt?: string;
 }
-
-const MOCK_SHARED: SharedItem[] = [
-  { id: '1', name: 'Contrato_2026.pdf', type: 'file', mimeType: 'application/pdf', sharedWith: 'ana@empresa.com', direction: 'outgoing', accessLevel: 'view', expiresAt: '2026-06-24T00:00:00Z', createdAt: '2026-05-24T10:00:00Z', size: 2_400_000 },
-  { id: '2', name: 'Plan_Q3.docx', type: 'file', mimeType: 'application/word', sharedWith: 'carlos@team.dev', direction: 'outgoing', accessLevel: 'edit', createdAt: '2026-05-23T14:00:00Z', size: 480_000 },
-  { id: '3', name: 'Fotos viaje Japón', type: 'folder', sharedWith: 'familia@grupo.com', direction: 'outgoing', accessLevel: 'view', createdAt: '2026-05-22T09:00:00Z' },
-  { id: '4', name: 'Diseño_logo_v3.png', type: 'file', mimeType: 'image/png', sharedBy: 'diseño@studio.co', direction: 'incoming', accessLevel: 'view', createdAt: '2026-05-21T16:00:00Z', size: 3_200_000 },
-  { id: '5', name: 'Presupuesto 2026', type: 'folder', sharedBy: 'finanzas@empresa.com', direction: 'incoming', accessLevel: 'edit', createdAt: '2026-05-20T11:00:00Z' },
-];
 
 function formatSize(bytes?: number) {
   if (!bytes) return '';
@@ -46,22 +42,40 @@ function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('es', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
-function fileIcon(mimeType?: string) {
-  if (!mimeType) return File;
-  if (mimeType.startsWith('image/')) return Image;
-  return FileText;
-}
-
 export default function SharedPage() {
+  const { loadShares, revokeShare } = useVault();
   const [tab, setTab] = useState<ShareDirection | 'all'>('all');
+  const [incoming, setIncoming] = useState<ShareItem[]>([]);
+  const [outgoing, setOutgoing] = useState<ShareItem[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const filtered = tab === 'all' ? MOCK_SHARED : MOCK_SHARED.filter((s) => s.direction === tab);
+  useEffect(() => {
+    (async () => {
+      setLoading(true);
+      const [inc, out] = await Promise.all([loadShares('incoming'), loadShares('outgoing')]);
+      setIncoming(inc);
+      setOutgoing(out);
+      setLoading(false);
+    })();
+  }, [loadShares]);
+
+  const allShares = [
+    ...incoming.map((s) => ({ ...s, direction: 'incoming' as const })),
+    ...outgoing.map((s) => ({ ...s, direction: 'outgoing' as const })),
+  ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+  const filtered = tab === 'all' ? allShares : allShares.filter((s) => s.direction === tab);
 
   const tabs = [
-    { value: 'all' as const, label: 'Todos', count: MOCK_SHARED.length },
-    { value: 'outgoing' as const, label: 'Enviados', count: MOCK_SHARED.filter((s) => s.direction === 'outgoing').length },
-    { value: 'incoming' as const, label: 'Recibidos', count: MOCK_SHARED.filter((s) => s.direction === 'incoming').length },
+    { value: 'all' as const, label: 'Todos', count: allShares.length },
+    { value: 'outgoing' as const, label: 'Enviados', count: outgoing.length },
+    { value: 'incoming' as const, label: 'Recibidos', count: incoming.length },
   ];
+
+  async function handleRevoke(shareId: string) {
+    await revokeShare(shareId);
+    setOutgoing((prev) => prev.filter((s) => s.id !== shareId));
+  }
 
   return (
     <div className="px-8 py-6 max-w-5xl mx-auto">
@@ -72,9 +86,6 @@ export default function SharedPage() {
             Archivos compartidos mediante enlaces cifrados E2E
           </p>
         </div>
-        <Button variant="primary" size="sm" leftIcon={<Link2 className="size-3.5" />}>
-          Nuevo enlace
-        </Button>
       </div>
 
       <div className="flex gap-1 mb-6 p-1 bg-[var(--color-bg-surface)] rounded-lg border border-[var(--color-border-faint)] w-fit">
@@ -95,83 +106,93 @@ export default function SharedPage() {
         ))}
       </div>
 
-      <div className="space-y-2">
-        {filtered.map((item) => {
-          const Icon = item.type === 'folder' ? Share2 : fileIcon(item.mimeType);
-          return (
-            <div
-              key={item.id}
-              className="flex items-center gap-4 p-4 rounded-xl border border-[var(--color-border-faint)] bg-[var(--color-bg-surface)] hover:border-[var(--color-border-subtle)] transition-all group"
-            >
-              <div className={cn(
-                'size-11 rounded-lg grid place-items-center shrink-0',
-                item.direction === 'outgoing' ? 'bg-violet-500/10 border border-violet-500/20' : 'bg-blue-500/10 border border-blue-500/20',
-              )}>
-                <Icon className={cn('size-5', item.direction === 'outgoing' ? 'text-violet-300' : 'text-blue-300')} />
-              </div>
+      {loading && (
+        <div className="py-24 text-center">
+          <Loader2 className="size-8 text-violet-400 animate-spin mx-auto mb-4" />
+          <p className="text-sm text-[var(--color-text-tertiary)]">Cargando compartidos…</p>
+        </div>
+      )}
 
-              <div className="flex-1 min-w-0">
-                <h3 className="text-sm font-medium truncate">{item.name}</h3>
-                <div className="flex items-center gap-3 mt-1">
-                  <span className="text-[10px] text-[var(--color-text-tertiary)] font-mono uppercase tracking-wider flex items-center gap-1">
-                    {item.direction === 'outgoing' ? (
-                      <><Users className="size-3" /> {item.sharedWith}</>
-                    ) : (
-                      <><ExternalLink className="size-3" /> {item.sharedBy}</>
-                    )}
+      {!loading && (
+        <div className="space-y-2">
+          {filtered.map((item) => {
+            const isOutgoing = item.direction === 'outgoing';
+            return (
+              <div
+                key={item.id}
+                className="flex items-center gap-4 p-4 rounded-xl border border-[var(--color-border-faint)] bg-[var(--color-bg-surface)] hover:border-[var(--color-border-subtle)] transition-all group"
+              >
+                <div className={cn(
+                  'size-11 rounded-lg grid place-items-center shrink-0',
+                  isOutgoing ? 'bg-violet-500/10 border border-violet-500/20' : 'bg-blue-500/10 border border-blue-500/20',
+                )}>
+                  <Share2 className={cn('size-5', isOutgoing ? 'text-violet-300' : 'text-blue-300')} />
+                </div>
+
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-sm font-medium truncate">
+                    {isOutgoing ? `Compartido con ${item.sharedWithUsername ?? '—'}` : `De ${item.sharedByUsername ?? '—'}`}
+                  </h3>
+                  <div className="flex items-center gap-3 mt-1">
+                    <span className="text-[10px] text-[var(--color-text-tertiary)] font-mono uppercase tracking-wider flex items-center gap-1">
+                      {isOutgoing ? (
+                        <><Users className="size-3" /> {item.sharedWithUsername}</>
+                      ) : (
+                        <><ExternalLink className="size-3" /> {item.sharedByUsername}</>
+                      )}
+                    </span>
+                    <span className="text-[10px] text-[var(--color-text-muted)]">·</span>
+                    <span className="text-[10px] text-[var(--color-text-muted)] flex items-center gap-1">
+                      <Clock className="size-3" /> {formatDate(item.createdAt)}
+                    </span>
+                    {item.ciphertextSize ? (
+                      <>
+                        <span className="text-[10px] text-[var(--color-text-muted)]">·</span>
+                        <span className="text-[10px] text-[var(--color-text-muted)] font-mono">{formatSize(item.ciphertextSize)}</span>
+                      </>
+                    ) : null}
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <span className={cn(
+                    'text-[10px] font-mono uppercase tracking-wider px-2 py-1 rounded',
+                    item.permission === 'write'
+                      ? 'bg-amber-500/10 text-amber-300'
+                      : 'bg-emerald-500/10 text-emerald-300',
+                  )}>
+                    {item.permission === 'write' ? 'Editar' : 'Solo ver'}
                   </span>
-                  <span className="text-[10px] text-[var(--color-text-muted)]">·</span>
-                  <span className="text-[10px] text-[var(--color-text-muted)] flex items-center gap-1">
-                    <Clock className="size-3" /> {formatDate(item.createdAt)}
-                  </span>
-                  {item.size && (
-                    <>
-                      <span className="text-[10px] text-[var(--color-text-muted)]">·</span>
-                      <span className="text-[10px] text-[var(--color-text-muted)] font-mono">{formatSize(item.size)}</span>
-                    </>
+                  {item.expiresAt && (
+                    <span className="text-[10px] text-[var(--color-text-muted)] font-mono">
+                      Expira {formatDate(item.expiresAt)}
+                    </span>
+                  )}
+                  {isOutgoing && (
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        className="p-1.5 rounded-md hover:bg-red-500/10"
+                        onClick={() => handleRevoke(item.id)}
+                      >
+                        <Trash2 className="size-3.5 text-red-400" />
+                      </button>
+                    </div>
                   )}
                 </div>
               </div>
+            );
+          })}
+        </div>
+      )}
 
-              <div className="flex items-center gap-2">
-                <span className={cn(
-                  'text-[10px] font-mono uppercase tracking-wider px-2 py-1 rounded',
-                  item.accessLevel === 'edit'
-                    ? 'bg-amber-500/10 text-amber-300'
-                    : 'bg-emerald-500/10 text-emerald-300',
-                )}>
-                  {item.accessLevel === 'edit' ? 'Editar' : 'Solo ver'}
-                </span>
-                {item.expiresAt && (
-                  <span className="text-[10px] text-[var(--color-text-muted)] font-mono">
-                    Expira {formatDate(item.expiresAt)}
-                  </span>
-                )}
-                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button
-                    className="p-1.5 rounded-md hover:bg-[var(--color-bg-surface-2)]"
-                    onClick={() => { navigator.clipboard.writeText(`https://noctcom.com/s/${item.id}`); toast.success('Enlace copiado'); }}
-                  >
-                    <Copy className="size-3.5 text-[var(--color-text-tertiary)]" />
-                  </button>
-                  <button className="p-1.5 rounded-md hover:bg-[var(--color-bg-surface-2)]">
-                    <Trash2 className="size-3.5 text-[var(--color-text-tertiary)]" />
-                  </button>
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {filtered.length === 0 && (
+      {!loading && filtered.length === 0 && (
         <div className="py-24 text-center">
           <div className="size-16 rounded-full bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] grid place-items-center mx-auto mb-4">
             <Share2 className="size-6 text-[var(--color-text-tertiary)]" />
           </div>
           <h3 className="font-display text-lg mb-1">Sin archivos compartidos</h3>
           <p className="text-sm text-[var(--color-text-tertiary)]">
-            Los enlaces que crees aparecerán aquí
+            Los archivos que compartas aparecerán aquí
           </p>
         </div>
       )}

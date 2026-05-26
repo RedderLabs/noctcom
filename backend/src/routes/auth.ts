@@ -2,41 +2,51 @@ import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 import { randomBytes, createHash, timingSafeEqual } from 'node:crypto';
 import { db, tx } from '../db/pool.js';
+import { sendVerificationEmail } from '../mail.js';
 
 // ─────────────────────────────────────────────────────────────────
 // Schemas
 // ─────────────────────────────────────────────────────────────────
 const bytesB64 = z.string().regex(/^[A-Za-z0-9_-]+$/, 'base64url required');
 
+// Exact-size validators for crypto fields (base64url encoded)
+const b64Exactly = (rawBytes: number) =>
+  bytesB64.min(1).max(Math.ceil(rawBytes * 4 / 3) + 4);
+const pubKey32 = b64Exactly(32);
+const nonce24 = b64Exactly(24);
+const wrappedKey = b64Exactly(32 + 16); // X25519 private: 32 key + 16 MAC
+const wrappedSignKey = b64Exactly(64 + 16); // Ed25519 private: 64 key + 16 MAC
+
 const signupSchema = z.object({
   username: z.string().min(3).max(64).regex(/^[a-zA-Z0-9_.-]+$/),
-  emailHash: bytesB64,                       // BLAKE2b(email) calculado en cliente
-  kdfSalt: bytesB64,
+  email: z.string().email().max(254).optional(),
+  emailHash: b64Exactly(32),
+  kdfSalt: b64Exactly(16),
   kdfOpsLimit: z.number().int().min(2).max(10),
-  kdfMemLimit: z.number().int().min(67108864),
+  kdfMemLimit: z.number().int().min(67108864).max(1073741824),
 
-  opaqueRecord: bytesB64,
+  opaqueRecord: b64Exactly(64),
 
-  identityPublicKey: bytesB64,
-  identityPrivateKeyWrapped: bytesB64,
-  identityPrivateKeyNonce: bytesB64,
+  identityPublicKey: pubKey32,
+  identityPrivateKeyWrapped: wrappedSignKey,
+  identityPrivateKeyNonce: nonce24,
 
-  exchangePublicKey: bytesB64,
-  exchangePrivateKeyWrapped: bytesB64,
-  exchangePrivateKeyNonce: bytesB64,
+  exchangePublicKey: pubKey32,
+  exchangePrivateKeyWrapped: wrappedKey,
+  exchangePrivateKeyNonce: nonce24,
 
-  // Vault inicial creado en el cliente
   initialVault: z.object({
-    nameEncrypted: bytesB64,
-    nameNonce: bytesB64,
-    vaultKeyWrapped: bytesB64,    // wrapped con exchange_private_key del owner
-    vaultKeyNonce: bytesB64,
+    nameEncrypted: bytesB64.max(512),
+    nameNonce: nonce24,
+    vaultKeyWrapped: wrappedKey,
+    vaultKeyNonce: nonce24,
   }),
 
-  // Device
-  deviceNameEncrypted: bytesB64,
-  deviceNameNonce: bytesB64,
-  devicePublicKey: bytesB64,
+  recoveryPublicKey: pubKey32.optional(),
+
+  deviceNameEncrypted: bytesB64.max(512),
+  deviceNameNonce: nonce24,
+  devicePublicKey: pubKey32,
 });
 
 const loginInitSchema = z.object({
@@ -72,14 +82,19 @@ function newRefreshToken(): { plain: string; hash: Buffer } {
 const authRoutes: FastifyPluginAsync = async (app) => {
 
   // ─── POST /signup ─────────────────────────────────────────
-  app.post('/signup', async (req, reply) => {
+  app.post('/signup', {
+    config: {
+      rateLimit: { max: 5, timeWindow: '1 minute' },
+    },
+  }, async (req, reply) => {
     const body = signupSchema.parse(req.body);
 
-    // El email_hash es único por usuario → el cliente prueba unicidad sin filtrar el email.
     const existing = await db.query(
       'SELECT 1 FROM users WHERE email_hash = $1 OR username = $2 LIMIT 1',
       [fromB64(body.emailHash), body.username],
     );
+    // Artificial delay to prevent timing-based user enumeration
+    await new Promise((r) => setTimeout(r, 80 + Math.random() * 120));
     if (existing.rowCount && existing.rowCount > 0) {
       return reply.conflict('username or email already registered');
     }
@@ -90,8 +105,9 @@ const authRoutes: FastifyPluginAsync = async (app) => {
           username, email_hash, kdf_salt, kdf_ops_limit, kdf_mem_limit,
           opaque_record,
           identity_public_key, identity_private_key_wrapped, identity_private_key_nonce,
-          exchange_public_key, exchange_private_key_wrapped, exchange_private_key_nonce
-         ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
+          exchange_public_key, exchange_private_key_wrapped, exchange_private_key_nonce,
+          recovery_public_key, recovery_enabled
+         ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
          RETURNING id`,
         [
           body.username,
@@ -106,6 +122,8 @@ const authRoutes: FastifyPluginAsync = async (app) => {
           fromB64(body.exchangePublicKey),
           fromB64(body.exchangePrivateKeyWrapped),
           fromB64(body.exchangePrivateKeyNonce),
+          body.recoveryPublicKey ? fromB64(body.recoveryPublicKey) : null,
+          !!body.recoveryPublicKey,
         ],
       );
       const userId = u.rows[0].id as string;
@@ -150,6 +168,20 @@ const authRoutes: FastifyPluginAsync = async (app) => {
       [result.userId, result.deviceId, hash, hashIp(req.ip), expires],
     );
 
+    // Send verification email (fire-and-forget, don't block signup)
+    if (body.email) {
+      const code = String(Math.floor(100000 + Math.random() * 900000));
+      const codeHash = createHash('blake2b512').update(code).digest().subarray(0, 32);
+      const expires = new Date(Date.now() + 30 * 60 * 1000);
+      await db.query(
+        `UPDATE users SET verification_code_hash = $1, verification_code_expires = $2 WHERE id = $3`,
+        [codeHash, expires, result.userId],
+      );
+      sendVerificationEmail(body.email, code).catch((err) => {
+        app.log.warn({ err }, 'failed to send verification email');
+      });
+    }
+
     return reply.code(201).send({
       userId: result.userId,
       deviceId: result.deviceId,
@@ -160,9 +192,11 @@ const authRoutes: FastifyPluginAsync = async (app) => {
   });
 
   // ─── POST /login/init ─────────────────────────────────────
-  // Devuelve los parámetros KDF + opaque envelope para que el cliente
-  // pueda derivar su MK localmente. NUNCA enviamos info útil sin auth.
-  app.post('/login/init', async (req, reply) => {
+  app.post('/login/init', {
+    config: {
+      rateLimit: { max: 10, timeWindow: '1 minute' },
+    },
+  }, async (req, reply) => {
     const body = loginInitSchema.parse(req.body);
 
     const r = await db.query(
@@ -208,7 +242,11 @@ const authRoutes: FastifyPluginAsync = async (app) => {
   });
 
   // ─── POST /login/finalize ─────────────────────────────────
-  app.post('/login/finalize', async (req, reply) => {
+  app.post('/login/finalize', {
+    config: {
+      rateLimit: { max: 10, timeWindow: '1 minute' },
+    },
+  }, async (req, reply) => {
     const body = loginFinalizeSchema.parse(req.body);
 
     const r = await db.query(
@@ -235,13 +273,17 @@ const authRoutes: FastifyPluginAsync = async (app) => {
     );
     if (!ok) return reply.unauthorized('invalid credentials');
 
-    let deviceId = body.deviceId;
-    if (!deviceId) {
+    let deviceId: string | null = body.deviceId ?? null;
+    if (deviceId) {
       const d = await db.query(
-        `SELECT id FROM devices WHERE user_id = $1 AND revoked_at IS NULL LIMIT 1`,
-        [row.id],
+        `SELECT id FROM devices WHERE id = $1 AND user_id = $2 AND revoked_at IS NULL`,
+        [deviceId, row.id],
       );
-      deviceId = d.rows[0]?.id;
+      if (d.rowCount === 0) {
+        deviceId = null;
+      } else {
+        await db.query(`UPDATE devices SET last_seen_at = now() WHERE id = $1`, [deviceId]);
+      }
     }
 
     const accessToken = await reply.jwtSign(
@@ -274,7 +316,11 @@ const authRoutes: FastifyPluginAsync = async (app) => {
   });
 
   // ─── POST /refresh ────────────────────────────────────────
-  app.post('/refresh', async (req, reply) => {
+  app.post('/refresh', {
+    config: {
+      rateLimit: { max: 20, timeWindow: '1 minute' },
+    },
+  }, async (req, reply) => {
     const schema = z.object({ refreshToken: z.string() });
     const { refreshToken } = schema.parse(req.body);
 
@@ -325,6 +371,39 @@ const authRoutes: FastifyPluginAsync = async (app) => {
       identityPublicKey: toB64(u.identity_public_key),
       exchangePublicKey: toB64(u.exchange_public_key),
     });
+  });
+
+  // ─── POST /verify ─ verificar email con código ────────────
+  app.post('/verify', { onRequest: [app.authenticate] }, async (req, reply) => {
+    const schema = z.object({ code: z.string().length(6) });
+    const { code } = schema.parse(req.body);
+    const userId = req.user.sub;
+
+    const r = await db.query(
+      `SELECT verification_code_hash, verification_code_expires, email_verified
+       FROM users WHERE id = $1`,
+      [userId],
+    );
+    if (r.rowCount === 0) return reply.notFound();
+    const row = r.rows[0];
+
+    if (row.email_verified) return reply.send({ ok: true, alreadyVerified: true });
+    if (!row.verification_code_hash) return reply.badRequest('no verification pending');
+    if (new Date(row.verification_code_expires) < new Date()) {
+      return reply.badRequest('verification code expired');
+    }
+
+    const codeHash = createHash('blake2b512').update(code).digest().subarray(0, 32);
+    if (!timingSafeEqual(codeHash, row.verification_code_hash)) {
+      return reply.unauthorized('invalid code');
+    }
+
+    await db.query(
+      `UPDATE users SET email_verified = TRUE, verification_code_hash = NULL, verification_code_expires = NULL WHERE id = $1`,
+      [userId],
+    );
+
+    return reply.send({ ok: true });
   });
 
   // ─── GET /users/lookup/:username ─ búsqueda para compartir ─

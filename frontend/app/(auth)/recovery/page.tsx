@@ -7,7 +7,13 @@ import { Mail, KeyRound, ArrowRight, AlertTriangle, Shield, ArrowLeft } from 'lu
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { cn } from '@/lib/utils';
+import { apiFetch } from '@/lib/api';
+import {
+  initCrypto, deriveMasterKey, hashEmail, encrypt,
+  randomBytes, deriveSubKey, DEFAULT_KDF,
+  fromB64, toB64, wipe,
+} from '@/lib/crypto';
+import { cn, sanitizeEmail } from '@/lib/utils';
 
 type Step = 'email' | 'mnemonic' | 'new_password' | 'done';
 
@@ -37,6 +43,102 @@ export default function RecoveryPage() {
   const [newPassword, setNewPassword] = useState('');
   const [newPasswordConfirm, setNewPasswordConfirm] = useState('');
   const [loading, setLoading] = useState(false);
+  const [challenge, setChallenge] = useState('');
+
+  async function handleEmailSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      await initCrypto();
+      const emailHash = hashEmail(sanitizeEmail(email));
+      const res = await apiFetch<{ challenge: string; recoveryKdfSalt: string }>(
+        '/api/v1/2fa/recovery/init',
+        {
+          method: 'POST',
+          body: JSON.stringify({ emailHash: toB64(emailHash) }),
+          skipAuth: true,
+        },
+      );
+      setChallenge(res.challenge);
+      setStep('mnemonic');
+    } catch (err: any) {
+      toast.error(err.message ?? 'Error al iniciar recuperación');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleRecovery(e: React.FormEvent) {
+    e.preventDefault();
+    if (newPassword !== newPasswordConfirm) {
+      toast.error('Las contraseñas no coinciden');
+      return;
+    }
+    if (newPassword.length < 8) {
+      toast.error('La contraseña debe tener al menos 8 caracteres');
+      return;
+    }
+    setLoading(true);
+    try {
+      await initCrypto();
+      const sodium = (await import('libsodium-wrappers-sumo')).default;
+      await sodium.ready;
+
+      const emailHash = hashEmail(sanitizeEmail(email));
+
+      // Derive recovery keypair from mnemonic (same as signup)
+      const mnemonicStr = words.join(' ');
+      const recoverySeed = sodium.crypto_generichash(
+        32, sodium.from_string(mnemonicStr), sodium.from_string('noctcom.recovery.v1'),
+      );
+      const recoveryKp = sodium.crypto_sign_seed_keypair(recoverySeed);
+
+      // Sign the challenge with recovery key
+      const challengeBytes = fromB64(challenge);
+      const signature = sodium.crypto_sign_detached(challengeBytes, recoveryKp.privateKey);
+
+      // Generate new keys with new password
+      const salt = randomBytes(DEFAULT_KDF.saltBytes());
+      const opsLimit = DEFAULT_KDF.opsLimit();
+      const memLimit = DEFAULT_KDF.memLimit();
+      const mk = deriveMasterKey(newPassword, salt, opsLimit, memLimit);
+
+      const signSeed = deriveSubKey(mk, 'noctcom.login.sign');
+      const identityKp = sodium.crypto_sign_seed_keypair(signSeed);
+      const exchangeKp = sodium.crypto_box_keypair();
+
+      const idWrapped = encrypt(identityKp.privateKey, mk);
+      const exWrapped = encrypt(exchangeKp.privateKey, mk);
+      const opaqueRecord = randomBytes(64);
+
+      await apiFetch('/api/v1/2fa/recovery/finalize', {
+        method: 'POST',
+        body: JSON.stringify({
+          emailHash: toB64(emailHash),
+          challenge,
+          signature: toB64(signature),
+          newOpaqueRecord: toB64(opaqueRecord),
+          newKdfSalt: toB64(salt),
+          newKdfOpsLimit: opsLimit,
+          newKdfMemLimit: memLimit,
+          newIdentityPublicKey: toB64(identityKp.publicKey),
+          newIdentityPrivateKeyWrapped: toB64(idWrapped.ciphertext),
+          newIdentityPrivateKeyNonce: toB64(idWrapped.nonce),
+          newExchangePublicKey: toB64(exchangeKp.publicKey),
+          newExchangePrivateKeyWrapped: toB64(exWrapped.ciphertext),
+          newExchangePrivateKeyNonce: toB64(exWrapped.nonce),
+        }),
+        skipAuth: true,
+      });
+
+      wipe(mk, recoverySeed, recoveryKp.privateKey, identityKp.privateKey, exchangeKp.privateKey);
+      setStep('done');
+    } catch (err: any) {
+      toast.error(err.message ?? 'Error al recuperar la cuenta');
+    } finally {
+      setLoading(false);
+    }
+  }
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -53,20 +155,17 @@ export default function RecoveryPage() {
           {step === 'email' && 'Necesitarás tu frase de recuperación de 12 palabras'}
           {step === 'mnemonic' && 'En el orden exacto que la generaste'}
           {step === 'new_password' && 'Tu bóveda se re-cifrará con esta contraseña'}
-          {step === 'done' && 'Tus archivos y claves siguen intactos'}
+          {step === 'done' && 'Tus claves han sido regeneradas con la nueva contraseña'}
         </p>
       </div>
 
       {step === 'email' && (
-        <form
-          onSubmit={(e) => { e.preventDefault(); setStep('mnemonic'); }}
-          className="space-y-4"
-        >
+        <form onSubmit={handleEmailSubmit} className="space-y-4">
           <div className="flex gap-2 p-3 rounded-lg bg-amber-500/5 border border-amber-500/20">
             <AlertTriangle className="size-4 text-amber-300 mt-0.5 shrink-0" />
             <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed">
-              Recuperar tu cuenta revoca todas las sesiones activas y re-cifra tus claves.
-              Necesitas tu frase de 12 palabras.
+              Recuperar tu cuenta revoca todas las sesiones activas y re-genera tus claves.
+              Los archivos compartidos con otros usuarios dejarán de ser accesibles para ellos.
             </p>
           </div>
 
@@ -81,7 +180,7 @@ export default function RecoveryPage() {
             autoFocus
           />
 
-          <Button type="submit" variant="primary" size="lg" className="w-full" rightIcon={<ArrowRight className="size-4" />}>
+          <Button type="submit" variant="primary" size="lg" className="w-full" loading={loading} rightIcon={!loading ? <ArrowRight className="size-4" /> : undefined}>
             Continuar
           </Button>
         </form>
@@ -104,6 +203,18 @@ export default function RecoveryPage() {
                     next[i] = e.target.value.trim().toLowerCase();
                     setWords(next);
                   }}
+                  onPaste={(e) => {
+                    const text = e.clipboardData.getData('text').trim();
+                    const parts = text.split(/[\s,]+/).filter(Boolean);
+                    if (parts.length > 1) {
+                      e.preventDefault();
+                      const next = [...words];
+                      for (let j = 0; j < 12; j++) {
+                        next[j] = (parts[j] ?? '').toLowerCase();
+                      }
+                      setWords(next);
+                    }
+                  }}
                   className="w-full h-10 pl-7 pr-2 text-sm font-mono bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] rounded-md focus:outline-none focus:border-violet-500/60 focus:shadow-[0_0_0_3px_rgba(139,92,246,0.12)] text-[var(--color-text-primary)]"
                   autoComplete="off"
                   autoCorrect="off"
@@ -113,6 +224,9 @@ export default function RecoveryPage() {
               </div>
             ))}
           </div>
+          <p className="text-[10px] text-[var(--color-text-muted)] text-center">
+            Pega la frase completa en cualquier campo para rellenar todos automáticamente
+          </p>
 
           <div className="flex gap-2">
             <Button
@@ -133,27 +247,14 @@ export default function RecoveryPage() {
               disabled={words.some((w) => !w)}
               rightIcon={<ArrowRight className="size-4" />}
             >
-              Verificar frase
+              Continuar
             </Button>
           </div>
         </form>
       )}
 
       {step === 'new_password' && (
-        <form
-          onSubmit={async (e) => {
-            e.preventDefault();
-            if (newPassword !== newPasswordConfirm) {
-              toast.error('Las contraseñas no coinciden');
-              return;
-            }
-            setLoading(true);
-            await new Promise((r) => setTimeout(r, 1500));
-            setStep('done');
-            setLoading(false);
-          }}
-          className="space-y-4"
-        >
+        <form onSubmit={handleRecovery} className="space-y-4">
           <Input
             label="Nueva contraseña maestra"
             type="password"
@@ -200,7 +301,7 @@ export default function RecoveryPage() {
             </svg>
           </div>
           <p className="text-sm text-[var(--color-text-secondary)]">
-            Tu cuenta ha sido restaurada y tus claves re-cifradas con la nueva contraseña.
+            Tu cuenta ha sido restaurada y tus claves re-generadas con la nueva contraseña.
             Todas las sesiones anteriores han sido revocadas.
           </p>
           <Button variant="primary" size="lg" className="w-full" onClick={() => router.push('/login')}>

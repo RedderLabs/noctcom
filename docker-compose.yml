@@ -124,6 +124,12 @@ services:
       PUBLIC_URL: ${PUBLIC_URL:-http://localhost:3000}
       MAX_UPLOAD_BYTES: ${MAX_UPLOAD_BYTES:-5368709120}
       USER_QUOTA_BYTES: ${USER_QUOTA_BYTES:-10737418240}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3001}
+      SMTP_HOST: ${SMTP_HOST:-localhost}
+      SMTP_PORT: ${SMTP_PORT:-465}
+      SMTP_USER: ${SMTP_USER:-noctcom}
+      SMTP_PASS: ${SMTP_PASS:-changeme}
+      SMTP_FROM: ${SMTP_FROM:-noreply@noctcom.app}
     networks:
       - noctcom-internal
       - noctcom-public
@@ -140,6 +146,8 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${PUBLIC_API_URL:-http://localhost:3000}
     container_name: noctcom-frontend
     restart: unless-stopped
     depends_on:

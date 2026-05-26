@@ -178,7 +178,7 @@ export function verify(signature: Bytes, message: Bytes, publicKey: Bytes): bool
 // genéricas (siguen siendo posibles para el atacante con el DB dump,
 // pero es lo mejor que hace un sistema zero-knowledge).
 // ─────────────────────────────────────────────────────────────────
-const EMAIL_NS = sodium_to_bytes_safe('cryptvault.email.v1');
+const EMAIL_NS = sodium_to_bytes_safe('noctcom.email.v1');
 
 export function hashEmail(email: string): Bytes {
   return sodium.crypto_generichash(

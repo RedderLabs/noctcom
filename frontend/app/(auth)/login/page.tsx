@@ -7,11 +7,11 @@ import { Mail, Lock, KeyRound, Fingerprint, ArrowRight, Shield } from 'lucide-re
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { useAuth } from '@/lib/auth-store';
+import { useAuth, getStoredDeviceId } from '@/lib/auth-store';
 import { apiFetch, setTokens } from '@/lib/api';
 import {
   initCrypto, deriveMasterKey, hashEmail, fromB64, toB64,
-  decrypt, sign, deriveSubKey, wipe,
+  decrypt, sign, deriveSubKey, wipe, encryptString, encrypt,
 } from '@/lib/crypto';
 
 type Step = 'credentials' | 'totp' | 'passkey';
@@ -57,9 +57,11 @@ export default function LoginPage() {
       const kp = sodium.crypto_sign_seed_keypair(signingKeySeed);
       const signature = sign(challenge, kp.privateKey);
 
+      const storedDeviceId = getStoredDeviceId();
+
       const finalize = await apiFetch<{
         userId: string;
-        deviceId: string;
+        deviceId: string | null;
         accessToken: string;
         refreshToken: string;
         identityPrivateKeyWrapped: string;
@@ -74,6 +76,7 @@ export default function LoginPage() {
           emailHash: toB64(emailHash),
           challenge: init.challenge,
           signature: toB64(signature),
+          deviceId: storedDeviceId ?? undefined,
         }),
         skipAuth: true,
       });
@@ -89,10 +92,35 @@ export default function LoginPage() {
         mk,
       );
 
+      let { accessToken } = finalize;
+      let deviceId = finalize.deviceId;
+
+      // New device — register it
+      if (!deviceId) {
+        setTokens(finalize.accessToken, finalize.refreshToken);
+        const deviceName = encryptString(navigator.userAgent.slice(0, 64), mk);
+        const deviceKp = sodium.crypto_box_keypair();
+        const devicePrivWrapped = encrypt(deviceKp.privateKey, mk);
+        const reg = await apiFetch<{ deviceId: string; accessToken: string }>(
+          '/api/v1/auth/devices',
+          {
+            method: 'POST',
+            body: JSON.stringify({
+              devicePublicKey: toB64(deviceKp.publicKey),
+              deviceNameEncrypted: toB64(deviceName.ciphertext),
+              deviceNameNonce: toB64(deviceName.nonce),
+            }),
+          },
+        );
+        deviceId = reg.deviceId;
+        accessToken = reg.accessToken;
+        localStorage.setItem('noctcom.devicePrivKey', toB64(devicePrivWrapped.ciphertext));
+      }
+
       const sessionData = {
         userId: finalize.userId,
         username: email.split('@')[0]!,
-        deviceId: finalize.deviceId,
+        deviceId,
         masterKey: mk,
         identityPrivateKey: idPriv,
         identityPublicKey: kp.publicKey,
@@ -101,13 +129,13 @@ export default function LoginPage() {
       };
 
       if (finalize.totpRequired) {
-        setPartial({ ...sessionData, accessToken: finalize.accessToken, refreshToken: finalize.refreshToken });
+        setPartial({ ...sessionData, accessToken, refreshToken: finalize.refreshToken });
         setStep('totp');
         setLoading(false);
         return;
       }
 
-      setTokens(finalize.accessToken, finalize.refreshToken);
+      setTokens(accessToken, finalize.refreshToken);
       setIdentity(sessionData);
       wipe(challenge, signingKeySeed);
       router.push('/vault');

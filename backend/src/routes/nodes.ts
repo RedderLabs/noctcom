@@ -1,6 +1,7 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 import { db, tx } from '../db/pool.js';
+import { publishChange } from '../db/redis.js';
 
 const bytesB64 = z.string().regex(/^[A-Za-z0-9_-]+$/);
 const fromB64 = (s: string) => Buffer.from(s, 'base64url');
@@ -51,6 +52,7 @@ const nodeRoutes: FastifyPluginAsync = async (app) => {
       ],
     );
 
+    publishChange(userId, { resource: 'nodes', action: 'created', vaultId: body.vaultId });
     return reply.code(201).send({ id: r.rows[0].id, createdAt: r.rows[0].created_at });
   });
 
@@ -72,7 +74,7 @@ const nodeRoutes: FastifyPluginAsync = async (app) => {
                 metadata_encrypted, metadata_nonce,
                 file_key_wrapped, file_key_nonce,
                 current_version_id, ciphertext_size,
-                created_at, updated_at
+                starred, created_at, updated_at
          FROM nodes
          WHERE vault_id = $1
                AND ((parent_id IS NULL AND $2::uuid IS NULL) OR parent_id = $2::uuid)
@@ -93,6 +95,7 @@ const nodeRoutes: FastifyPluginAsync = async (app) => {
           fileKeyNonce: n.file_key_nonce ? toB64(n.file_key_nonce) : null,
           currentVersionId: n.current_version_id,
           ciphertextSize: Number(n.ciphertext_size),
+          starred: n.starred,
           createdAt: n.created_at,
           updatedAt: n.updated_at,
         })),
@@ -168,6 +171,7 @@ const nodeRoutes: FastifyPluginAsync = async (app) => {
         `UPDATE nodes SET parent_id = $1 WHERE id = $2`,
         [body.newParentId, req.params.id],
       );
+      publishChange(userId, { resource: 'nodes', action: 'moved', vaultId: own.rows[0].vault_id });
       return reply.send({ ok: true });
     },
   );
@@ -187,6 +191,178 @@ const nodeRoutes: FastifyPluginAsync = async (app) => {
       if (own.rows[0].owner_id !== userId) return reply.forbidden();
 
       await db.query(`UPDATE nodes SET deleted_at = now() WHERE id = $1`, [req.params.id]);
+      publishChange(userId, { resource: 'nodes', action: 'deleted' });
+      return reply.send({ ok: true });
+    },
+  );
+
+  // ─── GET /vault/:vaultId/recent ─ archivos recientes ───────
+  app.get<{ Params: { vaultId: string } }>(
+    '/vault/:vaultId/recent',
+    { onRequest: [app.authenticate] },
+    async (req, reply) => {
+      const userId = req.user.sub;
+      const { vaultId } = req.params;
+
+      const v = await db.query(`SELECT owner_id FROM vaults WHERE id = $1`, [vaultId]);
+      if (v.rowCount === 0) return reply.notFound();
+      if (v.rows[0].owner_id !== userId) return reply.forbidden();
+
+      const r = await db.query(
+        `SELECT id, kind, name_encrypted, name_nonce,
+                metadata_encrypted, metadata_nonce,
+                file_key_wrapped, file_key_nonce,
+                current_version_id, ciphertext_size,
+                starred, created_at, updated_at
+         FROM nodes
+         WHERE vault_id = $1 AND deleted_at IS NULL AND kind = 'file'
+         ORDER BY updated_at DESC LIMIT 50`,
+        [vaultId],
+      );
+
+      return reply.send({
+        nodes: r.rows.map((n) => ({
+          id: n.id,
+          kind: n.kind,
+          nameEncrypted: toB64(n.name_encrypted),
+          nameNonce: toB64(n.name_nonce),
+          metadataEncrypted: n.metadata_encrypted ? toB64(n.metadata_encrypted) : null,
+          metadataNonce: n.metadata_nonce ? toB64(n.metadata_nonce) : null,
+          fileKeyWrapped: n.file_key_wrapped ? toB64(n.file_key_wrapped) : null,
+          fileKeyNonce: n.file_key_nonce ? toB64(n.file_key_nonce) : null,
+          currentVersionId: n.current_version_id,
+          ciphertextSize: Number(n.ciphertext_size),
+          starred: n.starred,
+          createdAt: n.created_at,
+          updatedAt: n.updated_at,
+        })),
+      });
+    },
+  );
+
+  // ─── GET /vault/:vaultId/starred ─ favoritos ──────────────
+  app.get<{ Params: { vaultId: string } }>(
+    '/vault/:vaultId/starred',
+    { onRequest: [app.authenticate] },
+    async (req, reply) => {
+      const userId = req.user.sub;
+      const { vaultId } = req.params;
+
+      const v = await db.query(`SELECT owner_id FROM vaults WHERE id = $1`, [vaultId]);
+      if (v.rowCount === 0) return reply.notFound();
+      if (v.rows[0].owner_id !== userId) return reply.forbidden();
+
+      const r = await db.query(
+        `SELECT id, kind, name_encrypted, name_nonce,
+                metadata_encrypted, metadata_nonce,
+                file_key_wrapped, file_key_nonce,
+                current_version_id, ciphertext_size,
+                starred, created_at, updated_at
+         FROM nodes
+         WHERE vault_id = $1 AND deleted_at IS NULL AND starred = TRUE
+         ORDER BY updated_at DESC`,
+        [vaultId],
+      );
+
+      return reply.send({
+        nodes: r.rows.map((n) => ({
+          id: n.id,
+          kind: n.kind,
+          nameEncrypted: toB64(n.name_encrypted),
+          nameNonce: toB64(n.name_nonce),
+          metadataEncrypted: n.metadata_encrypted ? toB64(n.metadata_encrypted) : null,
+          metadataNonce: n.metadata_nonce ? toB64(n.metadata_nonce) : null,
+          fileKeyWrapped: n.file_key_wrapped ? toB64(n.file_key_wrapped) : null,
+          fileKeyNonce: n.file_key_nonce ? toB64(n.file_key_nonce) : null,
+          currentVersionId: n.current_version_id,
+          ciphertextSize: Number(n.ciphertext_size),
+          starred: n.starred,
+          createdAt: n.created_at,
+          updatedAt: n.updated_at,
+        })),
+      });
+    },
+  );
+
+  // ─── PATCH /:id/star ─ toggle favorito ────────────────────
+  app.patch<{ Params: { id: string } }>(
+    '/:id/star',
+    { onRequest: [app.authenticate] },
+    async (req, reply) => {
+      const userId = req.user.sub;
+      const own = await db.query(
+        `SELECT v.owner_id, n.starred FROM nodes n
+         JOIN vaults v ON v.id = n.vault_id WHERE n.id = $1`,
+        [req.params.id],
+      );
+      if (own.rowCount === 0) return reply.notFound();
+      if (own.rows[0].owner_id !== userId) return reply.forbidden();
+
+      const newVal = !own.rows[0].starred;
+      await db.query(`UPDATE nodes SET starred = $1 WHERE id = $2`, [newVal, req.params.id]);
+      return reply.send({ starred: newVal });
+    },
+  );
+
+  // ─── GET /vault/:vaultId/trash ─ nodos eliminados ──────────
+  app.get<{ Params: { vaultId: string } }>(
+    '/vault/:vaultId/trash',
+    { onRequest: [app.authenticate] },
+    async (req, reply) => {
+      const userId = req.user.sub;
+      const { vaultId } = req.params;
+
+      const v = await db.query(`SELECT owner_id FROM vaults WHERE id = $1`, [vaultId]);
+      if (v.rowCount === 0) return reply.notFound();
+      if (v.rows[0].owner_id !== userId) return reply.forbidden();
+
+      const r = await db.query(
+        `SELECT id, kind, name_encrypted, name_nonce,
+                metadata_encrypted, metadata_nonce,
+                file_key_wrapped, file_key_nonce,
+                current_version_id, ciphertext_size,
+                created_at, updated_at, deleted_at
+         FROM nodes
+         WHERE vault_id = $1 AND deleted_at IS NOT NULL
+         ORDER BY deleted_at DESC`,
+        [vaultId],
+      );
+
+      return reply.send({
+        nodes: r.rows.map((n) => ({
+          id: n.id,
+          kind: n.kind,
+          nameEncrypted: toB64(n.name_encrypted),
+          nameNonce: toB64(n.name_nonce),
+          metadataEncrypted: n.metadata_encrypted ? toB64(n.metadata_encrypted) : null,
+          metadataNonce: n.metadata_nonce ? toB64(n.metadata_nonce) : null,
+          fileKeyWrapped: n.file_key_wrapped ? toB64(n.file_key_wrapped) : null,
+          fileKeyNonce: n.file_key_nonce ? toB64(n.file_key_nonce) : null,
+          currentVersionId: n.current_version_id,
+          ciphertextSize: Number(n.ciphertext_size),
+          createdAt: n.created_at,
+          updatedAt: n.updated_at,
+          deletedAt: n.deleted_at,
+        })),
+      });
+    },
+  );
+
+  // ─── POST /:id/restore ─ restaurar de papelera ────────────
+  app.post<{ Params: { id: string } }>(
+    '/:id/restore',
+    { onRequest: [app.authenticate] },
+    async (req, reply) => {
+      const userId = req.user.sub;
+      const own = await db.query(
+        `SELECT v.owner_id FROM nodes n
+         JOIN vaults v ON v.id = n.vault_id WHERE n.id = $1`,
+        [req.params.id],
+      );
+      if (own.rowCount === 0) return reply.notFound();
+      if (own.rows[0].owner_id !== userId) return reply.forbidden();
+
+      await db.query(`UPDATE nodes SET deleted_at = NULL WHERE id = $1`, [req.params.id]);
       return reply.send({ ok: true });
     },
   );

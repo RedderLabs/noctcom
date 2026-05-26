@@ -5,11 +5,11 @@
  */
 
 import type { FastifyPluginAsync } from 'fastify';
+import { createSubscriber } from '../db/redis.js';
 
 const wsRoutes: FastifyPluginAsync = async (app) => {
 
-  app.get('/sync', { websocket: true }, (socket, req) => {
-    // Autenticación por query param ?token=
+  app.get('/sync', { websocket: true }, async (socket, req) => {
     const url = new URL(req.url, 'http://localhost');
     const token = url.searchParams.get('token');
     if (!token) {
@@ -27,11 +27,31 @@ const wsRoutes: FastifyPluginAsync = async (app) => {
     }
 
     app.log.info({ userId }, 'ws connected');
-
     socket.send(JSON.stringify({ type: 'hello', ts: Date.now() }));
 
-    // Suscribe a Redis pub/sub canal `user:${userId}` para notificar cambios
-    // (implementación detallada queda fuera de este MVP inicial).
+    const subscriber = await createSubscriber();
+    if (subscriber) {
+      const channel = `user:${userId}`;
+      await subscriber.subscribe(channel, (message) => {
+        try {
+          if (socket.readyState === 1) {
+            socket.send(JSON.stringify({ type: 'change', ...JSON.parse(message) }));
+          }
+        } catch { /* ignore */ }
+      });
+
+      socket.on('close', async () => {
+        app.log.info({ userId }, 'ws disconnected');
+        try {
+          await subscriber.unsubscribe(channel);
+          await subscriber.quit();
+        } catch { /* ignore */ }
+      });
+    } else {
+      socket.on('close', () => {
+        app.log.info({ userId }, 'ws disconnected (no redis)');
+      });
+    }
 
     socket.on('message', (raw) => {
       try {
@@ -40,10 +60,6 @@ const wsRoutes: FastifyPluginAsync = async (app) => {
           socket.send(JSON.stringify({ type: 'pong', ts: Date.now() }));
         }
       } catch { /* ignore */ }
-    });
-
-    socket.on('close', () => {
-      app.log.info({ userId }, 'ws disconnected');
     });
   });
 };

@@ -1,0 +1,51 @@
+Un sistema de almacenamiento en la nube donde yo —que soy el dueño                        del servidor— no puedo leer los archivos de los usuarios. No "no                        
+  debería". No "prometo que no". Literalmente no puedo.                                   
+                                                                                          
+  Se llama Noctcom y hoy lo publico open source bajo AGPL-3.0.                            
+                                                                                          
+  ¿Por qué construirlo cuando ya hay opciones en el mercado?                              
+                                                                                          
+  Porque ninguna que probé pasaba la prueba que considero                                 
+  fundamental: si te quedas dormida con tu portátil abierto en una                        
+  cafetería, ¿qué puede leer un atacante de tus archivos en la nube?                      
+  La mayoría: bastante, si consigue tu sesión. Noctcom: bytes                             
+  opacos sin significado.                                                                 
+                                                                                          
+  Cómo funciona, en cuatro frases:                                                        
+                                                                                          
+  → Tu contraseña jamás llega al servidor. Se procesa con Argon2id                        
+  en tu navegador y genera una llave que vive solo en tu memoria.                         
+                                                                                          
+  → Tus archivos se trocean en chunks de 4 MiB y se cifran con                            
+  XChaCha20-Poly1305 antes de subir. El backend nunca toca el                             
+  contenido en claro.                                                                     
+                                                                                          
+  → Si pierdes la contraseña, una frase de 12 palabras generada
+  con entropía criptográfica te permite recuperar la cuenta. Si
+  pierdes las dos, los datos son irrecuperables. Sí, es duro.
+  Sí, es a propósito.                                        
+                                                                                          
+  → Para compartir un archivo con otra persona, la llave se re-cifra                      
+  con su clave pública usando sealed boxes. Mi servidor enruta el                         
+  sobre, pero no lo abre.                                                                 
+                                                                                          
+  Lo que NO hace (y prefiero decirlo claramente que esconderlo):                          
+                                                                                          
+  Noctcom no oculta el tamaño exacto de tus archivos cifrados, no                         
+  oculta el grafo social de con quién compartes, no protege contra                        
+  malware en tu dispositivo, y aún no es resistente a computación                         
+  cuántica. Todo esto está documentado en el modelo de amenaza                            
+  público del repo.                                                                       
+                                                                                          
+  Es MVP. Tiene bugs. Necesita auditoría profesional de                                   
+  criptografía. Lo digo abiertamente porque la confianza no se                            
+  construye con marketing — se construye con honestidad técnica.                          
+                                                                                          
+  Si trabajas en ciberseguridad, criptografía aplicada o privacy                          
+  engineering, me harías un enorme favor echándole un ojo crítico                         
+  al CRYPTO_SPEC.md.                                                                      
+                                                                                          
+  📦 https://github.com/RedderLabs/noctcom                                                          
+                                                                           
+                                                                                          
+  #Privacy #OpenSource #ZeroKnowledge #Cybersecurity  

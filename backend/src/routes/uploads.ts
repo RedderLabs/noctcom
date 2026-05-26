@@ -16,7 +16,9 @@ import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 import { db, tx } from '../db/pool.js';
 import { presignUpload, presignDownload, generateS3Key, deleteBlob } from '../storage/s3.js';
+import { writeToDisk, readFromDisk, deleteFromDisk, generateDiskKey } from '../storage/disk.js';
 import { env } from '../config.js';
+import { publishChange } from '../db/redis.js';
 
 const bytesB64 = z.string().regex(/^[A-Za-z0-9_-]+$/);
 
@@ -50,6 +52,10 @@ const fromB64 = (s: string) => Buffer.from(s, 'base64url');
 const toB64 = (b: Buffer | Uint8Array) => Buffer.from(b).toString('base64url');
 
 const uploadRoutes: FastifyPluginAsync = async (app) => {
+
+  app.addContentTypeParser('application/octet-stream', { parseAs: 'buffer' }, (_req, body, done) => {
+    done(null, body);
+  });
 
   // ─── POST /init ────────────────────────────────────────────
   app.post('/init', { onRequest: [app.authenticate] }, async (req, reply) => {
@@ -129,16 +135,37 @@ const uploadRoutes: FastifyPluginAsync = async (app) => {
       );
       const versionId = v.rows[0].id;
 
+      // Select storage backend: prefer active disk volume, fallback to S3
+      const activeVol = await client.query(
+        `SELECT id, path FROM storage_volumes WHERE active = true LIMIT 1`,
+      );
+      const diskVolume = activeVol.rows[0] as { id: string; path: string } | undefined;
+
       const presignedUrls: Array<{ index: number; uploadUrl: string; s3Key: string }> = [];
       for (const ch of body.chunks) {
-        const s3Key = generateS3Key();
-        await client.query(
-          `INSERT INTO chunks (version_id, chunk_index, s3_key, ciphertext_size, chunk_nonce, chunk_auth_tag)
-           VALUES ($1,$2,$3,$4,$5,$6)`,
-          [versionId, ch.index, s3Key, ch.ciphertextSize, fromB64(ch.nonce), Buffer.alloc(16)],
-        );
-        const url = await presignUpload(s3Key, ch.ciphertextSize, 600);
-        presignedUrls.push({ index: ch.index, uploadUrl: url, s3Key });
+        if (diskVolume) {
+          const diskKey = generateDiskKey();
+          const chunkRow = await client.query(
+            `INSERT INTO chunks (version_id, chunk_index, s3_key, ciphertext_size, chunk_nonce, chunk_auth_tag, storage_type, volume_id)
+             VALUES ($1,$2,$3,$4,$5,$6,'disk',$7) RETURNING id`,
+            [versionId, ch.index, diskKey, ch.ciphertextSize, fromB64(ch.nonce), Buffer.alloc(16), diskVolume.id],
+          );
+          const chunkId = chunkRow.rows[0].id;
+          presignedUrls.push({
+            index: ch.index,
+            uploadUrl: `${env.PUBLIC_URL}/api/v1/uploads/chunk/${chunkId}`,
+            s3Key: diskKey,
+          });
+        } else {
+          const s3Key = generateS3Key();
+          await client.query(
+            `INSERT INTO chunks (version_id, chunk_index, s3_key, ciphertext_size, chunk_nonce, chunk_auth_tag, storage_type)
+             VALUES ($1,$2,$3,$4,$5,$6,'s3')`,
+            [versionId, ch.index, s3Key, ch.ciphertextSize, fromB64(ch.nonce), Buffer.alloc(16)],
+          );
+          const url = await presignUpload(s3Key, ch.ciphertextSize, 600);
+          presignedUrls.push({ index: ch.index, uploadUrl: url, s3Key });
+        }
       }
 
       return { nodeId, versionId, presignedUrls };
@@ -193,6 +220,8 @@ const uploadRoutes: FastifyPluginAsync = async (app) => {
         );
       });
 
+      publishChange(userId, { resource: 'nodes', action: 'uploaded' });
+      publishChange(userId, { resource: 'storage', action: 'updated' });
       return reply.send({ ok: true });
     },
   );
@@ -227,7 +256,7 @@ const uploadRoutes: FastifyPluginAsync = async (app) => {
       if (!hasAccess) return reply.forbidden();
 
       const chunks = await db.query(
-        `SELECT chunk_index, s3_key, ciphertext_size, chunk_nonce
+        `SELECT id, chunk_index, s3_key, ciphertext_size, chunk_nonce, storage_type, volume_id
          FROM chunks WHERE version_id = $1 ORDER BY chunk_index ASC`,
         [req.params.versionId],
       );
@@ -237,7 +266,9 @@ const uploadRoutes: FastifyPluginAsync = async (app) => {
           index: c.chunk_index,
           ciphertextSize: Number(c.ciphertext_size),
           nonce: toB64(c.chunk_nonce),
-          downloadUrl: await presignDownload(c.s3_key, 600),
+          downloadUrl: c.storage_type === 'disk'
+            ? `${env.PUBLIC_URL}/api/v1/uploads/chunk/${c.id}/data`
+            : await presignDownload(c.s3_key, 600),
         })),
       );
 
@@ -275,11 +306,20 @@ const uploadRoutes: FastifyPluginAsync = async (app) => {
       if (own.rows[0].owner_id !== userId) return reply.forbidden();
 
       const chunks = await db.query(
-        `SELECT s3_key FROM chunks WHERE version_id = $1`,
+        `SELECT s3_key, storage_type, volume_id FROM chunks WHERE version_id = $1`,
         [req.params.versionId],
       );
 
-      await Promise.all(chunks.rows.map((c) => deleteBlob(c.s3_key).catch(() => null)));
+      for (const c of chunks.rows) {
+        try {
+          if (c.storage_type === 'disk' && c.volume_id) {
+            const vol = await db.query(`SELECT path FROM storage_volumes WHERE id = $1`, [c.volume_id]);
+            if (vol.rows[0]) await deleteFromDisk(vol.rows[0].path, c.s3_key);
+          } else {
+            await deleteBlob(c.s3_key);
+          }
+        } catch { /* ignore cleanup errors */ }
+      }
 
       await tx(async (client) => {
         await client.query(`DELETE FROM file_versions WHERE id = $1`, [req.params.versionId]);
@@ -290,6 +330,81 @@ const uploadRoutes: FastifyPluginAsync = async (app) => {
       });
 
       return reply.send({ ok: true });
+    },
+  );
+
+  // ─── PUT /chunk/:chunkId — upload encrypted chunk to disk ──
+  app.put<{ Params: { chunkId: string } }>(
+    '/chunk/:chunkId',
+    { onRequest: [app.authenticate], bodyLimit: 8 * 1024 * 1024 },
+    async (req, reply) => {
+      const userId = req.user.sub;
+      const r = await db.query(
+        `SELECT c.id, c.s3_key, c.volume_id, c.storage_type,
+                v.owner_id
+         FROM chunks c
+         JOIN file_versions fv ON fv.id = c.version_id
+         JOIN nodes n ON n.id = fv.node_id
+         JOIN vaults v ON v.id = n.vault_id
+         WHERE c.id = $1`,
+        [req.params.chunkId],
+      );
+      if (r.rowCount === 0) return reply.notFound();
+      if (r.rows[0].owner_id !== userId) return reply.forbidden();
+      if (r.rows[0].storage_type !== 'disk') return reply.badRequest('chunk is not disk-backed');
+
+      const vol = await db.query(
+        `SELECT path FROM storage_volumes WHERE id = $1`,
+        [r.rows[0].volume_id],
+      );
+      if (vol.rowCount === 0) return reply.notFound('volume not found');
+
+      const data = Buffer.isBuffer(req.body) ? req.body : Buffer.from(req.body as any);
+
+      await writeToDisk(vol.rows[0].path, r.rows[0].s3_key, data);
+      return reply.send({ ok: true });
+    },
+  );
+
+  // ─── GET /chunk/:chunkId/data — download encrypted chunk from disk
+  app.get<{ Params: { chunkId: string } }>(
+    '/chunk/:chunkId/data',
+    { onRequest: [app.authenticate] },
+    async (req, reply) => {
+      const userId = req.user.sub;
+      const r = await db.query(
+        `SELECT c.id, c.s3_key, c.volume_id, c.storage_type,
+                v.owner_id, n.vault_id
+         FROM chunks c
+         JOIN file_versions fv ON fv.id = c.version_id
+         JOIN nodes n ON n.id = fv.node_id
+         JOIN vaults v ON v.id = n.vault_id
+         WHERE c.id = $1`,
+        [req.params.chunkId],
+      );
+      if (r.rowCount === 0) return reply.notFound();
+
+      const row = r.rows[0];
+      const hasAccess = row.owner_id === userId
+        || (await db.query(
+          `SELECT 1 FROM shares
+           WHERE node_id IN (SELECT node_id FROM file_versions WHERE id = (SELECT version_id FROM chunks WHERE id = $1))
+             AND shared_with = $2 AND revoked_at IS NULL
+             AND (expires_at IS NULL OR expires_at > now())`,
+          [req.params.chunkId, userId],
+        )).rowCount! > 0;
+      if (!hasAccess) return reply.forbidden();
+
+      if (row.storage_type !== 'disk') return reply.badRequest('chunk is not disk-backed');
+
+      const vol = await db.query(
+        `SELECT path FROM storage_volumes WHERE id = $1`,
+        [row.volume_id],
+      );
+      if (vol.rowCount === 0) return reply.notFound('volume not found');
+
+      const data = await readFromDisk(vol.rows[0].path, row.s3_key);
+      return reply.type('application/octet-stream').send(data);
     },
   );
 };

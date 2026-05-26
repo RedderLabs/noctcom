@@ -5,11 +5,15 @@ import jwt from '@fastify/jwt';
 import rateLimit from '@fastify/rate-limit';
 import sensible from '@fastify/sensible';
 import websocket from '@fastify/websocket';
+import { randomUUID } from 'node:crypto';
 
 import { env } from './config.js';
-import { initDb } from './db/pool.js';
-import { initRedis } from './db/redis.js';
+import { db, initDb } from './db/pool.js';
+import { initRedis, redis } from './db/redis.js';
 import { initS3 } from './storage/s3.js';
+import { initMail } from './mail.js';
+import { initPush } from './push.js';
+import { createRedisRateLimitStore } from './rate-limit-store.js';
 
 import authRoutes from './routes/auth.js';
 import vaultRoutes from './routes/vaults.js';
@@ -18,6 +22,10 @@ import uploadRoutes from './routes/uploads.js';
 import shareRoutes from './routes/shares.js';
 import wsRoutes from './routes/ws.js';
 import twoFactorRoutes from './routes/two_factor.js';
+import storageRoutes from './routes/storage.js';
+import auditRoutes from './routes/audit.js';
+import pushRoutes from './routes/push.js';
+import deviceRoutes from './routes/devices.js';
 
 async function buildServer() {
   const app = Fastify({
@@ -27,8 +35,9 @@ async function buildServer() {
         ? undefined
         : { target: 'pino-pretty', options: { translateTime: 'HH:MM:ss.l' } },
     },
-    bodyLimit: 64 * 1024 * 1024,    // 64 MiB para JSON. Los chunks van por presigned URL directos a MinIO.
+    bodyLimit: 64 * 1024 * 1024,
     trustProxy: true,
+    genReqId: (req) => (req.headers['x-request-id'] as string) ?? randomUUID(),
   });
 
   // ─── Security plugins ──────────────────────────────────────
@@ -53,12 +62,13 @@ async function buildServer() {
     credentials: true,
   });
 
+  const redisClient = redis();
   await app.register(rateLimit, {
     max: 300,
-    timeWindow: '1 minute',
-    redis: env.REDIS_URL ? await initRedis() : undefined,
+    timeWindow: 60_000,
     keyGenerator: (req) => req.headers['x-forwarded-for']?.toString() ?? req.ip,
     skipOnError: false,
+    ...(redisClient ? { store: createRedisRateLimitStore(redisClient) as any } : {}),
   });
 
   await app.register(jwt, {
@@ -79,16 +89,42 @@ async function buildServer() {
   });
 
   // ─── Health ────────────────────────────────────────────────
-  app.get('/health', async () => ({ status: 'ok', ts: Date.now() }));
+  app.get('/health', async (_req, reply) => {
+    const checks = { db: false, redis: false, s3: false };
+
+    try { await db.query('SELECT 1'); checks.db = true; } catch { /* */ }
+
+    const r = redis();
+    if (r) {
+      try { await r.ping(); checks.redis = true; } catch { /* */ }
+    } else {
+      checks.redis = true;
+    }
+
+    try {
+      const { HeadBucketCommand } = await import('@aws-sdk/client-s3');
+      const { s3 } = await import('./storage/s3.js');
+      await s3.send(new HeadBucketCommand({ Bucket: env.S3_BUCKET }));
+      checks.s3 = true;
+    } catch { /* */ }
+
+    const status = checks.db ? 'ok' : 'degraded';
+    const code = checks.db ? 200 : 503;
+    return reply.code(code).send({ status, ...checks, ts: Date.now() });
+  });
 
   // ─── Routes ────────────────────────────────────────────────
-  await app.register(authRoutes,   { prefix: '/api/v1/auth' });
+  await app.register(authRoutes,   { prefix: '/api/v1/auth', bodyLimit: 16_384 });
   await app.register(vaultRoutes,  { prefix: '/api/v1/vaults' });
   await app.register(nodeRoutes,   { prefix: '/api/v1/nodes' });
   await app.register(uploadRoutes, { prefix: '/api/v1/uploads' });
   await app.register(shareRoutes,  { prefix: '/api/v1/shares' });
   await app.register(twoFactorRoutes, { prefix: '/api/v1/2fa' });
   await app.register(wsRoutes,     { prefix: '/api/v1/ws' });
+  await app.register(storageRoutes, { prefix: '/api/v1/storage' });
+  await app.register(auditRoutes,  { prefix: '/api/v1/audit' });
+  await app.register(pushRoutes,   { prefix: '/api/v1/push' });
+  await app.register(deviceRoutes, { prefix: '/api/v1/auth/devices' });
 
   return app;
 }
@@ -96,10 +132,25 @@ async function buildServer() {
 async function main() {
   await initDb();
   await initS3();
+  await initRedis();
+  initMail();
+  initPush();
 
   const app = await buildServer();
   await app.listen({ host: '0.0.0.0', port: env.PORT });
-  app.log.info(`CryptVault API listening on :${env.PORT}`);
+  app.log.info(`Noctcom API listening on :${env.PORT}`);
+
+  async function shutdown(signal: string) {
+    app.log.info(`${signal} received, shutting down`);
+    await app.close();
+    await db.end();
+    const r = redis();
+    if (r) await r.quit().catch(() => {});
+    process.exit(0);
+  }
+
+  process.on('SIGTERM', () => shutdown('SIGTERM'));
+  process.on('SIGINT', () => shutdown('SIGINT'));
 }
 
 main().catch((err) => {

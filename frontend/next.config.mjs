@@ -3,8 +3,11 @@ import { fileURLToPath } from 'url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
+const isDev = process.env.NODE_ENV !== 'production';
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: 'standalone',
   reactStrictMode: true,
   experimental: {
     typedRoutes: true,
@@ -18,13 +21,35 @@ const nextConfig = {
           { key: 'X-Frame-Options', value: 'DENY' },
           { key: 'Referrer-Policy', value: 'no-referrer' },
           { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
+          { key: 'X-XSS-Protection', value: '1; mode=block' },
+          { key: 'Cross-Origin-Opener-Policy', value: 'same-origin' },
+          {
+            key: 'Content-Security-Policy',
+            value: [
+              "default-src 'self'",
+              isDev
+                ? "script-src 'self' 'unsafe-eval' 'unsafe-inline' 'wasm-unsafe-eval' https://www.gstatic.com"
+                : "script-src 'self' 'wasm-unsafe-eval' https://www.gstatic.com",
+              "style-src 'self' 'unsafe-inline'",
+              "img-src 'self' data: blob:",
+              `connect-src 'self' http://localhost:3000 ws://localhost:3000 https://*.googleapis.com https://*.firebaseio.com https://fcmregistrations.googleapis.com${isDev ? ' ws://localhost:3001' : ''}`,
+              "frame-ancestors 'none'",
+              "form-action 'self'",
+              "base-uri 'self'",
+              "object-src 'none'",
+            ].join('; '),
+          },
         ],
       },
     ];
   },
   serverExternalPackages: ['libsodium-wrappers-sumo'],
   webpack: (config, { isServer }) => {
-    config.experiments = { ...config.experiments, asyncWebAssembly: true };
+    config.experiments = { ...config.experiments, asyncWebAssembly: true, topLevelAwait: true };
+    config.output = {
+      ...config.output,
+      environment: { ...config.output?.environment, asyncFunction: true, dynamicImport: true },
+    };
     config.resolve.alias = {
       ...config.resolve.alias,
       'libsodium-sumo': resolve(__dirname, 'node_modules/libsodium-sumo/dist/modules-sumo-esm/libsodium-sumo.mjs'),

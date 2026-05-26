@@ -108,7 +108,7 @@ Si el bug está siendo explotado activamente, aceleramos. Si necesitas más tiem
 Esta sección se actualiza el primer día de cada mes con la fecha actual firmada con la PGP de seguridad. Si lleva más de 60 días sin actualizar, asume que algo pasó.
 
 ```
-A día 24 de mayo de 2026, Noctcom afirma:
+A día 25 de mayo de 2026, Noctcom afirma:
 - No hemos recibido ninguna National Security Letter
 - No hemos recibido ninguna gag order
 - No hemos sido obligados a insertar backdoors
@@ -126,4 +126,4 @@ Para consultas comerciales → `hello@noctcom.com`
 
 ---
 
-*Última revisión: 24 de mayo de 2026 · Próxima revisión: 24 de noviembre de 2026*
+*Última revisión: 25 de mayo de 2026 · Próxima revisión: 25 de noviembre de 2026*

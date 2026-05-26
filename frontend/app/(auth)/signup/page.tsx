@@ -13,7 +13,7 @@ import {
   initCrypto, deriveMasterKey, hashEmail, fromB64, toB64,
   encrypt, encryptString, randomBytes, randomKey, DEFAULT_KDF, deriveSubKey,
 } from '@/lib/crypto';
-import { cn } from '@/lib/utils';
+import { cn, sanitizeUsername, sanitizeEmail, sanitizeErrorMessage } from '@/lib/utils';
 
 type Step = 'form' | 'mnemonic' | 'confirm';
 
@@ -62,6 +62,7 @@ export default function SignupPage() {
   const [confirmed, setConfirmed] = useState(false);
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [submitCooldown, setSubmitCooldown] = useState(false);
 
   // Step 3: verification
   const [verifyIndices, setVerifyIndices] = useState<number[]>([]);
@@ -85,6 +86,23 @@ export default function SignupPage() {
 
   function handleNext(e: React.FormEvent) {
     e.preventDefault();
+    if (submitCooldown) return;
+
+    const cleanUsername = sanitizeUsername(username);
+    const cleanEmail = sanitizeEmail(email);
+
+    if (cleanUsername.length < 3) {
+      toast.error('El nombre de usuario debe tener al menos 3 caracteres válidos.');
+      return;
+    }
+    if (!cleanEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+      toast.error('Introduce un correo electrónico válido.');
+      return;
+    }
+    if (password.length > 128) {
+      toast.error('La contraseña no puede superar los 128 caracteres.');
+      return;
+    }
     if (password !== passwordConfirm) {
       toast.error('Las contraseñas no coinciden');
       return;
@@ -93,6 +111,11 @@ export default function SignupPage() {
       toast.error('Tu contraseña es demasiado débil. Usa al menos 12 caracteres con números y símbolos.');
       return;
     }
+
+    setUsername(cleanUsername);
+    setEmail(cleanEmail);
+    setSubmitCooldown(true);
+    setTimeout(() => setSubmitCooldown(false), 2000);
     setMnemonic(generateMnemonic());
     setStep('mnemonic');
   }
@@ -146,10 +169,18 @@ export default function SignupPage() {
 
       const deviceName = encryptString(navigator.userAgent.slice(0, 64), mk);
       const deviceKp = sodium.crypto_box_keypair();
+      const devicePrivWrapped = encrypt(deviceKp.privateKey, mk);
       const opaqueRecord = randomBytes(64);
+
+      // Recovery keypair derived from mnemonic
+      const recoverySeed = sodium.crypto_generichash(
+        32, sodium.from_string(mnemonic.join(' ')), sodium.from_string('noctcom.recovery.v1'),
+      );
+      const recoveryKp = sodium.crypto_sign_seed_keypair(recoverySeed);
 
       const payload = {
         username,
+        email,
         emailHash: toB64(emailHash),
         kdfSalt: toB64(salt),
         kdfOpsLimit: opsLimit,
@@ -161,6 +192,7 @@ export default function SignupPage() {
         exchangePublicKey: toB64(exchangeKp.publicKey),
         exchangePrivateKeyWrapped: toB64(exWrapped.ciphertext),
         exchangePrivateKeyNonce: toB64(exWrapped.nonce),
+        recoveryPublicKey: toB64(recoveryKp.publicKey),
         initialVault: {
           nameEncrypted: toB64(vaultName.ciphertext),
           nameNonce: toB64(vaultName.nonce),
@@ -185,6 +217,7 @@ export default function SignupPage() {
       });
 
       setTokens(res.accessToken, res.refreshToken);
+      localStorage.setItem('noctcom.devicePrivKey', toB64(devicePrivWrapped.ciphertext));
       setIdentity({
         userId: res.userId,
         username,
@@ -196,10 +229,14 @@ export default function SignupPage() {
         exchangePublicKey: exchangeKp.publicKey,
       });
 
-      toast.success('Cuenta creada con éxito');
-      router.push('/vault');
-    } catch (err: any) {
-      toast.error(err.message ?? 'Error al crear la cuenta');
+      setMnemonic([]);
+      setPassword('');
+      setPasswordConfirm('');
+      navigator.clipboard.writeText('').catch(() => {});
+      toast.success('Cuenta creada — revisa tu email para verificar');
+      router.push('/verify');
+    } catch (err: unknown) {
+      toast.error(sanitizeErrorMessage(err));
       setLoading(false);
     }
   }
@@ -214,7 +251,7 @@ export default function SignupPage() {
           {step === 'mnemonic' && 'Tu frase de recuperación'}
           {step === 'confirm' && 'Casi listo'}
         </h1>
-        <p className="text-sm text-[var(--color-text-secondary)]">
+        <p className="text-sm text-[var(--color-text-primary)] opacity-80">
           {step === 'form' && 'Tu contraseña jamás se enviará a nuestros servidores'}
           {step === 'mnemonic' && 'Guárdala en lugar seguro. Es tu única forma de recuperar tu cuenta.'}
           {step === 'confirm' && 'Confirmamos algunas palabras al azar'}
@@ -228,10 +265,11 @@ export default function SignupPage() {
             label="Nombre de usuario"
             type="text"
             value={username}
-            onChange={(e) => setUsername(e.target.value)}
+            onChange={(e) => setUsername(sanitizeUsername(e.target.value))}
             leftIcon={<User className="size-4" />}
             placeholder="alex"
-            pattern="[a-zA-Z0-9_.-]{3,64}"
+            pattern="[a-zA-Z0-9_\\.\\-]{3,64}"
+            maxLength={64}
             required
             autoFocus
           />
@@ -239,10 +277,11 @@ export default function SignupPage() {
             label="Correo electrónico"
             type="email"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(e) => setEmail(sanitizeEmail(e.target.value))}
             leftIcon={<Mail className="size-4" />}
             placeholder="tu@email.com"
             hint="Solo guardamos un hash. Nunca verás spam."
+            maxLength={254}
             required
           />
           <div className="space-y-2">
@@ -250,9 +289,10 @@ export default function SignupPage() {
               label="Contraseña maestra"
               type="password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => setPassword(e.target.value.slice(0, 128))}
               leftIcon={<Lock className="size-4" />}
               placeholder="••••••••••••"
+              maxLength={128}
               required
             />
             {password.length > 0 && (
@@ -276,9 +316,10 @@ export default function SignupPage() {
             label="Repetir contraseña"
             type="password"
             value={passwordConfirm}
-            onChange={(e) => setPasswordConfirm(e.target.value)}
+            onChange={(e) => setPasswordConfirm(e.target.value.slice(0, 128))}
             leftIcon={<Lock className="size-4" />}
             placeholder="••••••••••••"
+            maxLength={128}
             required
             error={passwordConfirm.length > 0 && password !== passwordConfirm ? 'No coincide' : undefined}
           />
@@ -301,14 +342,14 @@ export default function SignupPage() {
       {/* ─── Paso 2: Frase mnemónica ──────────────────────────── */}
       {step === 'mnemonic' && (
         <div className="space-y-5">
-          <div className="grid grid-cols-3 gap-2 p-4 rounded-xl bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)]">
+          <div className="grid grid-cols-3 gap-2.5 p-5 rounded-xl bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)]">
             {mnemonic.map((word, i) => (
               <div
                 key={i}
-                className="flex items-center gap-2 p-2.5 rounded-lg bg-[var(--color-bg-surface-2)] border border-[var(--color-border-faint)] hover:border-violet-500/30 transition-colors"
+                className="flex items-center gap-2.5 p-3 rounded-lg bg-[var(--color-bg-surface-2)] border border-[var(--color-border-faint)] hover:border-violet-500/30 transition-colors"
               >
-                <span className="text-[10px] font-mono text-[var(--color-text-muted)] w-4 text-right">{i + 1}</span>
-                <span className="text-sm font-mono text-violet-300">{word}</span>
+                <span className="text-xs font-mono text-[var(--color-text-secondary)] w-5 text-right">{i + 1}</span>
+                <span className="text-base font-mono text-violet-200 font-medium">{word}</span>
               </div>
             ))}
           </div>
@@ -322,7 +363,10 @@ export default function SignupPage() {
               navigator.clipboard.writeText(mnemonic.join(' '));
               setCopied(true);
               setTimeout(() => setCopied(false), 2000);
-              toast.success('Copiado al portapapeles');
+              setTimeout(() => {
+                navigator.clipboard.writeText('').catch(() => {});
+              }, 60_000);
+              toast.success('Copiado al portapapeles (se borrará en 60s)');
             }}
           >
             {copied ? 'Copiado' : 'Copiar frase'}
@@ -335,7 +379,7 @@ export default function SignupPage() {
               onChange={(e) => setConfirmed(e.target.checked)}
               className="mt-0.5 size-4 accent-violet-500"
             />
-            <span className="text-[var(--color-text-secondary)]">
+            <span className="text-[var(--color-text-primary)] opacity-80">
               He guardado mi frase de recuperación en un lugar seguro y entiendo que es la
               única forma de recuperar mi cuenta.
             </span>
@@ -357,23 +401,30 @@ export default function SignupPage() {
       {/* ─── Paso 3: Verificación ─────────────────────────────── */}
       {step === 'confirm' && (
         <div className="space-y-5">
-          <div className="space-y-4">
+          <div className="space-y-5">
             {verifyIndices.map((wordIdx, i) => (
               <div key={wordIdx}>
-                <label className="block text-[10px] font-mono uppercase tracking-widest text-[var(--color-text-tertiary)] mb-1.5">
-                  Palabra #{wordIdx + 1}
+                <label className="flex items-center gap-2 mb-2">
+                  <span className="inline-flex items-center justify-center size-6 rounded bg-violet-500/15 text-violet-200 text-sm font-mono font-semibold">
+                    {wordIdx + 1}
+                  </span>
+                  <span className="text-sm text-[var(--color-text-primary)]">
+                    Palabra #{wordIdx + 1}
+                  </span>
                 </label>
                 <div className="relative">
                   <input
                     type="text"
                     value={verifyInputs[i]}
                     onChange={(e) => {
+                      const val = e.target.value.replace(/[^a-z]/g, '').slice(0, 20);
                       const next = [...verifyInputs];
-                      next[i] = e.target.value.trim().toLowerCase();
+                      next[i] = val;
                       setVerifyInputs(next);
                     }}
-                    placeholder={`Ingresa la palabra ${wordIdx + 1}`}
-                    className="w-full h-11 pl-3.5 pr-10 font-mono text-sm bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:border-violet-500/60 focus:shadow-[0_0_0_3px_rgba(139,92,246,0.12)] transition-all"
+                    onDrop={(e) => e.preventDefault()}
+                    placeholder={`Escribe la palabra nº ${wordIdx + 1}`}
+                    className="w-full h-12 pl-4 pr-10 font-mono text-base bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] focus:outline-none focus:border-violet-500/60 focus:shadow-[0_0_0_3px_rgba(139,92,246,0.12)] transition-all"
                     autoComplete="off"
                     autoCorrect="off"
                     autoCapitalize="off"
@@ -381,10 +432,10 @@ export default function SignupPage() {
                     autoFocus={i === 0}
                   />
                   <KeyRound className={cn(
-                    'absolute right-3 top-1/2 -translate-y-1/2 size-4 transition-colors',
+                    'absolute right-3 top-1/2 -translate-y-1/2 size-5 transition-colors',
                     verifyInputs[i] && verifyInputs[i] === mnemonic[wordIdx]
                       ? 'text-emerald-400'
-                      : 'text-[var(--color-text-muted)]',
+                      : 'text-[var(--color-text-tertiary)]',
                   )} />
                 </div>
               </div>
@@ -415,16 +466,16 @@ export default function SignupPage() {
 
           <div className="flex items-center justify-center gap-2 pt-3 border-t border-[var(--color-border-faint)]">
             <Shield className="size-3.5 text-violet-400" />
-            <span className="text-[10px] font-mono uppercase tracking-widest text-[var(--color-text-tertiary)]">
+            <span className="text-xs font-mono uppercase tracking-widest text-[var(--color-text-secondary)]">
               Zero-Knowledge Verification Active
             </span>
           </div>
         </div>
       )}
 
-      <div className="text-center text-sm text-[var(--color-text-tertiary)]">
+      <div className="text-center text-sm text-[var(--color-text-secondary)]">
         ¿Ya tienes cuenta?{' '}
-        <Link href="/login" className="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors">
+        <Link href="/login" className="text-violet-300 hover:text-violet-200 transition-colors">
           Iniciar sesión
         </Link>
       </div>

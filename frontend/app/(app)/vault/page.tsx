@@ -4,46 +4,22 @@ import { useState, useRef, useEffect, useMemo } from 'react';
 import { useDropzone } from 'react-dropzone';
 import {
   DndContext, useDraggable, useDroppable, DragOverlay,
+  MouseSensor, TouchSensor, useSensor, useSensors,
   type DragEndEvent, type DragStartEvent,
 } from '@dnd-kit/core';
 import {
   FileText, File, Image, Video, Music, Archive, FileCode,
-  ChevronRight, MoreVertical, Star, Download, Trash2, Share2, Edit3,
+  ChevronRight, MoreVertical, Star, Download, Trash2, Share2,
   Upload, FolderPlus, Grid3x3, List, Filter, ChevronLeft,
+  Loader2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/Button';
 import { FOLDER_ICONS, type FolderIconKey, getFolderColor, type FolderColorKey } from '@/components/vault/folder-icons';
 import { NewFolderModal } from '@/components/vault/NewFolderModal';
+import { ShareModal } from '@/components/vault/ShareModal';
+import { useVault, type DecryptedNode } from '@/lib/vault-store';
 import { cn } from '@/lib/utils';
-
-// ─── Mock data — sustituir por hook que consuma /api/v1/nodes ────
-interface VaultNode {
-  id: string;
-  kind: 'folder' | 'file';
-  name: string;
-  icon?: FolderIconKey;
-  color?: FolderColorKey;
-  size?: number;
-  mimeType?: string;
-  starred?: boolean;
-  updatedAt: string;
-}
-
-const MOCK_NODES: VaultNode[] = [
-  { id: '1', kind: 'folder', name: 'Documentos personales', icon: 'folder-lock', color: 'violet', updatedAt: '2026-05-20T12:00:00Z' },
-  { id: '2', kind: 'folder', name: 'Proyectos 2026', icon: 'folder-kanban', color: 'blue', updatedAt: '2026-05-19T10:00:00Z', starred: true },
-  { id: '3', kind: 'folder', name: 'Fotos viaje Japón', icon: 'camera', color: 'rose', updatedAt: '2026-05-18T08:00:00Z' },
-  { id: '4', kind: 'folder', name: 'Finanzas', icon: 'wallet', color: 'emerald', updatedAt: '2026-05-17T15:00:00Z' },
-  { id: '5', kind: 'folder', name: 'Código', icon: 'code', color: 'cyan', updatedAt: '2026-05-16T11:00:00Z' },
-  { id: '6', kind: 'file', name: 'Contrato_2026.pdf', size: 2_400_000, mimeType: 'application/pdf', updatedAt: '2026-05-15T14:00:00Z', starred: true },
-  { id: '7', kind: 'file', name: 'Plan_Q3.docx', size: 480_000, mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', updatedAt: '2026-05-14T09:00:00Z' },
-  { id: '8', kind: 'file', name: 'foto_perfil.jpg', size: 1_200_000, mimeType: 'image/jpeg', updatedAt: '2026-05-13T16:00:00Z' },
-  { id: '9', kind: 'file', name: 'demo_app.mp4', size: 25_600_000, mimeType: 'video/mp4', updatedAt: '2026-05-12T13:00:00Z' },
-  { id: '10', kind: 'file', name: 'archivo.zip', size: 8_900_000, mimeType: 'application/zip', updatedAt: '2026-05-11T17:00:00Z' },
-  { id: '11', kind: 'file', name: 'notas.md', size: 4_800, mimeType: 'text/markdown', updatedAt: '2026-05-10T07:00:00Z' },
-  { id: '12', kind: 'file', name: 'cancion.mp3', size: 5_400_000, mimeType: 'audio/mpeg', updatedAt: '2026-05-09T18:00:00Z' },
-];
 
 const PAGE_SIZE = 24;
 
@@ -77,8 +53,16 @@ function formatDate(iso: string) {
   return d.toLocaleDateString('es', { day: 'numeric', month: 'short', year: d.getFullYear() !== now.getFullYear() ? 'numeric' : undefined });
 }
 
-// ─── Carpeta como drop target + draggable ────────────────────────
-function FolderCard({ node, isDragging }: { node: VaultNode; isDragging?: boolean }) {
+// ─── Carpeta ────────────────────────────────────────────────────
+function FolderCard({
+  node, isDragging, onClick,
+  onDelete,
+}: {
+  node: DecryptedNode;
+  isDragging?: boolean;
+  onClick: () => void;
+  onDelete: () => void;
+}) {
   const { attributes, listeners, setNodeRef: setDragRef } = useDraggable({ id: node.id });
   const { isOver, setNodeRef: setDropRef } = useDroppable({ id: `drop-${node.id}` });
   const color = getFolderColor(node.color);
@@ -89,6 +73,7 @@ function FolderCard({ node, isDragging }: { node: VaultNode; isDragging?: boolea
       ref={(el) => { setDragRef(el); setDropRef(el); }}
       {...listeners}
       {...attributes}
+      onClick={onClick}
       className={cn(
         'group relative p-4 rounded-xl border bg-[var(--color-bg-surface)]',
         'hover:bg-[var(--color-bg-surface-2)] hover:border-[var(--color-border-strong)]',
@@ -106,9 +91,13 @@ function FolderCard({ node, isDragging }: { node: VaultNode; isDragging?: boolea
           <IconComp className={cn('size-5', color.text)} />
         </div>
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          {node.starred && <Star className="size-3.5 fill-amber-400 text-amber-400" />}
-          <button type="button" className="p-1 rounded hover:bg-[var(--color-bg-surface-3)]" aria-label="Más opciones">
-            <MoreVertical className="size-3.5 text-[var(--color-text-tertiary)]" />
+          <button
+            type="button"
+            className="p-1 rounded hover:bg-red-500/10"
+            aria-label="Eliminar"
+            onClick={(e) => { e.stopPropagation(); onDelete(); }}
+          >
+            <Trash2 className="size-3.5 text-red-400" />
           </button>
         </div>
       </div>
@@ -120,7 +109,18 @@ function FolderCard({ node, isDragging }: { node: VaultNode; isDragging?: boolea
   );
 }
 
-function FileCard({ node, isDragging }: { node: VaultNode; isDragging?: boolean }) {
+// ─── Archivo ────────────────────────────────────────────────────
+function FileCard({
+  node, isDragging,
+  onDownload, onDelete, onShare, onStar,
+}: {
+  node: DecryptedNode;
+  isDragging?: boolean;
+  onDownload: () => void;
+  onDelete: () => void;
+  onShare: () => void;
+  onStar: () => void;
+}) {
   const { attributes, listeners, setNodeRef } = useDraggable({ id: node.id });
   const FileIcon = fileIcon(node.mimeType);
 
@@ -141,9 +141,37 @@ function FileCard({ node, isDragging }: { node: VaultNode; isDragging?: boolean 
           <FileIcon className="size-5 text-[var(--color-text-secondary)]" />
         </div>
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          {node.starred && <Star className="size-3.5 fill-amber-400 text-amber-400" />}
-          <button type="button" className="p-1 rounded hover:bg-[var(--color-bg-surface-3)]" aria-label="Más opciones">
-            <MoreVertical className="size-3.5 text-[var(--color-text-tertiary)]" />
+          <button
+            type="button"
+            className="p-1 rounded hover:bg-amber-500/10"
+            aria-label="Favorito"
+            onClick={(e) => { e.stopPropagation(); onStar(); }}
+          >
+            <Star className={cn('size-3.5', node.starred ? 'fill-amber-400 text-amber-400' : 'text-[var(--color-text-tertiary)]')} />
+          </button>
+          <button
+            type="button"
+            className="p-1 rounded hover:bg-violet-500/10"
+            aria-label="Compartir"
+            onClick={(e) => { e.stopPropagation(); onShare(); }}
+          >
+            <Share2 className="size-3.5 text-violet-300" />
+          </button>
+          <button
+            type="button"
+            className="p-1 rounded hover:bg-[var(--color-bg-surface-3)]"
+            aria-label="Descargar"
+            onClick={(e) => { e.stopPropagation(); onDownload(); }}
+          >
+            <Download className="size-3.5 text-[var(--color-text-tertiary)]" />
+          </button>
+          <button
+            type="button"
+            className="p-1 rounded hover:bg-red-500/10"
+            aria-label="Eliminar"
+            onClick={(e) => { e.stopPropagation(); onDelete(); }}
+          >
+            <Trash2 className="size-3.5 text-red-400" />
           </button>
         </div>
       </div>
@@ -155,64 +183,109 @@ function FileCard({ node, isDragging }: { node: VaultNode; isDragging?: boolean 
   );
 }
 
+// ─── Upload progress bar ────────────────────────────────────────
+function UploadBar({ uploads }: { uploads: Record<string, { fileName: string; progress: number; status: string }> }) {
+  const entries = Object.entries(uploads);
+  if (entries.length === 0) return null;
+
+  return (
+    <div className="fixed bottom-6 right-6 z-40 w-80 space-y-2">
+      {entries.map(([id, u]) => (
+        <div key={id} className="p-3 rounded-lg bg-[var(--color-bg-surface-2)] border border-[var(--color-border-subtle)] shadow-lg">
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-xs font-medium truncate max-w-[200px]">{u.fileName}</span>
+            <span className="text-[10px] font-mono text-[var(--color-text-tertiary)]">
+              {u.status === 'encrypting' && 'Cifrando…'}
+              {u.status === 'uploading' && `${u.progress}%`}
+              {u.status === 'done' && '✓'}
+              {u.status === 'error' && 'Error'}
+            </span>
+          </div>
+          <div className="h-1.5 bg-[var(--color-bg-surface-3)] rounded-full overflow-hidden">
+            <div
+              className={cn(
+                'h-full rounded-full transition-all duration-300',
+                u.status === 'error' ? 'bg-red-500' : 'bg-violet-500',
+              )}
+              style={{ width: `${u.progress}%` }}
+            />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // ─── Página principal ───────────────────────────────────────────
 export default function VaultPage() {
+  const {
+    nodes, loading, breadcrumb, uploads, initialized,
+    init, navigateToFolder, navigateUp, createFolder,
+    uploadFiles, downloadFile, deleteNode, moveNode, toggleStar,
+  } = useVault();
+
   const [view, setView] = useState<'grid' | 'list'>('grid');
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [newFolderOpen, setNewFolderOpen] = useState(false);
+  const [shareNode, setShareNode] = useState<DecryptedNode | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Listener del botón "Nuevo" en sidebar
+  useEffect(() => { init(); }, [init]);
+
   useEffect(() => {
     const handler = () => setNewFolderOpen(true);
     window.addEventListener('noctcom:new-action', handler);
     return () => window.removeEventListener('noctcom:new-action', handler);
   }, []);
 
+  // Sensors with distance constraint so click != drag
+  const mouseSensor = useSensor(MouseSensor, { activationConstraint: { distance: 8 } });
+  const touchSensor = useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } });
+  const sensors = useSensors(mouseSensor, touchSensor);
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return MOCK_NODES;
-    return MOCK_NODES.filter((n) => n.name.toLowerCase().includes(q));
-  }, [search]);
+    if (!q) return nodes;
+    return nodes.filter((n) => n.name.toLowerCase().includes(q));
+  }, [search, nodes]);
 
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
   const pageNodes = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
   const folders = pageNodes.filter((n) => n.kind === 'folder');
   const files = pageNodes.filter((n) => n.kind === 'file');
 
-  // ─── Drag & drop entre nodos ────────────────────────────
   function handleDragStart(e: DragStartEvent) {
     setDraggedId(e.active.id as string);
   }
+
   function handleDragEnd(e: DragEndEvent) {
     setDraggedId(null);
     if (e.over && e.over.id !== e.active.id) {
       const targetId = (e.over.id as string).replace('drop-', '');
-      const target = MOCK_NODES.find((n) => n.id === targetId);
-      const moved = MOCK_NODES.find((n) => n.id === e.active.id);
-      if (target && moved) {
+      const target = nodes.find((n) => n.id === targetId);
+      const moved = nodes.find((n) => n.id === e.active.id);
+      if (target && moved && target.kind === 'folder') {
+        moveNode(moved.id, target.id);
         toast.success(`«${moved.name}» movido a «${target.name}»`);
       }
     }
   }
-  const draggedNode = draggedId ? MOCK_NODES.find((n) => n.id === draggedId) : null;
 
-  // ─── Drag & drop de archivos desde el SO ──────────────────
+  const draggedNode = draggedId ? nodes.find((n) => n.id === draggedId) : null;
+
   const { getRootProps, isDragActive } = useDropzone({
     noClick: true,
     noKeyboard: true,
     onDrop: (acceptedFiles) => {
       if (acceptedFiles.length === 0) return;
-      toast.success(`${acceptedFiles.length} archivo(s) listos para cifrar y subir`);
-      // TODO: invocar uploader real (encryptFileChunks + presigned URLs)
+      uploadFiles(acceptedFiles);
     },
   });
 
   return (
     <div {...getRootProps()} className="relative h-full">
-      {/* Overlay de drop ────────────────────────────────────── */}
       {isDragActive && (
         <div className="absolute inset-0 z-50 bg-violet-500/10 backdrop-blur-sm border-2 border-dashed border-violet-500/60 grid place-items-center pointer-events-none">
           <div className="text-center space-y-3">
@@ -225,14 +298,34 @@ export default function VaultPage() {
         </div>
       )}
 
-      <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+      <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
         <div className="px-8 py-6 max-w-7xl mx-auto">
           {/* ─── Breadcrumb + acciones ──────────────────────── */}
           <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-2 text-sm">
-              <span className="text-[var(--color-text-secondary)]">Mi bóveda</span>
-              <ChevronRight className="size-3.5 text-[var(--color-text-tertiary)]" />
-              <span className="text-[var(--color-text-primary)] font-medium">Inicio</span>
+            <div className="flex items-center gap-1 text-sm">
+              {breadcrumb.map((bc, i) => (
+                <span key={i} className="flex items-center gap-1">
+                  {i > 0 && <ChevronRight className="size-3.5 text-[var(--color-text-tertiary)]" />}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (i === breadcrumb.length - 1) return;
+                      const target = breadcrumb[i];
+                      const newBc = breadcrumb.slice(0, i + 1);
+                      useVault.setState({ breadcrumb: newBc });
+                      useVault.getState().loadNodes(target!.id);
+                    }}
+                    className={cn(
+                      'transition-colors',
+                      i === breadcrumb.length - 1
+                        ? 'text-[var(--color-text-primary)] font-medium cursor-default'
+                        : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]',
+                    )}
+                  >
+                    {bc.name}
+                  </button>
+                </span>
+              ))}
             </div>
             <div className="flex items-center gap-2">
               <input
@@ -242,7 +335,8 @@ export default function VaultPage() {
                 className="hidden"
                 onChange={(e) => {
                   if (e.target.files?.length) {
-                    toast.success(`${e.target.files.length} archivo(s) listos para cifrar`);
+                    uploadFiles(Array.from(e.target.files));
+                    e.target.value = '';
                   }
                 }}
               />
@@ -307,8 +401,16 @@ export default function VaultPage() {
             </div>
           </div>
 
+          {/* ─── Loading ─────────────────────────────────────── */}
+          {loading && !initialized && (
+            <div className="py-24 text-center">
+              <Loader2 className="size-8 text-violet-400 animate-spin mx-auto mb-4" />
+              <p className="text-sm text-[var(--color-text-tertiary)]">Descifrando bóveda…</p>
+            </div>
+          )}
+
           {/* ─── Carpetas ─────────────────────────────────── */}
-          {folders.length > 0 && (
+          {initialized && folders.length > 0 && (
             <section className="mb-8">
               <h2 className="text-[10px] uppercase tracking-widest text-[var(--color-text-tertiary)] mb-3">
                 Carpetas · {folders.length}
@@ -319,14 +421,20 @@ export default function VaultPage() {
                   : 'space-y-1',
               )}>
                 {folders.map((n) => (
-                  <FolderCard key={n.id} node={n} isDragging={draggedId === n.id} />
+                  <FolderCard
+                    key={n.id}
+                    node={n}
+                    isDragging={draggedId === n.id}
+                    onClick={() => navigateToFolder(n.id, n.name)}
+                    onDelete={() => deleteNode(n.id)}
+                  />
                 ))}
               </div>
             </section>
           )}
 
           {/* ─── Archivos ─────────────────────────────────── */}
-          {files.length > 0 && (
+          {initialized && files.length > 0 && (
             <section>
               <h2 className="text-[10px] uppercase tracking-widest text-[var(--color-text-tertiary)] mb-3">
                 Archivos · {files.length}
@@ -337,14 +445,22 @@ export default function VaultPage() {
                   : 'space-y-1',
               )}>
                 {files.map((n) => (
-                  <FileCard key={n.id} node={n} isDragging={draggedId === n.id} />
+                  <FileCard
+                    key={n.id}
+                    node={n}
+                    isDragging={draggedId === n.id}
+                    onDownload={() => downloadFile(n)}
+                    onDelete={() => deleteNode(n.id)}
+                    onShare={() => setShareNode(n)}
+                    onStar={() => toggleStar(n.id)}
+                  />
                 ))}
               </div>
             </section>
           )}
 
           {/* ─── Empty state ──────────────────────────────── */}
-          {pageNodes.length === 0 && (
+          {initialized && pageNodes.length === 0 && !loading && (
             <div className="py-24 text-center">
               <div className="size-16 rounded-full bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] grid place-items-center mx-auto mb-4">
                 <Upload className="size-6 text-[var(--color-text-tertiary)]" />
@@ -399,7 +515,6 @@ export default function VaultPage() {
           )}
         </div>
 
-        {/* ─── Drag overlay ───────────────────────────────── */}
         <DragOverlay>
           {draggedNode && (
             <div className="p-4 rounded-xl bg-[var(--color-bg-surface-3)] border border-violet-500/40 shadow-[0_8px_32px_-4px_rgba(0,0,0,0.6)] rotate-2 w-48">
@@ -412,7 +527,19 @@ export default function VaultPage() {
         </DragOverlay>
       </DndContext>
 
-      <NewFolderModal open={newFolderOpen} onClose={() => setNewFolderOpen(false)} />
+      <UploadBar uploads={uploads} />
+
+      <NewFolderModal
+        open={newFolderOpen}
+        onClose={() => setNewFolderOpen(false)}
+        onCreated={(name, icon, color) => createFolder(name, icon, color)}
+      />
+
+      <ShareModal
+        open={!!shareNode}
+        onClose={() => setShareNode(null)}
+        node={shareNode}
+      />
     </div>
   );
 }

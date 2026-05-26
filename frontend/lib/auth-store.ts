@@ -74,13 +74,17 @@ export const useAuth = create<AuthState & AuthActions>((set, get) => ({
   isUnlocked: false,
   requires2FA: false,
 
-  setIdentity: (data) =>
+  setIdentity: (data) => {
+    if (typeof window !== 'undefined' && data.deviceId) {
+      localStorage.setItem('noctcom.deviceId', data.deviceId);
+    }
     set({
       ...data,
       isAuthenticated: true,
       isUnlocked: true,
       requires2FA: false,
-    }),
+    });
+  },
 
   addVaultKey: (vault) =>
     set((s) => ({ vaultKeys: { ...s.vaultKeys, [vault.vaultId]: vault } })),
@@ -104,6 +108,10 @@ export const useAuth = create<AuthState & AuthActions>((set, get) => ({
 
   logout: () => {
     get().lock();
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('noctcom.deviceId');
+      localStorage.removeItem('noctcom.devicePrivKey');
+    }
     set({
       userId: null,
       username: null,
@@ -115,3 +123,8 @@ export const useAuth = create<AuthState & AuthActions>((set, get) => ({
     });
   },
 }));
+
+export function getStoredDeviceId(): string | null {
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem('noctcom.deviceId');
+}

@@ -16,6 +16,8 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 import { db } from '../db/pool.js';
+import { publishChange } from '../db/redis.js';
+import { sendPushToUser } from '../push.js';
 
 const bytesB64 = z.string().regex(/^[A-Za-z0-9_-]+$/);
 const fromB64 = (s: string) => Buffer.from(s, 'base64url');
@@ -63,6 +65,18 @@ const shareRoutes: FastifyPluginAsync = async (app) => {
         body.expiresAt ?? null,
       ],
     );
+
+    publishChange(userId, { resource: 'shares', action: 'created' });
+    publishChange(body.sharedWithUserId, { resource: 'shares', action: 'received' });
+
+    const sender = await db.query(`SELECT username FROM users WHERE id = $1`, [userId]);
+    const senderName = sender.rows[0]?.username ?? 'Alguien';
+    sendPushToUser(
+      body.sharedWithUserId,
+      'Archivo compartido',
+      `${senderName} compartió un archivo contigo`,
+      { type: 'share', nodeId: body.nodeId },
+    ).catch(() => {});
 
     return reply.code(201).send({ id: r.rows[0].id, createdAt: r.rows[0].created_at });
   });

@@ -43,5 +43,10 @@ noctcom-pages/
 .mcp.json
 settings.local.json
 
+# Firebase credentials
+**/firebase-service-account.json
+
 # Private notes
 dominios.txt
+recuperacion.txt
+NOCTCOM_vs_SELFHOSTED_INTERNAL.md

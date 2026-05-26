@@ -1,11 +1,14 @@
-import type { Metadata } from 'next';
-import { Toaster } from 'sonner';
 import './globals.css';
+import { Toaster } from 'sonner';
+import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: 'Noctcom — Zero-Knowledge Storage',
   description: 'Tu bóveda privada. Cifrada en tu dispositivo. Nadie más puede abrirla.',
   icons: { icon: '/favicon.svg' },
+  other: {
+    'referrer': 'no-referrer',
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

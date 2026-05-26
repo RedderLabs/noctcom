@@ -170,7 +170,12 @@ export default function LandingPage() {
 
       <footer className="border-t border-[var(--color-border-faint)] py-6">
         <div className="max-w-6xl mx-auto px-6 text-xs text-[var(--color-text-tertiary)] flex justify-between items-center">
-          <span>© {new Date().getFullYear()} Noctcom · AGPL-3.0</span>
+          <div className="flex items-center gap-4">
+            <span>© {new Date().getFullYear()} Noctcom · AGPL-3.0</span>
+            <Link href="/security" className="hover:text-[var(--color-text-secondary)] transition-colors">
+              Seguridad
+            </Link>
+          </div>
           <span className="font-mono text-[10px]">v0.1.0 · build {process.env.NODE_ENV}</span>
         </div>
       </footer>

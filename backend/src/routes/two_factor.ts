@@ -387,8 +387,8 @@ const twoFactorRoutes: FastifyPluginAsync = async (app) => {
     });
   });
 
-  // POST /recovery/finalize: el cliente envía nuevo opaque_record,
-  // nuevas privkeys wrapped con nueva MK, y la prueba de la frase.
+  // POST /recovery/finalize: el cliente prueba la frase mnemónica firmando
+  // con la recovery key. Luego envía nuevas keys wrapped con nueva MK.
   app.post('/recovery/finalize', async (req, reply) => {
     const schema = z.object({
       emailHash: bytesB64,
@@ -396,23 +396,30 @@ const twoFactorRoutes: FastifyPluginAsync = async (app) => {
       signature: bytesB64,
       newOpaqueRecord: bytesB64,
       newKdfSalt: bytesB64,
+      newKdfOpsLimit: z.number().int().min(2).max(10),
+      newKdfMemLimit: z.number().int().min(67108864).max(1073741824),
+      newIdentityPublicKey: bytesB64,
       newIdentityPrivateKeyWrapped: bytesB64,
       newIdentityPrivateKeyNonce: bytesB64,
+      newExchangePublicKey: bytesB64,
       newExchangePrivateKeyWrapped: bytesB64,
       newExchangePrivateKeyNonce: bytesB64,
     });
     const body = schema.parse(req.body);
 
     const u = await db.query(
-      `SELECT id, identity_public_key FROM users WHERE email_hash = $1`,
+      `SELECT id, recovery_public_key, recovery_enabled FROM users WHERE email_hash = $1`,
       [fromB64(body.emailHash)],
     );
     if (u.rowCount === 0) return reply.unauthorized();
+    if (!u.rows[0].recovery_enabled || !u.rows[0].recovery_public_key) {
+      return reply.unauthorized('recovery not enabled');
+    }
 
     const ok = sodium.crypto_sign_verify_detached(
       fromB64(body.signature),
       fromB64(body.challenge),
-      u.rows[0].identity_public_key,
+      u.rows[0].recovery_public_key,
     );
     if (!ok) return reply.unauthorized('invalid recovery signature');
 
@@ -429,22 +436,27 @@ const twoFactorRoutes: FastifyPluginAsync = async (app) => {
       `UPDATE users SET
         opaque_record = $1,
         kdf_salt = $2,
-        identity_private_key_wrapped = $3,
-        identity_private_key_nonce = $4,
-        exchange_private_key_wrapped = $5,
-        exchange_private_key_nonce = $6
-       WHERE id = $7`,
+        kdf_ops_limit = $3,
+        kdf_mem_limit = $4,
+        identity_public_key = $5,
+        identity_private_key_wrapped = $6,
+        identity_private_key_nonce = $7,
+        exchange_public_key = $8,
+        exchange_private_key_wrapped = $9,
+        exchange_private_key_nonce = $10
+       WHERE id = $11`,
       [
         fromB64(body.newOpaqueRecord), fromB64(body.newKdfSalt),
+        body.newKdfOpsLimit, body.newKdfMemLimit,
+        fromB64(body.newIdentityPublicKey),
         fromB64(body.newIdentityPrivateKeyWrapped), fromB64(body.newIdentityPrivateKeyNonce),
+        fromB64(body.newExchangePublicKey),
         fromB64(body.newExchangePrivateKeyWrapped), fromB64(body.newExchangePrivateKeyNonce),
         u.rows[0].id,
       ],
     );
 
     await db.query(`UPDATE password_reset_tokens SET used_at = now() WHERE id = $1`, [t.rows[0].id]);
-
-    // Revocar todas las sesiones activas
     await db.query(`UPDATE sessions SET revoked_at = now() WHERE user_id = $1 AND revoked_at IS NULL`, [u.rows[0].id]);
 
     return reply.send({ ok: true });
