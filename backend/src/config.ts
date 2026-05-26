@@ -5,7 +5,7 @@ const envSchema = z.object({
   PORT: z.coerce.number().default(3000),
 
   DATABASE_URL: z.string().url(),
-  REDIS_URL: z.string().url().optional(),
+  REDIS_URL: z.string().url().optional().or(z.literal('')),
 
   S3_ENDPOINT: z.string().url(),
   S3_ACCESS_KEY: z.string().min(1),
@@ -17,10 +17,10 @@ const envSchema = z.object({
   PUBLIC_URL: z.string().url(),
   FRONTEND_URL: z.string().url().optional(),
 
-  SMTP_HOST: z.string().min(1),
+  SMTP_HOST: z.string().min(1).optional().or(z.literal('')),
   SMTP_PORT: z.coerce.number().default(2525),
-  SMTP_USER: z.string().min(1),
-  SMTP_PASS: z.string().min(1),
+  SMTP_USER: z.string().min(1).optional().or(z.literal('')),
+  SMTP_PASS: z.string().min(1).optional().or(z.literal('')),
   SMTP_FROM: z.string().default('noreply@noctcom.app'),
 
   MAX_UPLOAD_BYTES: z.coerce.number().default(5 * 1024 * 1024 * 1024),
