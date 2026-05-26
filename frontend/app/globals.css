@@ -14,16 +14,16 @@
   --color-bg-surface-2: #1c1c28;     /* hover / elevación */
   --color-bg-surface-3: #252533;     /* activo */
 
-  /* Bordes — sutiles, casi imperceptibles */
-  --color-border-faint: #1f1f2e;
-  --color-border-subtle: #2a2a3d;
-  --color-border-strong: #3a3a52;
+  /* Bordes — visibles pero no invasivos */
+  --color-border-faint: #2a2a3d;
+  --color-border-subtle: #363650;
+  --color-border-strong: #4a4a64;
 
-  /* Texto */
-  --color-text-primary: #ededf3;
-  --color-text-secondary: #a0a0b8;
-  --color-text-tertiary: #6b6b85;
-  --color-text-muted: #4a4a60;
+  /* Texto — contraste alto para accesibilidad */
+  --color-text-primary: #f0f0f6;
+  --color-text-secondary: #b8b8ce;
+  --color-text-tertiary: #8e8ea8;
+  --color-text-muted: #6e6e8a;
 
   /* Violetas — el alma de Noctcom */
   --color-violet-50: #f5f3ff;
