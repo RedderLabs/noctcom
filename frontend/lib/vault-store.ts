@@ -357,14 +357,14 @@ export const useVault = create<VaultState & VaultActions>((set, get) => ({
             await apiFetch(new URL(url).pathname, {
               method: 'PUT',
               headers: { 'content-type': 'application/octet-stream' },
-              body: ct,
+              body: ct as unknown as BodyInit,
             });
             const pct = Math.round(((i + 1) / chunkMeta.length) * 100);
             set((s) => ({
               uploads: { ...s.uploads, [uid]: { ...s.uploads[uid]!, progress: pct } },
             }));
           } else {
-            await uploadToPresignedUrl(url, ct, (loaded, total) => {
+            await uploadToPresignedUrl(url, ct as unknown as BodyInit, (loaded, total) => {
               const pct = Math.round(((i + loaded / total) / chunkMeta.length) * 100);
               set((s) => ({
                 uploads: { ...s.uploads, [uid]: { ...s.uploads[uid]!, progress: pct } },
@@ -444,7 +444,7 @@ export const useVault = create<VaultState & VaultActions>((set, get) => ({
     }
 
     wipe(fileKey);
-    return new Blob(parts, { type: node.mimeType || 'application/octet-stream' });
+    return new Blob(parts as BlobPart[], { type: node.mimeType || 'application/octet-stream' });
   },
 
   downloadFile: async (node) => {

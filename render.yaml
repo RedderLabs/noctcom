@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: noctcom-landing
+    runtime: docker
+    dockerfilePath: ./Dockerfile.landing
+    dockerContext: .
+    region: frankfurt
+    plan: free
+    envVars:
+      - key: NEXT_PUBLIC_API_URL
+        value: https://noctcom.com

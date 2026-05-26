@@ -37,6 +37,24 @@ La sección principal donde gestionas todos tus archivos y carpetas.
 - **Mover archivos:** arrastra un archivo o carpeta sobre otra carpeta para moverlo
 - **Vista:** alterna entre vista de cuadrícula y lista con los botones de la barra superior
 
+### Previsualizar archivos
+
+Haz clic en cualquier archivo para abrirlo en el visor integrado. Noctcom descifra el contenido en tu navegador y lo muestra directamente, sin enviarlo a ningún servidor.
+
+| Tipo | Formatos soportados | Funcionalidad |
+|------|---------------------|---------------|
+| **Imágenes** | PNG, JPG, GIF, SVG, WebP, BMP, ICO | Visor con zoom (rueda del ratón o botones +/-) |
+| **Video** | MP4, WebM, OGG, MOV | Reproductor con controles nativos |
+| **Audio** | MP3, WAV, OGG, FLAC, AAC, WebM | Reproductor con controles nativos |
+| **PDF** | PDF | Visualizador integrado en el navegador |
+| **Texto y codigo** | TXT, MD, JSON, JS, TS, TSX, JSX, CSS, HTML, XML, YAML, TOML, PY, GO, RS, Java, C, C++, SQL, SH, CSV, LOG, SVG, INI, Dockerfile, Makefile | Vista con numeros de linea |
+| **Office** | DOCX, XLSX, PPTX, DOC, XLS, PPT | Solo descarga (no previsualizable en el navegador) |
+
+- Los archivos `.txt` y `.md` se muestran en un editor de texto
+- Los archivos de codigo se muestran con numeros de linea en fuente monoespaciada
+- Para archivos mayores de 50 MB se muestra una advertencia antes de descifrar (consume RAM)
+- Archivos de texto mayores de 5 MB se muestran truncados
+
 ### Buscar
 
 Usa la barra de búsqueda (atajo `Ctrl+K` o `⌘K`) para encontrar archivos por nombre. La búsqueda se realiza sobre un índice cifrado local — el servidor nunca ve tus consultas.

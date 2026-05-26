@@ -101,7 +101,7 @@ export async function uploadToPresignedUrl(
         else reject(new Error(`upload failed: ${xhr.status}`));
       };
       xhr.onerror = () => reject(new Error('network error during upload'));
-      xhr.send(body);
+      xhr.send(body as XMLHttpRequestBodyInit);
     });
   }
   const res = await fetch(url, { method: 'PUT', body });
