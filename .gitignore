@@ -49,4 +49,8 @@ settings.local.json
 # Private notes
 dominios.txt
 recuperacion.txt
+posts_.txt
+PHASES.md
+NOCTCOM.md
+NOCTCOM_vs_NEXTCLOUD_INTERNAL.md
 NOCTCOM_vs_SELFHOSTED_INTERNAL.md
