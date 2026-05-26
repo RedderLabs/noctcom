@@ -1,5 +1,6 @@
 import './globals.css';
 import { Toaster } from 'sonner';
+import { CookieBanner } from '@/components/ui/CookieBanner';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -16,6 +17,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="es" suppressHydrationWarning>
       <body className="grain">
         {children}
+        <CookieBanner />
         <Toaster
           theme="dark"
           position="bottom-right"

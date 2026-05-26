@@ -29,13 +29,13 @@ const nextConfig = {
               "default-src 'self'",
               isDev
                 ? "script-src 'self' 'unsafe-eval' 'unsafe-inline' 'wasm-unsafe-eval' https://www.gstatic.com"
-                : "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://www.gstatic.com",
+                : "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://www.gstatic.com https://static.cloudflareinsights.com https://challenges.cloudflare.com",
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: blob:",
               "media-src 'self' blob:",
               "frame-src blob:",
               "object-src blob:",
-              `connect-src 'self' ${isDev ? 'http://localhost:3000 ws://localhost:3000 ws://localhost:3001' : 'https://noctcom.com wss://noctcom.com'} https://*.googleapis.com https://*.firebaseio.com https://fcmregistrations.googleapis.com`,
+              `connect-src 'self' ${isDev ? 'http://localhost:3000 ws://localhost:3000 ws://localhost:3001' : 'https://noctcom.com wss://noctcom.com'} https://*.googleapis.com https://*.firebaseio.com https://fcmregistrations.googleapis.com https://cloudflareinsights.com`,
               "frame-ancestors 'none'",
               "form-action 'self'",
               "base-uri 'self'",
