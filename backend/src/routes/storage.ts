@@ -25,6 +25,7 @@ interface DiskInfo {
 }
 
 const COMPATIBLE_FS = new Set(['ext4', 'xfs']);
+const USABLE_FS = new Set(['ext4', 'xfs', 'ntfs', 'fat32', 'vfat', 'FAT32', 'FAT', 'NTFS', 'exfat', 'exFAT', 'fuseblk']);
 
 const PROTECTED_MOUNTS = new Set([
   '/', '/boot', '/boot/efi', '/home', '/var', '/usr', '/etc', '/snap', '/tmp',
@@ -56,7 +57,7 @@ async function detectDisksLinux(): Promise<DiskInfo[]> {
 
         const isMounted = !!mountpoint;
         const fstype = part.fstype || 'none';
-        const needsFormat = !COMPATIBLE_FS.has(fstype);
+        const needsFormat = !USABLE_FS.has(fstype);
         const totalBytes = isMounted && part.fssize ? Number(part.fssize) : Number(part.size) || 0;
         const freeBytes = isMounted && part.fsavail ? Number(part.fsavail) : 0;
         const usedBytes = isMounted && part.fsused ? Number(part.fsused) : 0;
@@ -101,6 +102,7 @@ async function detectDisksWindows(): Promise<DiskInfo[]> {
       const free = Number(freeSpace) || 0;
       if (total === 0) continue;
 
+      const fs = fileSystem || 'unknown';
       disks.push({
         id: caption.replace(':', '').toLowerCase(),
         device: caption,
@@ -109,11 +111,11 @@ async function detectDisksWindows(): Promise<DiskInfo[]> {
         totalBytes: total,
         freeBytes: free,
         usedBytes: total - free,
-        filesystem: fileSystem || 'unknown',
+        filesystem: fs,
         removable: driveType === '2',
         active: false,
         mounted: true,
-        needsFormat: false,
+        needsFormat: !USABLE_FS.has(fs),
       });
     }
     return disks;
@@ -381,12 +383,11 @@ const storageRoutes: FastifyPluginAsync = async (app) => {
       return reply.badRequest('el dispositivo no existe');
     }
 
-    // Verify it has a compatible filesystem
     try {
       const { stdout } = await execFile('lsblk', ['-no', 'FSTYPE', realDevice]);
       const fstype = stdout.trim();
-      if (!COMPATIBLE_FS.has(fstype)) {
-        return reply.badRequest(`filesystem incompatible (${fstype}) — se requiere ext4 o xfs`);
+      if (!USABLE_FS.has(fstype)) {
+        return reply.badRequest(`filesystem incompatible (${fstype})`);
       }
     } catch {
       return reply.badRequest('no se pudo leer el filesystem del dispositivo');

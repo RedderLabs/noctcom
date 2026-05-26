@@ -18,6 +18,7 @@ import { Button } from '@/components/ui/Button';
 import { FOLDER_ICONS, type FolderIconKey, getFolderColor, type FolderColorKey } from '@/components/vault/folder-icons';
 import { NewFolderModal } from '@/components/vault/NewFolderModal';
 import { ShareModal } from '@/components/vault/ShareModal';
+import { FilePreviewModal } from '@/components/vault/FilePreviewModal';
 import { useVault, type DecryptedNode } from '@/lib/vault-store';
 import { cn } from '@/lib/utils';
 
@@ -111,11 +112,12 @@ function FolderCard({
 
 // ─── Archivo ────────────────────────────────────────────────────
 function FileCard({
-  node, isDragging,
+  node, isDragging, onClick,
   onDownload, onDelete, onShare, onStar,
 }: {
   node: DecryptedNode;
   isDragging?: boolean;
+  onClick: () => void;
   onDownload: () => void;
   onDelete: () => void;
   onShare: () => void;
@@ -129,6 +131,7 @@ function FileCard({
       ref={setNodeRef}
       {...listeners}
       {...attributes}
+      onClick={onClick}
       className={cn(
         'group relative p-4 rounded-xl border border-[var(--color-border-faint)] bg-[var(--color-bg-surface)]',
         'hover:bg-[var(--color-bg-surface-2)] hover:border-[var(--color-border-strong)]',
@@ -230,6 +233,7 @@ export default function VaultPage() {
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [newFolderOpen, setNewFolderOpen] = useState(false);
   const [shareNode, setShareNode] = useState<DecryptedNode | null>(null);
+  const [previewNode, setPreviewNode] = useState<DecryptedNode | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { init(); }, [init]);
@@ -449,6 +453,7 @@ export default function VaultPage() {
                     key={n.id}
                     node={n}
                     isDragging={draggedId === n.id}
+                    onClick={() => setPreviewNode(n)}
                     onDownload={() => downloadFile(n)}
                     onDelete={() => deleteNode(n.id)}
                     onShare={() => setShareNode(n)}
@@ -539,6 +544,12 @@ export default function VaultPage() {
         open={!!shareNode}
         onClose={() => setShareNode(null)}
         node={shareNode}
+      />
+
+      <FilePreviewModal
+        open={!!previewNode}
+        onClose={() => setPreviewNode(null)}
+        node={previewNode}
       />
     </div>
   );

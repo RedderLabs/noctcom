@@ -206,10 +206,6 @@ export const useAuth = create<AuthState & AuthActions>((set, get) => ({
   logout: () => {
     get().lock();
     clearSession();
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('noctcom.deviceId');
-      localStorage.removeItem('noctcom.devicePrivKey');
-    }
     set({
       userId: null,
       username: null,

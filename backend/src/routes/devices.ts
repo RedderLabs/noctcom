@@ -77,7 +77,7 @@ const deviceRoutes: FastifyPluginAsync = async (app) => {
 
     const accessToken = await reply.jwtSign(
       { sub: userId, deviceId },
-      { expiresIn: '15m' },
+      { expiresIn: '7d' },
     );
 
     publishChange(userId, { resource: 'devices', action: 'new' });

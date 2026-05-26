@@ -3,7 +3,7 @@
 import { create } from 'zustand';
 import { toast } from 'sonner';
 import { useAuth } from './auth-store';
-import { apiFetch, uploadToPresignedUrl } from './api';
+import { apiFetch, uploadToPresignedUrl, getAccessToken } from './api';
 import {
   initCrypto, decrypt, encrypt, encryptString, decryptString,
   decryptJSON, encryptJSON, randomKey, randomNonce,
@@ -59,6 +59,7 @@ interface VaultActions {
   deleteNode: (nodeId: string) => Promise<void>;
   moveNode: (nodeId: string, newParentId: string) => Promise<void>;
   uploadFiles: (files: File[]) => Promise<void>;
+  getFileBlob: (node: DecryptedNode) => Promise<Blob>;
   downloadFile: (node: DecryptedNode) => Promise<void>;
   loadTrash: () => Promise<DecryptedNode[]>;
   restoreNode: (nodeId: string) => Promise<void>;
@@ -404,43 +405,55 @@ export const useVault = create<VaultState & VaultActions>((set, get) => ({
     }, 3000);
   },
 
-  // ─── Download: get presigned URLs → decrypt chunks → blob ─
+  // ─── Decrypt file to Blob (reusable for preview + download) ─
+  getFileBlob: async (node) => {
+    if (node.kind !== 'file' || !node.currentVersionId) {
+      throw new Error('No es un archivo descargable');
+    }
+    const { currentVaultId } = get();
+    if (!currentVaultId) throw new Error('No hay vault seleccionado');
+
+    const vaultKey = requireVaultKey(currentVaultId);
+    const sodium = (await import('libsodium-wrappers-sumo')).default;
+    await sodium.ready;
+
+    const dl = await apiFetch<{
+      chunks: { index: number; nonce: string; downloadUrl: string }[];
+      fileKeyWrapped: string;
+      fileKeyNonce: string;
+    }>(`/api/v1/uploads/${node.currentVersionId}/download`);
+
+    const fileKey = decrypt(fromB64(dl.fileKeyWrapped), fromB64(dl.fileKeyNonce), vaultKey);
+    const parts: Uint8Array[] = [];
+
+    for (const ch of dl.chunks.sort((a, b) => a.index - b.index)) {
+      const headers: Record<string, string> = {};
+      const token = getAccessToken();
+      if (token && ch.downloadUrl.includes('/api/')) {
+        headers.authorization = `Bearer ${token}`;
+      }
+      const res = await fetch(ch.downloadUrl, { headers });
+      if (!res.ok) throw new Error(`Chunk ${ch.index} falló`);
+      const ct = new Uint8Array(await res.arrayBuffer());
+      const aad = sodium.from_string(`chunk:${ch.index}`);
+      parts.push(
+        sodium.crypto_aead_xchacha20poly1305_ietf_decrypt(
+          null, ct, aad, fromB64(ch.nonce), fileKey,
+        ),
+      );
+    }
+
+    wipe(fileKey);
+    return new Blob(parts, { type: node.mimeType || 'application/octet-stream' });
+  },
+
   downloadFile: async (node) => {
     if (node.kind !== 'file' || !node.currentVersionId) return;
-    const { currentVaultId } = get();
-    if (!currentVaultId) return;
-
     try {
       toast.info(`Descargando «${node.name}»…`);
-      const vaultKey = requireVaultKey(currentVaultId);
-      const sodium = (await import('libsodium-wrappers-sumo')).default;
-      await sodium.ready;
-
-      const dl = await apiFetch<{
-        chunks: { index: number; nonce: string; downloadUrl: string }[];
-        fileKeyWrapped: string;
-        fileKeyNonce: string;
-      }>(`/api/v1/uploads/${node.currentVersionId}/download`);
-
-      const fileKey = decrypt(fromB64(dl.fileKeyWrapped), fromB64(dl.fileKeyNonce), vaultKey);
-      const parts: Uint8Array[] = [];
-
-      for (const ch of dl.chunks.sort((a, b) => a.index - b.index)) {
-        const res = await fetch(ch.downloadUrl);
-        if (!res.ok) throw new Error(`Chunk ${ch.index} falló`);
-        const ct = new Uint8Array(await res.arrayBuffer());
-        const aad = sodium.from_string(`chunk:${ch.index}`);
-        parts.push(
-          sodium.crypto_aead_xchacha20poly1305_ietf_decrypt(
-            null, ct, aad, fromB64(ch.nonce), fileKey,
-          ),
-        );
-      }
-
-      wipe(fileKey);
-
+      const blob = await get().getFileBlob(node);
       const a = document.createElement('a');
-      a.href = URL.createObjectURL(new Blob(parts));
+      a.href = URL.createObjectURL(blob);
       a.download = node.name;
       document.body.appendChild(a);
       a.click();

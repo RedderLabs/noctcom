@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, type ReactNode } from 'react';
+import { useState, useEffect, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -29,18 +29,20 @@ function formatStorageSize(bytes: number): string {
 
 export default function AppLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
-  const auth = useAuth();
-  const { isAuthenticated, isUnlocked, username, logout } = auth;
-  const { sidebarCollapsed, toggleSidebar, hydrate: hydrateFontScale, hydrated } = useFontScale();
+  const { isAuthenticated, isUnlocked, username, logout, hydrate } = useAuth();
+  const { sidebarCollapsed, toggleSidebar, hydrate: hydrateFontScale } = useFontScale();
   const { storageUsed, storageQuota, init: initVault, reset: resetVault } = useVault();
+  const [mounted, setMounted] = useState(false);
   useSync();
 
   useEffect(() => {
-    auth.hydrate();
+    hydrate();
     hydrateFontScale();
-  }, [auth.hydrate, hydrateFontScale]);
+    setMounted(true);
+  }, [hydrate, hydrateFontScale]);
 
   useEffect(() => {
+    if (!mounted) return;
     loadTokens();
     if (!isAuthenticated || !isUnlocked) {
       const { access } = loadTokens();
@@ -55,7 +57,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
       });
       return unsub;
     }
-  }, [isAuthenticated, isUnlocked, router, initVault]);
+  }, [mounted, isAuthenticated, isUnlocked, router, initVault]);
 
   const collapsed = sidebarCollapsed;
 
@@ -67,6 +69,18 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     { href: '/vault/activity', label: 'Actividad', icon: Activity },
     { href: '/vault/trash', label: 'Papelera', icon: Trash2 },
   ];
+
+  if (!mounted) {
+    return (
+      <div className="h-screen flex overflow-hidden">
+        <aside className="w-64 shrink-0 h-screen fixed left-0 top-0 border-r border-[var(--color-border-faint)] bg-[var(--color-bg-deep)]/40 backdrop-blur-md flex flex-col z-30" />
+        <div className="flex-1 flex flex-col min-w-0 ml-64">
+          <header className="h-16 border-b border-[var(--color-border-faint)] bg-[var(--color-bg-base)]/60 backdrop-blur-md" />
+          <main className="flex-1" />
+        </div>
+      </div>
+    );
+  }
 
   const sidebarW = collapsed ? 'w-16' : 'w-64';
   const mainMl = collapsed ? 'ml-16' : 'ml-64';
@@ -171,9 +185,9 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           </Link>
         </div>
 
-        
 
-        {/* Cuota — se poblará desde GET /api/v1/auth/me */}
+
+        {/* Cuota */}
         {!collapsed && (
           <div className="px-4 py-3 border-t border-[var(--color-border-faint)]">
             <div className="flex items-center gap-2 text-xs text-[var(--color-text-tertiary)] mb-2">

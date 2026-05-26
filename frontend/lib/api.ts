@@ -21,6 +21,10 @@ export function setTokens(access: string | null, refresh: string | null) {
   }
 }
 
+export function getAccessToken(): string | null {
+  return accessToken;
+}
+
 export function loadTokens(): { access: string | null; refresh: string | null } {
   if (typeof window === 'undefined') return { access: null, refresh: null };
   accessToken = localStorage.getItem('noctcom.access');

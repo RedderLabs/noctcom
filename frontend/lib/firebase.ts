@@ -45,22 +45,20 @@ export async function requestNotificationPermission(): Promise<string | null> {
       serviceWorkerRegistration: await navigator.serviceWorker.register('/firebase-messaging-sw.js'),
     });
     return token;
-  } catch (err) {
-    console.warn('FCM token error:', err);
+  } catch {
     return null;
   }
 }
 
 export async function registerPushToken() {
-  const token = await requestNotificationPermission();
-  if (!token) return;
-
   try {
+    const token = await requestNotificationPermission();
+    if (!token) return;
     await apiFetch('/api/v1/push/register', {
       method: 'POST',
       body: JSON.stringify({ token }),
     });
-  } catch { /* ignore */ }
+  } catch { /* FCM not available in dev — ignore */ }
 }
 
 export function onForegroundMessage(callback: (payload: any) => void) {

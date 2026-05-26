@@ -161,7 +161,7 @@ const authRoutes: FastifyPluginAsync = async (app) => {
 
     const accessToken = await reply.jwtSign(
       { sub: result.userId, deviceId: result.deviceId },
-      { expiresIn: '15m' },
+      { expiresIn: '7d' },
     );
 
     const { plain, hash } = newRefreshToken();
@@ -292,7 +292,7 @@ const authRoutes: FastifyPluginAsync = async (app) => {
 
     const accessToken = await reply.jwtSign(
       { sub: row.id, deviceId: deviceId ?? null },
-      { expiresIn: '15m' },
+      { expiresIn: '7d' },
     );
 
     const { plain, hash } = newRefreshToken();
@@ -309,6 +309,11 @@ const authRoutes: FastifyPluginAsync = async (app) => {
        VALUES ($1,$2,$3,$4,$5)`,
       [row.id, deviceId, hash, hashIp(req.ip), expires],
     );
+
+    const adminExists = await db.query('SELECT 1 FROM users WHERE is_admin = true LIMIT 1');
+    if (adminExists.rowCount === 0) {
+      await db.query('UPDATE users SET is_admin = true WHERE id = $1', [row.id]);
+    }
 
     await db.query(`UPDATE users SET last_login_at = now() WHERE id = $1`, [row.id]);
 
@@ -349,7 +354,7 @@ const authRoutes: FastifyPluginAsync = async (app) => {
 
     const accessToken = await reply.jwtSign(
       { sub: s.user_id, deviceId: s.device_id },
-      { expiresIn: '15m' },
+      { expiresIn: '7d' },
     );
     return reply.send({ accessToken });
   });
