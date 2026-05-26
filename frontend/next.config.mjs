@@ -29,7 +29,7 @@ const nextConfig = {
               "default-src 'self'",
               isDev
                 ? "script-src 'self' 'unsafe-eval' 'unsafe-inline' 'wasm-unsafe-eval' https://www.gstatic.com"
-                : "script-src 'self' 'wasm-unsafe-eval' https://www.gstatic.com",
+                : "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://www.gstatic.com",
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: blob:",
               "media-src 'self' blob:",
