@@ -17,7 +17,7 @@ app.{$CADDY_DOMAIN} {
 		Referrer-Policy "no-referrer"
 		Permissions-Policy "geolocation=(), microphone=(), camera=()"
 		Cross-Origin-Opener-Policy "same-origin"
-		Content-Security-Policy "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' https://api.{$CADDY_DOMAIN} wss://api.{$CADDY_DOMAIN}; frame-ancestors 'none'; base-uri 'self'; object-src 'none'; form-action 'self'"
+		Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob:; frame-src blob:; object-src blob:; connect-src 'self' https://api.{$CADDY_DOMAIN} wss://api.{$CADDY_DOMAIN}; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
 		-Server
 	}
 }
