@@ -3,8 +3,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   Shield, KeyRound, Monitor, Lock, HardDrive,
-  AlertTriangle, Fingerprint, Smartphone, Usb, Plus, Power, Trash2,
+  AlertTriangle, Fingerprint, Smartphone, Usb, Plus, Power, Trash2, Disc,
 } from 'lucide-react';
+import { FormatDiskModal } from '@/components/vault/FormatDiskModal';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/Button';
 import { useAuth } from '@/lib/auth-store';
@@ -72,6 +73,7 @@ function fmtSize(bytes: number): string {
 
 interface DiskInfo {
   id: string;
+  device: string;
   path: string;
   label: string;
   totalBytes: number;
@@ -79,6 +81,8 @@ interface DiskInfo {
   filesystem: string;
   removable: boolean;
   active: boolean;
+  mounted: boolean;
+  needsFormat: boolean;
 }
 
 interface VolumeInfo {
@@ -100,6 +104,8 @@ export default function SettingsPage() {
   const [loadingDevices, setLoadingDevices] = useState(true);
   const [disks, setDisks] = useState<DiskInfo[]>([]);
   const [volumes, setVolumes] = useState<VolumeInfo[]>([]);
+  const [formatDisk, setFormatDisk] = useState<DiskInfo | null>(null);
+  const [formatOpen, setFormatOpen] = useState(false);
 
   const fetchDevices = useCallback(async () => {
     if (!masterKey) return;
@@ -496,22 +502,52 @@ export default function SettingsPage() {
                       </span>
                     </div>
                     <p className="text-[10px] text-[var(--color-text-muted)] font-mono mt-0.5">
-                      {fmtSize(disk.freeBytes)} libre de {fmtSize(disk.totalBytes)} · {disk.filesystem}{!disk.removable ? ' · Interno' : ''}
+                      {fmtSize(disk.freeBytes)} libre de {fmtSize(disk.totalBytes)} ·{' '}
+                      <span className={disk.needsFormat ? 'text-amber-400' : ''}>{disk.filesystem}</span>
+                      {disk.needsFormat && <span className="text-amber-400"> (incompatible)</span>}
+                      {!disk.removable ? ' · Interno' : ''}
                     </p>
                   </div>
-                  <Button variant="outline" size="sm" onClick={async () => {
-                    try {
-                      await apiFetch('/api/v1/storage/volumes', {
-                        method: 'POST',
-                        body: JSON.stringify({ path: disk.path, label: disk.label }),
-                      });
-                      toast.success(`«${disk.label}» añadido como volumen`);
-                      fetchVolumes();
-                      fetchDisks();
-                    } catch (e: any) { toast.error(e.message ?? 'Error al añadir disco'); }
-                  }}>
-                    <Plus className="size-3.5 mr-1" /> Añadir
-                  </Button>
+                  {disk.needsFormat ? (
+                    <Button variant="danger" size="sm" onClick={() => {
+                      setFormatDisk(disk);
+                      setFormatOpen(true);
+                    }}>
+                      <Disc className="size-3.5 mr-1" /> Formatear
+                    </Button>
+                  ) : !disk.mounted ? (
+                    <Button variant="secondary" size="sm" onClick={async () => {
+                      try {
+                        const res = await apiFetch<{ ok: boolean; mountPath: string }>('/api/v1/storage/disks/mount', {
+                          method: 'POST',
+                          body: JSON.stringify({ device: disk.device, label: disk.label.replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 12) || disk.id }),
+                        });
+                        await apiFetch('/api/v1/storage/volumes', {
+                          method: 'POST',
+                          body: JSON.stringify({ path: res.mountPath, label: disk.label }),
+                        });
+                        toast.success(`«${disk.label}» montado y añadido`);
+                        fetchVolumes();
+                        fetchDisks();
+                      } catch (e: any) { toast.error(e.message ?? 'Error al montar disco'); }
+                    }}>
+                      <Plus className="size-3.5 mr-1" /> Montar
+                    </Button>
+                  ) : (
+                    <Button variant="outline" size="sm" onClick={async () => {
+                      try {
+                        await apiFetch('/api/v1/storage/volumes', {
+                          method: 'POST',
+                          body: JSON.stringify({ path: disk.path, label: disk.label }),
+                        });
+                        toast.success(`«${disk.label}» añadido como volumen`);
+                        fetchVolumes();
+                        fetchDisks();
+                      } catch (e: any) { toast.error(e.message ?? 'Error al añadir disco'); }
+                    }}>
+                      <Plus className="size-3.5 mr-1" /> Añadir
+                    </Button>
+                  )}
                 </div>
               ))}
             </div>
@@ -524,6 +560,13 @@ export default function SettingsPage() {
           </p>
         )}
       </section>
+
+      <FormatDiskModal
+        open={formatOpen}
+        onClose={() => { setFormatOpen(false); setFormatDisk(null); }}
+        disk={formatDisk}
+        onFormatted={() => { fetchDisks(); fetchVolumes(); }}
+      />
 
       {/* Danger zone */}
       <section>
