@@ -115,7 +115,7 @@ async function buildServer() {
   });
 
   // ─── Routes ────────────────────────────────────────────────
-  await app.register(authRoutes,   { prefix: '/api/v1/auth', bodyLimit: 16_384 });
+  await app.register(authRoutes,   { prefix: '/api/v1/auth', bodyLimit: 16_384 } as any);
   await app.register(vaultRoutes,  { prefix: '/api/v1/vaults' });
   await app.register(nodeRoutes,   { prefix: '/api/v1/nodes' });
   await app.register(uploadRoutes, { prefix: '/api/v1/uploads' });

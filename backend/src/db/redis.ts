@@ -8,7 +8,7 @@ export async function initRedis(): Promise<RedisClientType | null> {
   if (!env.REDIS_URL) return null;
 
   try {
-    client = createClient({ url: env.REDIS_URL });
+    client = createClient({ url: env.REDIS_URL }) as RedisClientType;
     client.on('error', (err) => console.error('redis error:', err));
     await client.connect();
     return client;
@@ -25,7 +25,7 @@ export function redis(): RedisClientType | null {
 export async function createSubscriber(): Promise<RedisClientType | null> {
   if (!env.REDIS_URL) return null;
   try {
-    const sub = createClient({ url: env.REDIS_URL });
+    const sub = createClient({ url: env.REDIS_URL }) as RedisClientType;
     sub.on('error', (err) => console.error('redis subscriber error:', err));
     await sub.connect();
     return sub;
