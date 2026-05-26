@@ -2,7 +2,9 @@ FROM node:22-alpine AS deps
 WORKDIR /app
 COPY package.json package-lock.json .npmrc ./
 RUN apk add --no-cache python3 make g++ \
- && npm ci
+ && npm ci \
+ && cp node_modules/libsodium-sumo/dist/modules-sumo-esm/libsodium-sumo.mjs \
+       node_modules/libsodium-wrappers-sumo/dist/modules-sumo-esm/libsodium-sumo.mjs
 
 FROM node:22-alpine AS build
 WORKDIR /app
