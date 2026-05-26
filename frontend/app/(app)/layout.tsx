@@ -29,14 +29,16 @@ function formatStorageSize(bytes: number): string {
 
 export default function AppLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
-  const { isAuthenticated, isUnlocked, username, logout } = useAuth();
-  const { sidebarCollapsed, toggleSidebar, hydrate, hydrated } = useFontScale();
+  const auth = useAuth();
+  const { isAuthenticated, isUnlocked, username, logout } = auth;
+  const { sidebarCollapsed, toggleSidebar, hydrate: hydrateFontScale, hydrated } = useFontScale();
   const { storageUsed, storageQuota, init: initVault, reset: resetVault } = useVault();
   useSync();
 
   useEffect(() => {
-    hydrate();
-  }, [hydrate]);
+    auth.hydrate();
+    hydrateFontScale();
+  }, [auth.hydrate, hydrateFontScale]);
 
   useEffect(() => {
     loadTokens();
@@ -198,18 +200,20 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         {/* Usuario */}
         <div className={cn('border-t border-[var(--color-border-faint)]', collapsed ? 'p-2' : 'p-3')}>
           <div className={cn(
-            'flex items-center rounded-md hover:bg-[var(--color-bg-surface)] transition-colors group cursor-pointer',
+            'flex items-center rounded-md hover:bg-[var(--color-bg-surface)] transition-colors group',
             collapsed ? 'justify-center p-1.5' : 'gap-3 px-2 py-2',
           )}>
-            <div className="size-8 rounded-full bg-gradient-to-br from-violet-400 to-violet-600 grid place-items-center text-xs font-medium shrink-0" title={username ?? 'Usuario'}>
-              {username?.[0]?.toUpperCase() ?? '?'}
-            </div>
+            <Link href={'/vault/profile' as any} className="shrink-0" title={username ?? 'Usuario'}>
+              <div className="size-8 rounded-full bg-gradient-to-br from-violet-400 to-violet-600 grid place-items-center text-xs font-medium cursor-pointer hover:shadow-[0_0_12px_-2px_rgba(139,92,246,0.5)] transition-shadow">
+                {username?.[0]?.toUpperCase() ?? '?'}
+              </div>
+            </Link>
             {!collapsed && (
               <>
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium truncate">{username ?? 'Usuario'}</div>
+                <Link href={'/vault/profile' as any} className="flex-1 min-w-0 cursor-pointer">
+                  <div className="text-sm font-medium truncate hover:text-violet-300 transition-colors">{username ?? 'Usuario'}</div>
                   <div className="text-[10px] text-[var(--color-text-tertiary)]">Plan gratuito</div>
-                </div>
+                </Link>
                 <Link href="/vault/settings" className="opacity-0 group-hover:opacity-100 transition-opacity">
                   <Settings className="size-4 text-[var(--color-text-tertiary)]" />
                 </Link>

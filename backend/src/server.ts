@@ -26,6 +26,7 @@ import storageRoutes from './routes/storage.js';
 import auditRoutes from './routes/audit.js';
 import pushRoutes from './routes/push.js';
 import deviceRoutes from './routes/devices.js';
+import adminRoutes from './routes/admin.js';
 
 async function buildServer() {
   const app = Fastify({
@@ -125,6 +126,7 @@ async function buildServer() {
   await app.register(auditRoutes,  { prefix: '/api/v1/audit' });
   await app.register(pushRoutes,   { prefix: '/api/v1/push' });
   await app.register(deviceRoutes, { prefix: '/api/v1/auth/devices' });
+  await app.register(adminRoutes,  { prefix: '/api/v1/admin' });
 
   return app;
 }

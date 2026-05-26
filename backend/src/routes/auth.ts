@@ -100,14 +100,17 @@ const authRoutes: FastifyPluginAsync = async (app) => {
     }
 
     const result = await tx(async (client) => {
+      const countResult = await client.query('SELECT count(*)::int AS n FROM users');
+      const isFirstUser = countResult.rows[0].n === 0;
+
       const u = await client.query(
         `INSERT INTO users (
           username, email_hash, kdf_salt, kdf_ops_limit, kdf_mem_limit,
           opaque_record,
           identity_public_key, identity_private_key_wrapped, identity_private_key_nonce,
           exchange_public_key, exchange_private_key_wrapped, exchange_private_key_nonce,
-          recovery_public_key, recovery_enabled
-         ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
+          recovery_public_key, recovery_enabled, is_admin
+         ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
          RETURNING id`,
         [
           body.username,
@@ -124,6 +127,7 @@ const authRoutes: FastifyPluginAsync = async (app) => {
           fromB64(body.exchangePrivateKeyNonce),
           body.recoveryPublicKey ? fromB64(body.recoveryPublicKey) : null,
           !!body.recoveryPublicKey,
+          isFirstUser,
         ],
       );
       const userId = u.rows[0].id as string;
@@ -293,6 +297,13 @@ const authRoutes: FastifyPluginAsync = async (app) => {
 
     const { plain, hash } = newRefreshToken();
     const expires = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+    if (deviceId) {
+      await db.query(
+        `UPDATE sessions SET revoked_at = now()
+         WHERE user_id = $1 AND device_id = $2 AND revoked_at IS NULL`,
+        [row.id, deviceId],
+      );
+    }
     await db.query(
       `INSERT INTO sessions (user_id, device_id, refresh_token_hash, ip_address_hash, expires_at)
        VALUES ($1,$2,$3,$4,$5)`,
@@ -357,7 +368,7 @@ const authRoutes: FastifyPluginAsync = async (app) => {
   app.get('/me', { onRequest: [app.authenticate] }, async (req, reply) => {
     const r = await db.query(
       `SELECT id, username, storage_quota_bytes, storage_used_bytes,
-              identity_public_key, exchange_public_key
+              identity_public_key, exchange_public_key, is_admin
        FROM users WHERE id = $1`,
       [req.user.sub],
     );
@@ -366,6 +377,7 @@ const authRoutes: FastifyPluginAsync = async (app) => {
     return reply.send({
       id: u.id,
       username: u.username,
+      isAdmin: u.is_admin,
       storageQuotaBytes: Number(u.storage_quota_bytes),
       storageUsedBytes: Number(u.storage_used_bytes),
       identityPublicKey: toB64(u.identity_public_key),
