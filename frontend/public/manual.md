@@ -139,7 +139,7 @@ En **Configuración > Dispositivos** puedes ver tu sesión actual y revocar sesi
 
 ### Plan gratuito
 
-Cada cuenta incluye 10 GB de almacenamiento cifrado.
+Cada cuenta incluye 2 GB de almacenamiento cifrado. Puedes ampliar tu cuota desde los planes de pago.
 
 ### Uso
 

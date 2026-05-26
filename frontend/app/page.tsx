@@ -54,7 +54,7 @@ export default function LandingPage() {
           <div className="flex items-center justify-center gap-3 flex-wrap">
             <Link href="/signup">
               <Button variant="primary" size="lg" rightIcon={<ArrowRight className="size-4" />}>
-                Empezar gratis · 10 GB
+                Empezar gratis · 2 GB
               </Button>
             </Link>
             <Link href="/login">

@@ -38,7 +38,7 @@ CREATE TABLE users (
     recovery_private_keys_nonce   BYTEA,
 
     -- Cuota
-    storage_quota_bytes  BIGINT NOT NULL DEFAULT 10737418240,
+    storage_quota_bytes  BIGINT NOT NULL DEFAULT 2147483648,
     storage_used_bytes   BIGINT NOT NULL DEFAULT 0,
 
     created_at           TIMESTAMPTZ NOT NULL DEFAULT now(),
