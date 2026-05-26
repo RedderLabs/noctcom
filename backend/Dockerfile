@@ -1,6 +1,6 @@
 FROM node:22-alpine AS deps
 WORKDIR /app
-COPY package.json package-lock.json ./
+COPY package.json package-lock.json .npmrc ./
 RUN apk add --no-cache python3 make g++ \
  && npm ci
 
@@ -13,7 +13,7 @@ RUN npx tsc -p tsconfig.json
 
 FROM node:22-alpine AS prod-deps
 WORKDIR /app
-COPY package.json package-lock.json ./
+COPY package.json package-lock.json .npmrc ./
 RUN apk add --no-cache python3 make g++ \
  && npm ci --omit=dev
 
