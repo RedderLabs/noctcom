@@ -3,9 +3,11 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { useEffect } from 'react';
+import { loadTokens } from '@/lib/api';
 
 export default function AuthLayout({ children }: { children: ReactNode }) {
   useEffect(() => {
+    loadTokens();
     const observer = new MutationObserver((mutations) => {
       for (const m of mutations) {
         m.addedNodes.forEach((node) => {
