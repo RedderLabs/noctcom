@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import {
   Shield, KeyRound, Monitor, Lock, HardDrive,
   AlertTriangle, Fingerprint, Smartphone, Usb, Plus, Power, Trash2, Disc,
+  Download, Upload, Loader2,
 } from 'lucide-react';
 import { FormatDiskModal } from '@/components/vault/FormatDiskModal';
 import { toast } from 'sonner';
@@ -596,6 +597,9 @@ export default function SettingsPage() {
         onFormatted={() => { fetchDisks(); fetchVolumes(); }}
       />
 
+      {/* Export / Import */}
+      <ExportImportSection />
+
       {/* Danger zone */}
       <section>
         <div className="flex items-center gap-2 mb-4">
@@ -619,5 +623,225 @@ export default function SettingsPage() {
         </div>
       </section>
     </div>
+  );
+}
+
+// ─── Export / Import Section ─────────────────────────────────────
+
+function ExportImportSection() {
+  const [exporting, setExporting] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [importPhase, setImportPhase] = useState('');
+  const [importPct, setImportPct] = useState(0);
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [importPassword, setImportPassword] = useState('');
+  const [vaultName, setVaultName] = useState<string | null>(null);
+  const [passwordValidated, setPasswordValidated] = useState(false);
+  const [validatingPw, setValidatingPw] = useState(false);
+  const [vaultKeyRef, setVaultKeyRef] = useState<Uint8Array | null>(null);
+
+  const { currentVaultId } = useVault();
+
+  const handleExport = async () => {
+    if (!currentVaultId) return;
+    setExporting(true);
+    try {
+      const { exportVault } = await import('@/lib/vault-export');
+      await exportVault(currentVaultId);
+      toast.success('Bóveda exportada');
+    } catch (err: any) {
+      toast.error(`Error al exportar: ${err.message}`);
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (f) {
+      setImportFile(f);
+      setPasswordValidated(false);
+      setVaultName(null);
+      setImportPassword('');
+      setVaultKeyRef(null);
+    }
+  };
+
+  const handleValidatePassword = async () => {
+    if (!importFile || !importPassword) return;
+    setValidatingPw(true);
+    try {
+      const { parseManifest, validateExportPassword } = await import('@/lib/vault-export');
+      const manifest = await parseManifest(importFile);
+      const { vaultName: name, vaultKey } = await validateExportPassword(manifest, importPassword);
+      setVaultName(name);
+      setVaultKeyRef(vaultKey);
+      setPasswordValidated(true);
+    } catch (err: any) {
+      if (err.message === 'wrong_password') {
+        toast.error('Contraseña incorrecta');
+      } else {
+        toast.error(`Error: ${err.message}`);
+      }
+    } finally {
+      setValidatingPw(false);
+    }
+  };
+
+  const handleImport = async () => {
+    if (!importFile || !vaultKeyRef) return;
+    setImporting(true);
+    try {
+      const { importVault } = await import('@/lib/vault-export');
+      await importVault(importFile, vaultKeyRef, (phase, pct) => {
+        setImportPhase(phase);
+        setImportPct(pct);
+      });
+      toast.success('Bóveda importada correctamente');
+      setImportFile(null);
+      setImportPassword('');
+      setPasswordValidated(false);
+      setVaultName(null);
+      setVaultKeyRef(null);
+      useVault.getState().init();
+    } catch (err: any) {
+      toast.error(`Error al importar: ${err.message}`);
+    } finally {
+      setImporting(false);
+      setImportPhase('');
+      setImportPct(0);
+    }
+  };
+
+  const phaseLabel: Record<string, string> = {
+    parsing: 'Leyendo archivo...',
+    validating: 'Validando...',
+    rewrapping: 'Re-cifrando claves...',
+    uploading: 'Subiendo archivos...',
+    done: 'Completado',
+  };
+
+  return (
+    <section>
+      <div className="flex items-center gap-2 mb-4">
+        <Download className="size-4 text-violet-300" />
+        <h2 className="text-sm font-semibold uppercase tracking-wider text-[var(--color-text-secondary)]">
+          Exportar / Importar bóveda
+        </h2>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        {/* Export */}
+        <div className="p-5 rounded-xl border border-[var(--color-border-faint)] bg-[var(--color-bg-surface)]">
+          <div className="flex items-center gap-2 mb-2">
+            <Download className="size-4 text-emerald-300" />
+            <h3 className="text-sm font-medium">Exportar</h3>
+          </div>
+          <p className="text-xs text-[var(--color-text-tertiary)] mb-4">
+            Descarga toda tu bóveda como un archivo <code className="text-[10px] bg-[var(--color-bg-surface-2)] px-1 py-0.5 rounded">.noctcom</code> cifrado.
+            Puedes importarlo en cualquier instancia de Noctcom.
+          </p>
+          <Button
+            variant="outline"
+            size="sm"
+            leftIcon={exporting ? <Loader2 className="size-3.5 animate-spin" /> : <Download className="size-3.5" />}
+            onClick={handleExport}
+            disabled={exporting || !currentVaultId}
+          >
+            {exporting ? 'Exportando...' : 'Exportar bóveda'}
+          </Button>
+        </div>
+
+        {/* Import */}
+        <div className="p-5 rounded-xl border border-[var(--color-border-faint)] bg-[var(--color-bg-surface)]">
+          <div className="flex items-center gap-2 mb-2">
+            <Upload className="size-4 text-violet-300" />
+            <h3 className="text-sm font-medium">Importar</h3>
+          </div>
+          <p className="text-xs text-[var(--color-text-tertiary)] mb-4">
+            Importa un archivo <code className="text-[10px] bg-[var(--color-bg-surface-2)] px-1 py-0.5 rounded">.noctcom</code> exportado desde otra instancia.
+          </p>
+
+          <div className="space-y-3">
+            <label className="block">
+              <span className="text-xs text-[var(--color-text-tertiary)]">Archivo .noctcom</span>
+              <input
+                type="file"
+                accept=".noctcom"
+                onChange={handleFileSelect}
+                disabled={importing}
+                className="mt-1 block w-full text-xs text-[var(--color-text-secondary)]
+                           file:mr-3 file:px-3 file:py-1.5 file:rounded-md file:border-0
+                           file:text-xs file:font-medium file:bg-violet-500/10 file:text-violet-300
+                           hover:file:bg-violet-500/20 file:cursor-pointer file:transition-colors"
+              />
+            </label>
+
+            {importFile && !passwordValidated && (
+              <>
+                <label className="block">
+                  <span className="text-xs text-[var(--color-text-tertiary)]">Contraseña de la cuenta origen</span>
+                  <input
+                    type="password"
+                    value={importPassword}
+                    onChange={(e) => setImportPassword(e.target.value)}
+                    placeholder="Contraseña usada al exportar"
+                    className="mt-1 w-full px-3 py-2 rounded-lg border border-[var(--color-border-faint)]
+                               bg-[var(--color-bg-deep)] text-sm text-[var(--color-text-primary)]
+                               placeholder:text-[var(--color-text-muted)]
+                               focus:outline-none focus:border-violet-500/50"
+                    onKeyDown={(e) => e.key === 'Enter' && handleValidatePassword()}
+                  />
+                </label>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  leftIcon={validatingPw ? <Loader2 className="size-3.5 animate-spin" /> : <Lock className="size-3.5" />}
+                  onClick={handleValidatePassword}
+                  disabled={!importPassword || validatingPw}
+                >
+                  {validatingPw ? 'Verificando...' : 'Verificar contraseña'}
+                </Button>
+              </>
+            )}
+
+            {passwordValidated && vaultName && (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+                  <Shield className="size-3.5 text-emerald-300" />
+                  <span className="text-xs text-emerald-300">
+                    Bóveda: <strong>{vaultName}</strong>
+                  </span>
+                </div>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  leftIcon={importing ? <Loader2 className="size-3.5 animate-spin" /> : <Upload className="size-3.5" />}
+                  onClick={handleImport}
+                  disabled={importing}
+                >
+                  {importing ? 'Importando...' : 'Importar bóveda'}
+                </Button>
+              </div>
+            )}
+
+            {importing && importPhase && (
+              <div className="space-y-1.5">
+                <div className="flex justify-between text-[10px] text-[var(--color-text-tertiary)]">
+                  <span>{phaseLabel[importPhase] ?? importPhase}</span>
+                  <span>{importPct}%</span>
+                </div>
+                <div className="h-1.5 rounded-full bg-[var(--color-bg-deep)] overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-violet-500 transition-all duration-300"
+                    style={{ width: `${importPct}%` }}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </section>
   );
 }

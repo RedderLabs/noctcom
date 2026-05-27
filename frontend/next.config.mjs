@@ -28,14 +28,14 @@ const nextConfig = {
             value: [
               "default-src 'self'",
               isDev
-                ? "script-src 'self' 'unsafe-eval' 'unsafe-inline' 'wasm-unsafe-eval' https://www.gstatic.com"
-                : "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://www.gstatic.com https://static.cloudflareinsights.com https://challenges.cloudflare.com",
+                ? "script-src 'self' 'unsafe-eval' 'unsafe-inline' 'wasm-unsafe-eval' https://www.gstatic.com https://www.googletagmanager.com"
+                : "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://www.gstatic.com https://static.cloudflareinsights.com https://challenges.cloudflare.com https://www.googletagmanager.com https://www.google-analytics.com",
               "style-src 'self' 'unsafe-inline'",
-              "img-src 'self' data: blob:",
+              "img-src 'self' data: blob: https://www.googletagmanager.com https://www.google-analytics.com",
               "media-src 'self' blob:",
               "frame-src blob:",
               "object-src blob:",
-              `connect-src 'self' ${isDev ? 'http://localhost:3000 ws://localhost:3000 ws://localhost:3001' : 'https://api.noctcom.com wss://api.noctcom.com'} https://*.googleapis.com https://*.firebaseio.com https://fcmregistrations.googleapis.com https://cloudflareinsights.com`,
+              `connect-src 'self' ${isDev ? 'http://localhost:3000 ws://localhost:3000 ws://localhost:3001' : 'https://api.noctcom.com wss://api.noctcom.com'} https://*.googleapis.com https://*.firebaseio.com https://fcmregistrations.googleapis.com https://cloudflareinsights.com https://www.googletagmanager.com https://www.google-analytics.com https://analytics.google.com`,
               "frame-ancestors 'none'",
               "form-action 'self'",
               "base-uri 'self'",
