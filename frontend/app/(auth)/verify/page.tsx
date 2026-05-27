@@ -11,6 +11,7 @@ import { apiFetch } from '@/lib/api';
 export default function VerifyPage() {
   const router = useRouter();
   const [code, setCode] = useState('');
+  const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
   const [verified, setVerified] = useState(false);
@@ -90,14 +91,31 @@ export default function VerifyPage() {
         </Button>
       </form>
 
-      <div className="text-center space-y-2">
+      <div className="space-y-3 text-center">
+        <input
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="tu@email.com"
+          className="w-full px-3 py-2 rounded-lg border border-[var(--color-border-faint)]
+                     bg-[var(--color-bg-deep)] text-sm text-[var(--color-text-primary)]
+                     placeholder:text-[var(--color-text-muted)] text-center
+                     focus:outline-none focus:border-violet-500/50"
+        />
         <button
           type="button"
-          disabled={resending}
+          disabled={resending || !email}
           onClick={async () => {
             setResending(true);
             try {
-              await apiFetch('/api/v1/auth/resend-verification', { method: 'POST', body: '{}' });
+              if (!email) {
+                toast.error('Introduce tu email para reenviar el código');
+                return;
+              }
+              await apiFetch('/api/v1/auth/resend-verification', {
+                method: 'POST',
+                body: JSON.stringify({ email }),
+              });
               toast.success('Código reenviado — revisa tu email');
             } catch (err: any) {
               toast.error(err.message ?? 'Error al reenviar');
