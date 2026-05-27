@@ -90,7 +90,11 @@ async function buildServer() {
 
   await app.register(cors, {
     origin: env.NODE_ENV === 'production'
-      ? [env.FRONTEND_URL ?? env.PUBLIC_URL]
+      ? [
+          env.FRONTEND_URL ?? 'https://noctcom.com',
+          'https://www.noctcom.com',
+          env.PUBLIC_URL,
+        ].filter(Boolean)
       : true,
     credentials: true,
   });

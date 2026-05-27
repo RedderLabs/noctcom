@@ -268,7 +268,7 @@ export default function SignupPage() {
             onChange={(e) => setUsername(sanitizeUsername(e.target.value))}
             leftIcon={<User className="size-4" />}
             placeholder="alex"
-            pattern="[a-zA-Z0-9_\\.\\-]{3,64}"
+            pattern="[a-zA-Z0-9_.\-]{3,64}"
             maxLength={64}
             required
             autoFocus
