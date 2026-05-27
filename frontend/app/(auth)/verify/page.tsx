@@ -97,7 +97,7 @@ export default function VerifyPage() {
           onClick={async () => {
             setResending(true);
             try {
-              await apiFetch('/api/v1/auth/resend-verification', { method: 'POST' });
+              await apiFetch('/api/v1/auth/resend-verification', { method: 'POST', body: '{}' });
               toast.success('Código reenviado — revisa tu email');
             } catch (err: any) {
               toast.error(err.message ?? 'Error al reenviar');
