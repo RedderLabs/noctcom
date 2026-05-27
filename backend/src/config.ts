@@ -24,7 +24,7 @@ const envSchema = z.object({
   SMTP_FROM: z.string().default('noreply@noctcom.app'),
 
   MAX_UPLOAD_BYTES: z.coerce.number().default(5 * 1024 * 1024 * 1024),
-  USER_QUOTA_BYTES: z.coerce.number().default(10 * 1024 * 1024 * 1024),
+  USER_QUOTA_BYTES: z.coerce.number().default(1 * 1024 * 1024 * 1024),
 });
 
 export const env = envSchema.parse(process.env);
