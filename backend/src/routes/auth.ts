@@ -423,6 +423,30 @@ const authRoutes: FastifyPluginAsync = async (app) => {
     return reply.send({ ok: true });
   });
 
+  // ─── POST /resend-verification ─ reenviar código ──────────
+  app.post('/resend-verification', { onRequest: [app.authenticate] }, async (req, reply) => {
+    const userId = req.user.sub;
+    const r = await db.query(
+      `SELECT email, email_verified FROM users WHERE id = $1`,
+      [userId],
+    );
+    if (r.rowCount === 0) return reply.notFound();
+    if (r.rows[0].email_verified) return reply.send({ ok: true, alreadyVerified: true });
+
+    const email = r.rows[0].email;
+    if (!email) return reply.badRequest('no email on account');
+
+    const code = String(Math.floor(100000 + Math.random() * 900000));
+    const codeHash = createHash('blake2b512').update(code).digest().subarray(0, 32);
+    const expires = new Date(Date.now() + 30 * 60 * 1000);
+    await db.query(
+      `UPDATE users SET verification_code_hash = $1, verification_code_expires = $2 WHERE id = $3`,
+      [codeHash, expires, userId],
+    );
+    await sendVerificationEmail(email, code);
+    return reply.send({ ok: true });
+  });
+
   // ─── GET /users/lookup/:username ─ búsqueda para compartir ─
   app.get<{ Params: { username: string } }>(
     '/users/lookup/:username',

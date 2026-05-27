@@ -12,6 +12,7 @@ export default function VerifyPage() {
   const router = useRouter();
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
+  const [resending, setResending] = useState(false);
   const [verified, setVerified] = useState(false);
 
   async function handleVerify(e: React.FormEvent) {
@@ -89,7 +90,26 @@ export default function VerifyPage() {
         </Button>
       </form>
 
-      <div className="text-center">
+      <div className="text-center space-y-2">
+        <button
+          type="button"
+          disabled={resending}
+          onClick={async () => {
+            setResending(true);
+            try {
+              await apiFetch('/api/v1/auth/resend-verification', { method: 'POST' });
+              toast.success('Código reenviado — revisa tu email');
+            } catch (err: any) {
+              toast.error(err.message ?? 'Error al reenviar');
+            } finally {
+              setResending(false);
+            }
+          }}
+          className="text-sm text-violet-400 hover:text-violet-300 transition-colors disabled:opacity-50"
+        >
+          {resending ? 'Enviando...' : 'Reenviar código'}
+        </button>
+        <br />
         <button
           type="button"
           onClick={() => router.push('/vault')}
