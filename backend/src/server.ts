@@ -4,6 +4,8 @@ import helmet from '@fastify/helmet';
 import jwt from '@fastify/jwt';
 import rateLimit from '@fastify/rate-limit';
 import sensible from '@fastify/sensible';
+import swagger from '@fastify/swagger';
+import swaggerUi from '@fastify/swagger-ui';
 import websocket from '@fastify/websocket';
 import { randomUUID } from 'node:crypto';
 
@@ -41,14 +43,43 @@ async function buildServer() {
     genReqId: (req) => (req.headers['x-request-id'] as string) ?? randomUUID(),
   });
 
+  // ─── API docs ───────────────────────────────────────────────
+  await app.register(swagger, {
+    openapi: {
+      info: {
+        title: 'Noctcom API',
+        description: 'End-to-end encrypted vault storage API',
+        version: '1.0.0',
+      },
+      servers: [
+        { url: 'https://api.noctcom.com', description: 'Production' },
+        { url: 'http://localhost:4000', description: 'Local' },
+      ],
+      components: {
+        securitySchemes: {
+          bearerAuth: {
+            type: 'http',
+            scheme: 'bearer',
+            bearerFormat: 'JWT',
+          },
+        },
+      },
+    },
+  });
+
+  await app.register(swaggerUi, {
+    routePrefix: '/docs',
+    uiConfig: { docExpansion: 'list', deepLinking: true },
+  });
+
   // ─── Security plugins ──────────────────────────────────────
   await app.register(helmet, {
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
-        scriptSrc: ["'self'", "'wasm-unsafe-eval'"],   // libsodium WASM
+        scriptSrc: ["'self'", "'unsafe-inline'", "'wasm-unsafe-eval'"],
         styleSrc: ["'self'", "'unsafe-inline'"],
-        imgSrc: ["'self'", 'data:', 'blob:'],
+        imgSrc: ["'self'", 'data:', 'blob:', 'https://fastify.dev'],
         connectSrc: ["'self'"],
         frameAncestors: ["'none'"],
       },
