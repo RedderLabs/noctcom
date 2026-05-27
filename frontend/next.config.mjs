@@ -35,7 +35,7 @@ const nextConfig = {
               "media-src 'self' blob:",
               "frame-src blob:",
               "object-src blob:",
-              `connect-src 'self' ${isDev ? 'http://localhost:3000 ws://localhost:3000 ws://localhost:3001' : 'https://noctcom.com wss://noctcom.com'} https://*.googleapis.com https://*.firebaseio.com https://fcmregistrations.googleapis.com https://cloudflareinsights.com`,
+              `connect-src 'self' ${isDev ? 'http://localhost:3000 ws://localhost:3000 ws://localhost:3001' : 'https://api.noctcom.com wss://api.noctcom.com'} https://*.googleapis.com https://*.firebaseio.com https://fcmregistrations.googleapis.com https://cloudflareinsights.com`,
               "frame-ancestors 'none'",
               "form-action 'self'",
               "base-uri 'self'",
