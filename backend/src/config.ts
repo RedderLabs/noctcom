@@ -17,11 +17,12 @@ const envSchema = z.object({
   PUBLIC_URL: z.string().url(),
   FRONTEND_URL: z.string().url().optional(),
 
+  RESEND_API_KEY: z.string().min(1).optional().or(z.literal('')),
   SMTP_HOST: z.string().min(1).optional().or(z.literal('')),
   SMTP_PORT: z.coerce.number().default(2525),
   SMTP_USER: z.string().min(1).optional().or(z.literal('')),
   SMTP_PASS: z.string().min(1).optional().or(z.literal('')),
-  SMTP_FROM: z.string().default('noreply@noctcom.app'),
+  SMTP_FROM: z.string().default('noreply@noctcom.com'),
 
   MAX_UPLOAD_BYTES: z.coerce.number().default(5 * 1024 * 1024 * 1024),
   USER_QUOTA_BYTES: z.coerce.number().default(1 * 1024 * 1024 * 1024),

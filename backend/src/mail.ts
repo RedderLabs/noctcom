@@ -1,29 +1,72 @@
 import { createTransport, type Transporter } from 'nodemailer';
 import { env } from './config.js';
 
-let transporter: Transporter;
+let transporter: Transporter | null = null;
+let resendApiKey: string | null = null;
+let fromAddress: string;
 
 export function initMail() {
-  transporter = createTransport({
-    host: env.SMTP_HOST,
-    port: env.SMTP_PORT,
-    secure: env.SMTP_PORT === 465,
-    auth: {
-      user: env.SMTP_USER,
-      pass: env.SMTP_PASS,
-    },
-  });
+  fromAddress = env.SMTP_FROM;
+  resendApiKey = env.RESEND_API_KEY ?? null;
+
+  if (!resendApiKey && env.SMTP_HOST) {
+    transporter = createTransport({
+      host: env.SMTP_HOST,
+      port: env.SMTP_PORT,
+      secure: env.SMTP_PORT === 465,
+      auth: {
+        user: env.SMTP_USER,
+        pass: env.SMTP_PASS,
+      },
+    });
+  }
+}
+
+async function sendEmail(to: string, subject: string, text: string, html: string) {
+  if (resendApiKey) {
+    const resp = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${resendApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: `Noctcom <${fromAddress}>`,
+        to: [to],
+        subject,
+        text,
+        html,
+      }),
+    });
+    if (!resp.ok) {
+      const body = await resp.text();
+      throw new Error(`Resend error ${resp.status}: ${body}`);
+    }
+    return;
+  }
+
+  if (transporter) {
+    await transporter.sendMail({
+      from: `"Noctcom" <${fromAddress}>`,
+      to,
+      subject,
+      text,
+      html,
+    });
+    return;
+  }
+
+  console.warn('No email provider configured, skipping email to', to);
 }
 
 export async function sendVerificationEmail(to: string, code: string) {
   const verifyUrl = `${env.FRONTEND_URL ?? env.PUBLIC_URL}/verify?code=${code}`;
 
-  await transporter.sendMail({
-    from: `"Noctcom" <${env.SMTP_FROM}>`,
+  await sendEmail(
     to,
-    subject: 'Verifica tu cuenta — Noctcom',
-    text: `Tu código de verificación es: ${code}\n\nO abre este enlace: ${verifyUrl}\n\nSi no creaste esta cuenta, ignora este mensaje.`,
-    html: `
+    'Verifica tu cuenta — Noctcom',
+    `Tu código de verificación es: ${code}\n\nO abre este enlace: ${verifyUrl}\n\nSi no creaste esta cuenta, ignora este mensaje.`,
+    `
       <div style="font-family: system-ui, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px; background: #0f0f17; color: #ededf3; border-radius: 12px;">
         <h2 style="color: #a78bfa; margin: 0 0 24px;">Noctcom</h2>
         <p style="margin: 0 0 16px; color: #a0a0b8;">Tu código de verificación:</p>
@@ -34,18 +77,17 @@ export async function sendVerificationEmail(to: string, code: string) {
         <p style="margin: 24px 0 0; font-size: 12px; color: #6b6b85;">Si no creaste esta cuenta, ignora este mensaje.</p>
       </div>
     `,
-  });
+  );
 }
 
 export async function sendPasswordResetEmail(to: string, code: string) {
   const resetUrl = `${env.FRONTEND_URL ?? env.PUBLIC_URL}/recovery?code=${code}`;
 
-  await transporter.sendMail({
-    from: `"Noctcom" <${env.SMTP_FROM}>`,
+  await sendEmail(
     to,
-    subject: 'Recuperación de cuenta — Noctcom',
-    text: `Código de recuperación: ${code}\n\nEnlace: ${resetUrl}\n\nExpira en 15 minutos. Si no solicitaste esto, ignora este mensaje.`,
-    html: `
+    'Recuperación de cuenta — Noctcom',
+    `Código de recuperación: ${code}\n\nEnlace: ${resetUrl}\n\nExpira en 15 minutos. Si no solicitaste esto, ignora este mensaje.`,
+    `
       <div style="font-family: system-ui, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px; background: #0f0f17; color: #ededf3; border-radius: 12px;">
         <h2 style="color: #a78bfa; margin: 0 0 24px;">Noctcom</h2>
         <p style="margin: 0 0 16px; color: #a0a0b8;">Código de recuperación (expira en 15 min):</p>
@@ -56,5 +98,5 @@ export async function sendPasswordResetEmail(to: string, code: string) {
         <p style="margin: 24px 0 0; font-size: 12px; color: #6b6b85;">Si no solicitaste esto, ignora este mensaje.</p>
       </div>
     `,
-  });
+  );
 }
