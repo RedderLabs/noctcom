@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Mail, Lock, KeyRound, Fingerprint, ArrowRight, Shield } from 'lucide-react';
+import { Mail, Lock, Fingerprint, ArrowRight, Shield } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -14,17 +14,12 @@ import {
   decrypt, sign, deriveSubKey, wipe, encryptString, encrypt,
 } from '@/lib/crypto';
 
-type Step = 'credentials' | 'totp' | 'passkey';
-
 export default function LoginPage() {
   const router = useRouter();
   const setIdentity = useAuth((s) => s.setIdentity);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [totpCode, setTotpCode] = useState('');
-  const [step, setStep] = useState<Step>('credentials');
   const [loading, setLoading] = useState(false);
-  const [partial, setPartial] = useState<any>(null);
 
   useEffect(() => { initCrypto(); }, []);
 
@@ -69,7 +64,6 @@ export default function LoginPage() {
         exchangePrivateKeyWrapped: string;
         exchangePrivateKeyNonce: string;
         exchangePublicKey: string;
-        totpRequired?: boolean;
       }>('/api/v1/auth/login/finalize', {
         method: 'POST',
         body: JSON.stringify({
@@ -128,13 +122,6 @@ export default function LoginPage() {
         exchangePublicKey: fromB64(finalize.exchangePublicKey),
       };
 
-      if (finalize.totpRequired) {
-        setPartial({ ...sessionData, accessToken, refreshToken: finalize.refreshToken });
-        setStep('totp');
-        setLoading(false);
-        return;
-      }
-
       setTokens(accessToken, finalize.refreshToken);
       setIdentity(sessionData);
       wipe(challenge, signingKeySeed);
@@ -145,44 +132,18 @@ export default function LoginPage() {
     }
   }
 
-  async function handleTotp(e: React.FormEvent) {
-    e.preventDefault();
-    setLoading(true);
-    try {
-      // El 2º factor lo verifica el servidor con su propia clave; aquí solo
-      // enviamos el código (TOTP o de respaldo). No se deriva ni se envía
-      // ninguna clave a partir de la Master Key.
-      await apiFetch('/api/v1/2fa/totp/verify', {
-        method: 'POST',
-        body: JSON.stringify({
-          userId: partial.userId,
-          code: totpCode,
-        }),
-        skipAuth: true,
-      });
-
-      setTokens(partial.accessToken, partial.refreshToken);
-      setIdentity(partial);
-      router.push('/vault');
-    } catch (err: any) {
-      toast.error('Código incorrecto');
-      setLoading(false);
-    }
-  }
-
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="text-center space-y-2">
         <h1 className="font-display text-3xl font-light tracking-tight">
-          {step === 'credentials' ? 'Bienvenido de nuevo' : 'Verificación 2FA'}
+          Bienvenido de nuevo
         </h1>
         <p className="text-sm text-[var(--color-text-secondary)]">
-          {step === 'credentials' ? 'Desbloquea tu bóveda' : 'Ingresa el código de tu app autenticadora'}
+          Desbloquea tu bóveda
         </p>
       </div>
 
-      {step === 'credentials' && (
-        <form onSubmit={handleCredentials} className="space-y-4">
+      <form onSubmit={handleCredentials} className="space-y-4">
           <Input
             label="Correo electrónico"
             type="email"
@@ -235,35 +196,6 @@ export default function LoginPage() {
             Iniciar con Passkey
           </Button>
         </form>
-      )}
-
-      {step === 'totp' && (
-        <form onSubmit={handleTotp} className="space-y-4">
-          <Input
-            label="Código de 6 dígitos"
-            type="text"
-            inputMode="numeric"
-            pattern="[0-9]{6}"
-            maxLength={6}
-            value={totpCode}
-            onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, ''))}
-            leftIcon={<KeyRound className="size-4" />}
-            placeholder="000000"
-            className="text-center font-mono text-lg tracking-[0.5em]"
-            required
-            autoFocus
-          />
-          <Button
-            type="submit"
-            variant="primary"
-            size="lg"
-            className="w-full"
-            loading={loading}
-          >
-            Verificar
-          </Button>
-        </form>
-      )}
 
       <div className="text-center space-y-2 text-sm">
         <Link href="/recovery" className="text-violet-300 hover:text-violet-200 transition-colors">

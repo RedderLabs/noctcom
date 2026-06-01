@@ -375,7 +375,7 @@ const authRoutes: FastifyPluginAsync = async (app) => {
   app.get('/me', { onRequest: [app.authenticate] }, async (req, reply) => {
     const r = await db.query(
       `SELECT id, username, storage_quota_bytes, storage_used_bytes,
-              identity_public_key, exchange_public_key, is_admin, totp_enabled
+              identity_public_key, exchange_public_key, is_admin
        FROM users WHERE id = $1`,
       [req.user.sub],
     );
@@ -385,7 +385,6 @@ const authRoutes: FastifyPluginAsync = async (app) => {
       id: u.id,
       username: u.username,
       isAdmin: u.is_admin,
-      totpEnabled: u.totp_enabled === true,
       storageQuotaBytes: Number(u.storage_quota_bytes),
       storageUsedBytes: Number(u.storage_used_bytes),
       identityPublicKey: toB64(u.identity_public_key),

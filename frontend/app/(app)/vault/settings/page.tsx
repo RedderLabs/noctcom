@@ -16,7 +16,6 @@ import { fromB64, decryptString } from '@/lib/crypto';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
-import { TwoFactorModal } from '@/components/vault/TwoFactorModal';
 
 const SOON = (
   <span className="text-[10px] font-mono uppercase tracking-wider text-[var(--color-text-muted)] px-2 py-1 rounded bg-[var(--color-bg-surface-2)] border border-[var(--color-border-faint)] whitespace-nowrap">
@@ -111,8 +110,6 @@ export default function SettingsPage() {
   const { storageUsed, storageQuota, reset: resetVault } = useVault();
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const [totpEnabled, setTotpEnabled] = useState(false);
-  const [twoFAOpen, setTwoFAOpen] = useState(false);
   const [devices, setDevices] = useState<DeviceView[]>([]);
   const [loadingDevices, setLoadingDevices] = useState(true);
   const [disks, setDisks] = useState<DiskInfo[]>([]);
@@ -149,14 +146,6 @@ export default function SettingsPage() {
 
   useEffect(() => { fetchDevices(); }, [fetchDevices]);
 
-  const fetchMe = useCallback(async () => {
-    try {
-      const me = await apiFetch<{ totpEnabled?: boolean }>('/api/v1/auth/me');
-      setTotpEnabled(me.totpEnabled === true);
-    } catch { /* ignore */ }
-  }, []);
-  useEffect(() => { fetchMe(); }, [fetchMe]);
-
   const fetchDisks = useCallback(async () => {
     try {
       const res = await apiFetch<{ disks: DiskInfo[] }>('/api/v1/storage/disks');
@@ -192,25 +181,6 @@ export default function SettingsPage() {
       title: 'Seguridad',
       icon: Shield,
       items: [
-        {
-          label: 'Autenticación de dos factores (TOTP)',
-          description: 'Requiere un código de 6 dígitos al iniciar sesión',
-          icon: KeyRound,
-          action: (
-            <div className="flex items-center gap-2 shrink-0">
-              {totpEnabled && (
-                <span className="text-[10px] font-mono uppercase tracking-wider text-emerald-400">Activo</span>
-              )}
-              <Button
-                variant={totpEnabled ? 'secondary' : 'outline'}
-                size="sm"
-                onClick={() => setTwoFAOpen(true)}
-              >
-                {totpEnabled ? 'Gestionar' : 'Activar'}
-              </Button>
-            </div>
-          ),
-        },
         {
           label: 'Passkeys (WebAuthn)',
           description: 'Usa tu huella digital o Face ID para autenticarte',
@@ -646,13 +616,6 @@ export default function SettingsPage() {
           </div>
         </div>
       </section>
-
-      <TwoFactorModal
-        open={twoFAOpen}
-        enabled={totpEnabled}
-        onClose={() => setTwoFAOpen(false)}
-        onChanged={fetchMe}
-      />
 
       <ConfirmDialog
         open={confirmDelete}
