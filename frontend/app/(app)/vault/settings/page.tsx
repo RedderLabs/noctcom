@@ -14,6 +14,14 @@ import { useVault } from '@/lib/vault-store';
 import { apiFetch } from '@/lib/api';
 import { fromB64, decryptString } from '@/lib/crypto';
 import { cn } from '@/lib/utils';
+import { useRouter } from 'next/navigation';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+
+const SOON = (
+  <span className="text-[10px] font-mono uppercase tracking-wider text-[var(--color-text-muted)] px-2 py-1 rounded bg-[var(--color-bg-surface-2)] border border-[var(--color-border-faint)] whitespace-nowrap">
+    Próximamente
+  </span>
+);
 
 function parseDeviceName(raw: string): { browser: string; os: string } {
   let browser = 'Navegador';
@@ -97,10 +105,11 @@ interface VolumeInfo {
 }
 
 export default function SettingsPage() {
-  const { username, masterKey } = useAuth();
-  const { storageUsed, storageQuota } = useVault();
-  const [totpEnabled, setTotpEnabled] = useState(false);
-  const [passkeysEnabled, setPasskeysEnabled] = useState(false);
+  const router = useRouter();
+  const { username, masterKey, logout } = useAuth();
+  const { storageUsed, storageQuota, reset: resetVault } = useVault();
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [devices, setDevices] = useState<DeviceView[]>([]);
   const [loadingDevices, setLoadingDevices] = useState(true);
   const [disks, setDisks] = useState<DiskInfo[]>([]);
@@ -153,6 +162,20 @@ export default function SettingsPage() {
 
   useEffect(() => { fetchDisks(); fetchVolumes(); }, [fetchDisks, fetchVolumes]);
 
+  async function handleDeleteAccount() {
+    setDeleting(true);
+    try {
+      await apiFetch('/api/v1/auth/me', { method: 'DELETE' });
+      resetVault();
+      logout();
+      router.replace('/');
+    } catch (err: any) {
+      toast.error(`No se pudo eliminar la cuenta: ${err.message}`);
+      setDeleting(false);
+      setConfirmDelete(false);
+    }
+  }
+
   const sections = [
     {
       title: 'Seguridad',
@@ -162,54 +185,25 @@ export default function SettingsPage() {
           label: 'Autenticación de dos factores (TOTP)',
           description: 'Requiere un código de 6 dígitos al iniciar sesión',
           icon: KeyRound,
-          action: (
-            <button
-              onClick={() => { setTotpEnabled(!totpEnabled); toast.success(totpEnabled ? '2FA desactivado' : '2FA activado'); }}
-              className={cn(
-                'relative w-11 h-6 rounded-full transition-colors',
-                totpEnabled ? 'bg-violet-600' : 'bg-[var(--color-bg-surface-3)]',
-              )}
-            >
-              <span className={cn(
-                'absolute top-0.5 left-0.5 size-5 bg-white rounded-full transition-transform',
-                totpEnabled && 'translate-x-5',
-              )} />
-            </button>
-          ),
-          status: totpEnabled ? 'Activo' : 'Inactivo',
-          statusColor: totpEnabled ? 'text-emerald-400' : 'text-[var(--color-text-muted)]',
+          action: SOON,
         },
         {
           label: 'Passkeys (WebAuthn)',
           description: 'Usa tu huella digital o Face ID para autenticarte',
           icon: Fingerprint,
-          action: (
-            <Button variant="outline" size="sm" onClick={() => toast.info('Registrando passkey…')}>
-              Configurar
-            </Button>
-          ),
-          status: passkeysEnabled ? '1 registrada' : 'Sin configurar',
-          statusColor: passkeysEnabled ? 'text-emerald-400' : 'text-[var(--color-text-muted)]',
+          action: SOON,
         },
         {
           label: 'Cambiar contraseña maestra',
           description: 'Re-cifra todas tus claves con una nueva contraseña',
           icon: Lock,
-          action: (
-            <Button variant="secondary" size="sm">
-              Cambiar
-            </Button>
-          ),
+          action: SOON,
         },
         {
           label: 'Frase de recuperación',
           description: 'Regenera o verifica tu frase de 12 palabras',
           icon: KeyRound,
-          action: (
-            <Button variant="secondary" size="sm">
-              Verificar
-            </Button>
-          ),
+          action: SOON,
         },
       ],
     },
@@ -244,11 +238,6 @@ export default function SettingsPage() {
               <div className="flex-1 min-w-0">
                 <h3 className="text-sm font-medium">{item.label}</h3>
                 <p className="text-xs text-[var(--color-text-tertiary)] mt-0.5">{item.description}</p>
-                {item.status && (
-                  <span className={cn('text-[10px] font-mono uppercase tracking-wider mt-1 block', item.statusColor)}>
-                    {item.status}
-                  </span>
-                )}
               </div>
               {item.action}
             </div>
@@ -584,9 +573,15 @@ export default function SettingsPage() {
         )}
 
         {disks.length === 0 && volumes.length === 0 && (
-          <p className="text-xs text-[var(--color-text-muted)] px-1">
-            No se detectaron discos externos. Conecta un USB o disco SATA.
-          </p>
+          <div className="p-3 rounded-lg bg-[var(--color-bg-surface)] border border-[var(--color-border-faint)] flex items-start gap-2">
+            <AlertTriangle className="size-4 text-amber-300 mt-0.5 shrink-0" />
+            <p className="text-xs text-[var(--color-text-tertiary)] leading-relaxed">
+              Usar discos físicos (USB/SATA) solo es posible cuando <strong className="text-[var(--color-text-secondary)]">alojas Noctcom tú mismo</strong>:
+              la detección ocurre en el servidor donde corre la API. En la versión en la nube
+              (noctcom.com) el servidor no puede ver los discos de tu ordenador. Conéctalos en tu
+              propia instancia self-hosted y aparecerán aquí.
+            </p>
+          </div>
         )}
       </section>
 
@@ -616,12 +611,28 @@ export default function SettingsPage() {
                 Elimina permanentemente tu cuenta y todos tus archivos. Esta acción es irreversible.
               </p>
             </div>
-            <Button variant="danger" size="sm">
+            <Button
+              variant="danger"
+              size="sm"
+              loading={deleting}
+              onClick={() => setConfirmDelete(true)}
+            >
               Eliminar
             </Button>
           </div>
         </div>
       </section>
+
+      <ConfirmDialog
+        open={confirmDelete}
+        danger
+        title="¿Eliminar tu cuenta?"
+        message="Se borrarán para siempre tu cuenta, todas tus bóvedas y todos tus archivos cifrados. No hay forma de recuperarlos. Esta acción es irreversible."
+        confirmLabel="Eliminar mi cuenta"
+        cancelLabel="Cancelar"
+        onConfirm={handleDeleteAccount}
+        onCancel={() => setConfirmDelete(false)}
+      />
     </div>
   );
 }

@@ -3,6 +3,8 @@ import { z } from 'zod';
 import { randomBytes, createHash, timingSafeEqual } from 'node:crypto';
 import { db, tx } from '../db/pool.js';
 import { sendVerificationEmail } from '../mail.js';
+import { deleteBlob } from '../storage/s3.js';
+import { deleteFromDisk } from '../storage/disk.js';
 
 // ─────────────────────────────────────────────────────────────────
 // Schemas
@@ -467,6 +469,36 @@ const authRoutes: FastifyPluginAsync = async (app) => {
       });
     },
   );
+
+  // ─── DELETE /me ─ eliminar la cuenta y todo su contenido ──────────
+  // Borra los blobs del almacenamiento; el resto (vaults, nodes, versions,
+  // chunks, devices, sessions, shares…) cae en cascada al borrar el usuario.
+  app.delete('/me', { onRequest: [app.authenticate] }, async (req, reply) => {
+    const userId = req.user.sub;
+
+    const chunks = await db.query(
+      `SELECT c.s3_key, c.storage_type, c.volume_id
+       FROM chunks c
+       JOIN file_versions fv ON fv.id = c.version_id
+       JOIN nodes n ON n.id = fv.node_id
+       JOIN vaults v ON v.id = n.vault_id
+       WHERE v.owner_id = $1`,
+      [userId],
+    );
+    for (const c of chunks.rows) {
+      try {
+        if (c.storage_type === 'disk' && c.volume_id) {
+          const vol = await db.query(`SELECT path FROM storage_volumes WHERE id = $1`, [c.volume_id]);
+          if (vol.rows[0]) await deleteFromDisk(vol.rows[0].path, c.s3_key);
+        } else {
+          await deleteBlob(c.s3_key);
+        }
+      } catch { /* ignore cleanup errors */ }
+    }
+
+    await db.query(`DELETE FROM users WHERE id = $1`, [userId]);
+    return reply.send({ ok: true });
+  });
 };
 
 export default authRoutes;
