@@ -3,10 +3,12 @@
 import { useState, useEffect } from 'react';
 import {
   FileText, File, Image, Video, Music, Archive, FileCode,
-  Clock, Download, Star, Loader2,
+  Clock, Download, Star, Loader2, Share2, Trash2, Eye,
 } from 'lucide-react';
 import { useVault, type DecryptedNode } from '@/lib/vault-store';
-import { cn } from '@/lib/utils';
+import { CardActionsMenu } from '@/components/vault/CardActionsMenu';
+import { ShareModal } from '@/components/vault/ShareModal';
+import { FilePreviewModal } from '@/components/vault/FilePreviewModal';
 
 function getFileIcon(mime?: string) {
   if (!mime) return File;
@@ -37,9 +39,11 @@ function timeAgo(iso: string) {
 }
 
 export default function RecentPage() {
-  const { loadRecent, downloadFile, toggleStar } = useVault();
+  const { loadRecent, downloadFile, toggleStar, deleteNode } = useVault();
   const [items, setItems] = useState<DecryptedNode[]>([]);
   const [loading, setLoading] = useState(true);
+  const [shareNode, setShareNode] = useState<DecryptedNode | null>(null);
+  const [previewNode, setPreviewNode] = useState<DecryptedNode | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -53,6 +57,11 @@ export default function RecentPage() {
   async function handleStar(nodeId: string) {
     await toggleStar(nodeId);
     setItems((prev) => prev.map((n) => n.id === nodeId ? { ...n, starred: !n.starred } : n));
+  }
+
+  async function handleDelete(nodeId: string) {
+    await deleteNode(nodeId);
+    setItems((prev) => prev.filter((n) => n.id !== nodeId));
   }
 
   return (
@@ -78,6 +87,7 @@ export default function RecentPage() {
             return (
               <div
                 key={file.id}
+                onClick={() => setPreviewNode(file)}
                 className="flex items-center gap-4 px-4 py-3 rounded-lg hover:bg-[var(--color-bg-surface)] transition-colors group cursor-pointer"
               >
                 <div className="size-10 rounded-lg bg-[var(--color-bg-surface-2)] border border-[var(--color-border-faint)] grid place-items-center shrink-0">
@@ -89,24 +99,20 @@ export default function RecentPage() {
                     {formatSize(file.size)}
                   </span>
                 </div>
+                {file.starred && <Star className="size-3.5 fill-amber-400 text-amber-400 shrink-0" />}
                 <span className="text-xs text-[var(--color-text-muted)] flex items-center gap-1 min-w-[100px] justify-end">
                   <Clock className="size-3" />
                   {timeAgo(file.updatedAt)}
                 </span>
-                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button
-                    className="p-1.5 rounded-md hover:bg-amber-500/10"
-                    onClick={() => handleStar(file.id)}
-                  >
-                    <Star className={cn('size-3.5', file.starred ? 'fill-amber-400 text-amber-400' : 'text-[var(--color-text-tertiary)]')} />
-                  </button>
-                  <button
-                    className="p-1.5 rounded-md hover:bg-[var(--color-bg-surface-2)]"
-                    onClick={() => downloadFile(file)}
-                  >
-                    <Download className="size-3.5 text-[var(--color-text-tertiary)]" />
-                  </button>
-                </div>
+                <CardActionsMenu
+                  actions={[
+                    { label: 'Abrir', icon: Eye, onSelect: () => setPreviewNode(file) },
+                    { label: file.starred ? 'Quitar de destacados' : 'Destacar', icon: Star, onSelect: () => handleStar(file.id) },
+                    { label: 'Compartir', icon: Share2, onSelect: () => setShareNode(file) },
+                    { label: 'Descargar', icon: Download, onSelect: () => downloadFile(file) },
+                    { label: 'Eliminar', icon: Trash2, onSelect: () => handleDelete(file.id), danger: true },
+                  ]}
+                />
               </div>
             );
           })}
@@ -122,6 +128,9 @@ export default function RecentPage() {
           <p className="text-sm text-[var(--color-text-tertiary)]">Los archivos que subas aparecerán aquí</p>
         </div>
       )}
+
+      <ShareModal open={!!shareNode} onClose={() => setShareNode(null)} node={shareNode} />
+      <FilePreviewModal open={!!previewNode} onClose={() => setPreviewNode(null)} node={previewNode} />
     </div>
   );
 }

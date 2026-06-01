@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useRef, useEffect, useMemo } from 'react';
-import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { useDropzone } from 'react-dropzone';
 import {
   DndContext, useDraggable, useDroppable, DragOverlay,
@@ -10,7 +9,7 @@ import {
 } from '@dnd-kit/core';
 import {
   FileText, File, Image, Video, Music, Archive, FileCode,
-  ChevronRight, MoreVertical, Star, Download, Trash2, Share2,
+  ChevronRight, Star, Download, Trash2, Share2,
   Upload, FolderPlus, Grid3x3, List, Filter, ChevronLeft,
   Loader2,
 } from 'lucide-react';
@@ -20,6 +19,7 @@ import { FOLDER_ICONS, type FolderIconKey, getFolderColor, type FolderColorKey }
 import { NewFolderModal } from '@/components/vault/NewFolderModal';
 import { ShareModal } from '@/components/vault/ShareModal';
 import { FilePreviewModal } from '@/components/vault/FilePreviewModal';
+import { CardActionsMenu } from '@/components/vault/CardActionsMenu';
 import { useVault, type DecryptedNode } from '@/lib/vault-store';
 import { cn } from '@/lib/utils';
 
@@ -53,57 +53,6 @@ function formatDate(iso: string) {
   if (diff < 2) return 'Ayer';
   if (diff < 7) return `Hace ${Math.floor(diff)} días`;
   return d.toLocaleDateString('es', { day: 'numeric', month: 'short', year: d.getFullYear() !== now.getFullYear() ? 'numeric' : undefined });
-}
-
-// ─── Menú de acciones (⋮) ───────────────────────────────────────
-// Visible siempre (no depende de hover) para que funcione en táctil.
-type CardAction = { label: string; icon: typeof Trash2; onSelect: () => void; danger?: boolean };
-
-function CardMenu({ actions }: { actions: CardAction[] }) {
-  const stop = (e: { stopPropagation: () => void }) => e.stopPropagation();
-  return (
-    <DropdownMenu.Root>
-      <DropdownMenu.Trigger asChild>
-        <button
-          type="button"
-          aria-label="Acciones"
-          className="p-1.5 rounded-md text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-surface-3)] transition-colors"
-          onClick={stop}
-          onMouseDown={stop}
-          onTouchStart={stop}
-          onPointerDown={stop}
-        >
-          <MoreVertical className="size-4" />
-        </button>
-      </DropdownMenu.Trigger>
-      <DropdownMenu.Portal>
-        <DropdownMenu.Content
-          align="end"
-          sideOffset={6}
-          onClick={stop}
-          className="z-50 min-w-[190px] rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-bg-surface-2)] p-1.5 shadow-[0_8px_30px_-8px_rgba(0,0,0,0.6)]"
-        >
-          {actions.map((a) => {
-            const Icon = a.icon;
-            return (
-              <DropdownMenu.Item
-                key={a.label}
-                onSelect={a.onSelect}
-                className={cn(
-                  'flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm cursor-pointer outline-none select-none',
-                  'data-[highlighted]:bg-[var(--color-bg-surface-3)]',
-                  a.danger ? 'text-red-400' : 'text-[var(--color-text-secondary)]',
-                )}
-              >
-                <Icon className="size-4 shrink-0" />
-                {a.label}
-              </DropdownMenu.Item>
-            );
-          })}
-        </DropdownMenu.Content>
-      </DropdownMenu.Portal>
-    </DropdownMenu.Root>
-  );
 }
 
 // ─── Carpeta ────────────────────────────────────────────────────
@@ -143,7 +92,7 @@ function FolderCard({
         )}>
           <IconComp className={cn('size-5', color.text)} />
         </div>
-        <CardMenu actions={[{ label: 'Eliminar', icon: Trash2, onSelect: onDelete, danger: true }]} />
+        <CardActionsMenu actions={[{ label: 'Eliminar', icon: Trash2, onSelect: onDelete, danger: true }]} />
       </div>
       <h3 className="text-sm font-medium truncate mb-0.5">{node.name}</h3>
       <p className="text-[10px] text-[var(--color-text-tertiary)] uppercase tracking-wider">
@@ -186,7 +135,7 @@ function FileCard({
         <div className="size-11 rounded-lg grid place-items-center bg-[var(--color-bg-surface-2)] border border-[var(--color-border-faint)]">
           <FileIcon className="size-5 text-[var(--color-text-secondary)]" />
         </div>
-        <CardMenu
+        <CardActionsMenu
           actions={[
             { label: node.starred ? 'Quitar de destacados' : 'Destacar', icon: Star, onSelect: onStar },
             { label: 'Compartir', icon: Share2, onSelect: onShare },
