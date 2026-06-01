@@ -174,6 +174,9 @@ export default function LandingPage() {
             <Link href="/security" className="hover:text-[var(--color-text-secondary)] transition-colors">
               Seguridad
             </Link>
+            <Link href="/roadmap" className="hover:text-[var(--color-text-secondary)] transition-colors">
+              Hoja de ruta
+            </Link>
             <a
               href="https://x.com/noctcom"
               target="_blank"
