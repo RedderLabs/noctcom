@@ -2,6 +2,8 @@ import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 import { db, tx } from '../db/pool.js';
 import { publishChange } from '../db/redis.js';
+import { deleteBlob } from '../storage/s3.js';
+import { deleteFromDisk } from '../storage/disk.js';
 
 const bytesB64 = z.string().regex(/^[A-Za-z0-9_-]+$/);
 const fromB64 = (s: string) => Buffer.from(s, 'base64url');
@@ -192,6 +194,72 @@ const nodeRoutes: FastifyPluginAsync = async (app) => {
 
       await db.query(`UPDATE nodes SET deleted_at = now() WHERE id = $1`, [req.params.id]);
       publishChange(userId, { resource: 'nodes', action: 'deleted' });
+      return reply.send({ ok: true });
+    },
+  );
+
+  // ─── DELETE /:id/permanent ─ borrado definitivo (desde papelera) ──
+  app.delete<{ Params: { id: string } }>(
+    '/:id/permanent',
+    { onRequest: [app.authenticate] },
+    async (req, reply) => {
+      const userId = req.user.sub;
+      const own = await db.query(
+        `SELECT v.owner_id, n.deleted_at FROM nodes n
+         JOIN vaults v ON v.id = n.vault_id WHERE n.id = $1`,
+        [req.params.id],
+      );
+      if (own.rowCount === 0) return reply.notFound();
+      if (own.rows[0].owner_id !== userId) return reply.forbidden();
+      if (!own.rows[0].deleted_at) return reply.badRequest('el nodo no está en la papelera');
+
+      // El nodo (y sus descendientes si es carpeta) se borran en cascada en la
+      // DB; los blobs en almacenamiento hay que borrarlos a mano antes.
+      const subtree = `
+        WITH RECURSIVE tree AS (
+          SELECT id FROM nodes WHERE id = $1
+          UNION ALL
+          SELECT n.id FROM nodes n JOIN tree t ON n.parent_id = t.id
+        )`;
+
+      const chunks = await db.query(
+        `${subtree}
+         SELECT c.s3_key, c.storage_type, c.volume_id
+         FROM chunks c
+         JOIN file_versions fv ON fv.id = c.version_id
+         WHERE fv.node_id IN (SELECT id FROM tree)`,
+        [req.params.id],
+      );
+
+      for (const c of chunks.rows) {
+        try {
+          if (c.storage_type === 'disk' && c.volume_id) {
+            const vol = await db.query(`SELECT path FROM storage_volumes WHERE id = $1`, [c.volume_id]);
+            if (vol.rows[0]) await deleteFromDisk(vol.rows[0].path, c.s3_key);
+          } else {
+            await deleteBlob(c.s3_key);
+          }
+        } catch { /* ignore cleanup errors */ }
+      }
+
+      const sizeRes = await db.query(
+        `${subtree}
+         SELECT COALESCE(SUM(ciphertext_size), 0)::bigint AS total
+         FROM nodes WHERE id IN (SELECT id FROM tree) AND kind = 'file'`,
+        [req.params.id],
+      );
+      const freed = sizeRes.rows[0]?.total ?? 0;
+
+      await tx(async (client) => {
+        await client.query(`DELETE FROM nodes WHERE id = $1`, [req.params.id]);
+        await client.query(
+          `UPDATE users SET storage_used_bytes = GREATEST(0, storage_used_bytes - $1) WHERE id = $2`,
+          [freed, userId],
+        );
+      });
+
+      publishChange(userId, { resource: 'nodes', action: 'deleted' });
+      publishChange(userId, { resource: 'storage', action: 'update' });
       return reply.send({ ok: true });
     },
   );

@@ -2,11 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import {
-  Star, FileText, File, Image, Folder, Download, Loader2,
+  Star, FileText, File, Image, Download, Loader2, Share2, Trash2, Eye,
 } from 'lucide-react';
 import { useVault, type DecryptedNode } from '@/lib/vault-store';
-import { FOLDER_ICONS, getFolderColor, type FolderIconKey } from '@/components/vault/folder-icons';
+import { FOLDER_ICONS, getFolderColor } from '@/components/vault/folder-icons';
 import { cn } from '@/lib/utils';
+import { CardActionsMenu } from '@/components/vault/CardActionsMenu';
+import { ShareModal } from '@/components/vault/ShareModal';
+import { FilePreviewModal } from '@/components/vault/FilePreviewModal';
 
 function formatSize(bytes?: number) {
   if (!bytes) return '';
@@ -17,9 +20,11 @@ function formatSize(bytes?: number) {
 }
 
 export default function StarredPage() {
-  const { loadStarred, toggleStar, downloadFile } = useVault();
+  const { loadStarred, toggleStar, downloadFile, deleteNode } = useVault();
   const [items, setItems] = useState<DecryptedNode[]>([]);
   const [loading, setLoading] = useState(true);
+  const [shareNode, setShareNode] = useState<DecryptedNode | null>(null);
+  const [previewNode, setPreviewNode] = useState<DecryptedNode | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -32,6 +37,11 @@ export default function StarredPage() {
 
   async function handleUnstar(nodeId: string) {
     await toggleStar(nodeId);
+    setItems((prev) => prev.filter((n) => n.id !== nodeId));
+  }
+
+  async function handleDelete(nodeId: string) {
+    await deleteNode(nodeId);
     setItems((prev) => prev.filter((n) => n.id !== nodeId));
   }
 
@@ -60,15 +70,18 @@ export default function StarredPage() {
               return (
                 <div
                   key={item.id}
-                  className="group relative p-4 rounded-xl border border-[var(--color-border-faint)] bg-[var(--color-bg-surface)] hover:bg-[var(--color-bg-surface-2)] hover:border-[var(--color-border-strong)] transition-all cursor-pointer"
+                  className="group relative p-4 rounded-xl border border-[var(--color-border-faint)] bg-[var(--color-bg-surface)] hover:bg-[var(--color-bg-surface-2)] hover:border-[var(--color-border-strong)] transition-all"
                 >
                   <div className="flex items-start justify-between mb-3">
                     <div className={cn('size-11 rounded-lg grid place-items-center border', color.bg, color.border)}>
                       <IconComp className={cn('size-5', color.text)} />
                     </div>
-                    <button onClick={() => handleUnstar(item.id)} className="p-1 rounded hover:bg-amber-500/10">
-                      <Star className="size-3.5 fill-amber-400 text-amber-400" />
-                    </button>
+                    <CardActionsMenu
+                      actions={[
+                        { label: 'Quitar de destacados', icon: Star, onSelect: () => handleUnstar(item.id) },
+                        { label: 'Eliminar', icon: Trash2, onSelect: () => handleDelete(item.id), danger: true },
+                      ]}
+                    />
                   </div>
                   <h3 className="text-sm font-medium truncate">{item.name}</h3>
                   <p className="text-[10px] text-[var(--color-text-tertiary)] uppercase tracking-wider mt-0.5">Carpeta</p>
@@ -80,23 +93,22 @@ export default function StarredPage() {
             return (
               <div
                 key={item.id}
+                onClick={() => setPreviewNode(item)}
                 className="group relative p-4 rounded-xl border border-[var(--color-border-faint)] bg-[var(--color-bg-surface)] hover:bg-[var(--color-bg-surface-2)] hover:border-[var(--color-border-strong)] transition-all cursor-pointer"
               >
                 <div className="flex items-start justify-between mb-3">
                   <div className="size-11 rounded-lg grid place-items-center bg-[var(--color-bg-surface-2)] border border-[var(--color-border-faint)]">
                     <FileIcon className="size-5 text-[var(--color-text-secondary)]" />
                   </div>
-                  <div className="flex items-center gap-1">
-                    <button
-                      onClick={() => downloadFile(item)}
-                      className="p-1 rounded hover:bg-[var(--color-bg-surface-3)] opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                      <Download className="size-3.5 text-[var(--color-text-tertiary)]" />
-                    </button>
-                    <button onClick={() => handleUnstar(item.id)} className="p-1 rounded hover:bg-amber-500/10">
-                      <Star className="size-3.5 fill-amber-400 text-amber-400" />
-                    </button>
-                  </div>
+                  <CardActionsMenu
+                    actions={[
+                      { label: 'Abrir', icon: Eye, onSelect: () => setPreviewNode(item) },
+                      { label: 'Quitar de destacados', icon: Star, onSelect: () => handleUnstar(item.id) },
+                      { label: 'Compartir', icon: Share2, onSelect: () => setShareNode(item) },
+                      { label: 'Descargar', icon: Download, onSelect: () => downloadFile(item) },
+                      { label: 'Eliminar', icon: Trash2, onSelect: () => handleDelete(item.id), danger: true },
+                    ]}
+                  />
                 </div>
                 <h3 className="text-sm font-medium truncate">{item.name}</h3>
                 <p className="text-[10px] text-[var(--color-text-tertiary)] uppercase tracking-wider mt-0.5">
@@ -119,6 +131,9 @@ export default function StarredPage() {
           </p>
         </div>
       )}
+
+      <ShareModal open={!!shareNode} onClose={() => setShareNode(null)} node={shareNode} />
+      <FilePreviewModal open={!!previewNode} onClose={() => setPreviewNode(null)} node={previewNode} />
     </div>
   );
 }

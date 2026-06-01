@@ -63,6 +63,7 @@ interface VaultActions {
   downloadFile: (node: DecryptedNode) => Promise<void>;
   loadTrash: () => Promise<DecryptedNode[]>;
   restoreNode: (nodeId: string) => Promise<void>;
+  purgeNode: (nodeId: string) => Promise<void>;
   toggleStar: (nodeId: string) => Promise<void>;
   loadRecent: () => Promise<DecryptedNode[]>;
   loadStarred: () => Promise<DecryptedNode[]>;
@@ -486,6 +487,16 @@ export const useVault = create<VaultState & VaultActions>((set, get) => ({
   restoreNode: async (nodeId) => {
     await apiFetch(`/api/v1/nodes/${nodeId}/restore`, { method: 'POST' });
     toast.success('Archivo restaurado');
+  },
+
+  purgeNode: async (nodeId) => {
+    try {
+      await apiFetch(`/api/v1/nodes/${nodeId}/permanent`, { method: 'DELETE' });
+      toast.success('Eliminado definitivamente');
+    } catch (err: any) {
+      toast.error(`No se pudo eliminar: ${err.message}`);
+      throw err;
+    }
   },
 
   // ─── Star toggle ────────────────────────────────────────────

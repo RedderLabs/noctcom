@@ -2,13 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import {
-  Trash2, FileText, File, Image, RotateCcw, AlertTriangle, X,
-  Loader2, Folder,
+  Trash2, FileText, File, Image, RotateCcw, AlertTriangle, Loader2, Folder,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { Button } from '@/components/ui/Button';
 import { useVault, type DecryptedNode } from '@/lib/vault-store';
-import { cn } from '@/lib/utils';
+import { CardActionsMenu } from '@/components/vault/CardActionsMenu';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 
 function formatSize(bytes: number) {
   if (!bytes) return '—';
@@ -35,9 +34,10 @@ function getIcon(node: DecryptedNode) {
 }
 
 export default function TrashPage() {
-  const { loadTrash, restoreNode } = useVault();
+  const { loadTrash, restoreNode, purgeNode } = useVault();
   const [items, setItems] = useState<DecryptedNode[]>([]);
   const [loading, setLoading] = useState(true);
+  const [confirmNode, setConfirmNode] = useState<DecryptedNode | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -53,6 +53,14 @@ export default function TrashPage() {
     await restoreNode(nodeId);
     setItems((prev) => prev.filter((i) => i.id !== nodeId));
     if (item) toast.success(`«${item.name}» restaurado`);
+  }
+
+  async function handlePurge(node: DecryptedNode) {
+    try {
+      await purgeNode(node.id);
+      setItems((prev) => prev.filter((i) => i.id !== node.id));
+    } catch { /* el toast de error ya se muestra en el store */ }
+    setConfirmNode(null);
   }
 
   return (
@@ -102,15 +110,12 @@ export default function TrashPage() {
                     {item.kind === 'folder' ? 'Carpeta' : formatSize(item.size)} · Expira en {daysUntilExpiry(item.deletedAt)}
                   </span>
                 </div>
-                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button
-                    onClick={() => handleRestore(item.id)}
-                    className="p-2 rounded-md hover:bg-emerald-500/10 text-emerald-400"
-                    title="Restaurar"
-                  >
-                    <RotateCcw className="size-4" />
-                  </button>
-                </div>
+                <CardActionsMenu
+                  actions={[
+                    { label: 'Restaurar', icon: RotateCcw, onSelect: () => handleRestore(item.id) },
+                    { label: 'Eliminar definitivamente', icon: Trash2, onSelect: () => setConfirmNode(item), danger: true },
+                  ]}
+                />
               </div>
             );
           })}
@@ -126,6 +131,19 @@ export default function TrashPage() {
           <p className="text-sm text-[var(--color-text-tertiary)]">No hay archivos eliminados</p>
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!confirmNode}
+        danger
+        title="¿Eliminar definitivamente?"
+        message={confirmNode
+          ? `«${confirmNode.name}» se borrará para siempre, junto con su contenido cifrado. Esta acción no se puede deshacer.`
+          : ''}
+        confirmLabel="Eliminar"
+        cancelLabel="Cancelar"
+        onConfirm={() => { if (confirmNode) handlePurge(confirmNode); }}
+        onCancel={() => setConfirmNode(null)}
+      />
     </div>
   );
 }
