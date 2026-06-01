@@ -51,7 +51,10 @@ export async function apiFetch<T = unknown>(
 ): Promise<T> {
   const { skipAuth, headers, ...rest } = options;
   const baseHeaders: Record<string, string> = {
-    'content-type': 'application/json',
+    // Solo declaramos JSON si hay cuerpo: Fastify 5 rechaza un body vacío con
+    // content-type application/json, y eso rompía DELETE (papelera) y PATCH
+    // (estrella), que no envían body.
+    ...(rest.body != null ? { 'content-type': 'application/json' } : {}),
     ...(headers as Record<string, string>),
   };
   if (!skipAuth && accessToken) baseHeaders.authorization = `Bearer ${accessToken}`;
