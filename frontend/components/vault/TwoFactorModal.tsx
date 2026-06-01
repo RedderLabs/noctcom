@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import QRCode from 'qrcode';
 import { Loader2, Copy, Check, ShieldCheck, ShieldOff } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/Button';
@@ -44,9 +43,13 @@ export function TwoFactorModal({
     const otpauth =
       `otpauth://totp/Noctcom:${encodeURIComponent(username ?? 'cuenta')}` +
       `?secret=${b32}&issuer=Noctcom&period=30&digits=6&algorithm=SHA1`;
-    // toString(svg) es JS puro (sin canvas) → evita el require del build de Node.
+    // Import dinámico + try/catch: si qrcode falla (su build hace require de
+    // canvas), no rompe nada y mostramos solo la clave manual. toString(svg) no
+    // toca canvas, así que normalmente el QR sí se genera.
     (async () => {
       try {
+        const mod = await import('qrcode');
+        const QRCode = (mod as any).default ?? mod;
         setQr(await QRCode.toString(otpauth, { type: 'svg', margin: 1, width: 200 }));
       } catch {
         setQr('');
