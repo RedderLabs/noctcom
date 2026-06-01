@@ -44,7 +44,14 @@ export function TwoFactorModal({
     const otpauth =
       `otpauth://totp/Noctcom:${encodeURIComponent(username ?? 'cuenta')}` +
       `?secret=${b32}&issuer=Noctcom&period=30&digits=6&algorithm=SHA1`;
-    QRCode.toDataURL(otpauth, { margin: 1, width: 200 }).then(setQr).catch(() => setQr(''));
+    // toString(svg) es JS puro (sin canvas) → evita el require del build de Node.
+    (async () => {
+      try {
+        setQr(await QRCode.toString(otpauth, { type: 'svg', margin: 1, width: 200 }));
+      } catch {
+        setQr('');
+      }
+    })();
   }, [open, enabled, username]);
 
   if (!open) return null;
@@ -162,7 +169,10 @@ export function TwoFactorModal({
             </p>
             <div className="flex justify-center mb-3">
               {qr
-                ? <img src={qr} alt="QR de 2FA" className="rounded-lg border border-[var(--color-border-faint)] bg-white p-1" width={180} height={180} />
+                ? <div
+                    className="rounded-lg border border-[var(--color-border-faint)] bg-white p-2 [&_svg]:size-[176px] [&_svg]:block"
+                    dangerouslySetInnerHTML={{ __html: qr }}
+                  />
                 : <div className="size-[180px] grid place-items-center"><Loader2 className="size-6 animate-spin text-violet-400" /></div>}
             </div>
             <p className="text-[10px] text-center text-[var(--color-text-muted)] mb-1">¿No puedes escanear? Introduce esta clave:</p>
