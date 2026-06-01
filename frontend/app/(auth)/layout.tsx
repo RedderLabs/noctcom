@@ -1,13 +1,28 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import type { ReactNode } from 'react';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
 import { loadTokens } from '@/lib/api';
+import { useAuth } from '@/lib/auth-store';
 
 export default function AuthLayout({ children }: { children: ReactNode }) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const { isAuthenticated, isUnlocked, hydrate } = useAuth();
+  const [checked, setChecked] = useState(false);
+
+  // /verify sí debe ser accesible con una sesión recién creada (post-signup).
+  const isVerify = pathname === '/verify';
+  const hasSession = isAuthenticated && isUnlocked;
+
   useEffect(() => {
     loadTokens();
+    hydrate();
+    setChecked(true);
+
     const observer = new MutationObserver((mutations) => {
       for (const m of mutations) {
         m.addedNodes.forEach((node) => {
@@ -19,15 +34,25 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
     });
     observer.observe(document.body, { childList: true, subtree: true });
     return () => observer.disconnect();
-  }, []);
+  }, [hydrate]);
+
+  // Con sesión activa no tiene sentido ver login/signup/recovery: al vault.
+  useEffect(() => {
+    if (checked && hasSession && !isVerify) {
+      router.replace('/vault');
+    }
+  }, [checked, hasSession, isVerify, router]);
+
+  // Evita el parpadeo del formulario mientras comprobamos o redirigimos.
+  if (!checked || (hasSession && !isVerify)) {
+    return <div className="min-h-screen bg-[var(--color-bg-base)]" />;
+  }
 
   return (
     <div className="min-h-screen flex flex-col">
       <div className="px-6 h-16 flex items-center">
         <Link href="/" className="flex items-center gap-2.5 group">
-          <div className="size-7 rounded-md bg-gradient-to-br from-violet-500 to-violet-700 grid place-items-center shadow-[0_0_16px_-4px_rgba(139,92,246,0.6)]">
-            <span className="font-display text-white font-semibold text-xs">N</span>
-          </div>
+          <Image src="/logo.png" alt="" width={28} height={28} priority className="rounded-md" />
           <span className="font-display text-sm tracking-tight text-[var(--color-text-secondary)] group-hover:text-[var(--color-text-primary)] transition-colors">Noctcom</span>
         </Link>
       </div>
