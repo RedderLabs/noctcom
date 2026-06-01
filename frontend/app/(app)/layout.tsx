@@ -7,7 +7,7 @@ import Image from 'next/image';
 import {
   FolderTree, Star, Share2, Trash2, Clock, Settings, LogOut,
   Search, Plus, ChevronDown, HardDrive, Activity, PanelLeftClose, PanelLeftOpen,
-  BookOpen,
+  BookOpen, Menu,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/lib/auth-store';
@@ -34,12 +34,20 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   const { sidebarCollapsed, toggleSidebar, hydrate: hydrateFontScale } = useFontScale();
   const { storageUsed, storageQuota, init: initVault, reset: resetVault } = useVault();
   const [mounted, setMounted] = useState(false);
+  // Drawer móvil: el sidebar pasa a off-canvas en pantallas pequeñas.
+  const [isMobile, setIsMobile] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
   useSync();
 
   useEffect(() => {
     hydrate();
     hydrateFontScale();
     setMounted(true);
+    const mq = window.matchMedia('(max-width: 767px)');
+    const apply = () => setIsMobile(mq.matches);
+    apply();
+    mq.addEventListener('change', apply);
+    return () => mq.removeEventListener('change', apply);
   }, [hydrate, hydrateFontScale]);
 
   useEffect(() => {
@@ -60,7 +68,8 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     }
   }, [mounted, isAuthenticated, isUnlocked, router, initVault]);
 
-  const collapsed = sidebarCollapsed;
+  // En móvil el drawer siempre se muestra expandido (con etiquetas).
+  const collapsed = isMobile ? false : sidebarCollapsed;
 
   const navItems = [
     { href: '/vault', label: 'Mis archivos', icon: FolderTree },
@@ -74,8 +83,8 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   if (!mounted) {
     return (
       <div className="h-screen flex overflow-hidden">
-        <aside className="w-64 shrink-0 h-screen fixed left-0 top-0 border-r border-[var(--color-border-faint)] bg-[var(--color-bg-deep)]/40 backdrop-blur-md flex flex-col z-30" />
-        <div className="flex-1 flex flex-col min-w-0 ml-64">
+        <aside className="w-64 shrink-0 h-screen fixed left-0 top-0 border-r border-[var(--color-border-faint)] bg-[var(--color-bg-deep)]/40 backdrop-blur-md flex flex-col z-30 -translate-x-full md:translate-x-0" />
+        <div className="flex-1 flex flex-col min-w-0 ml-0 md:ml-64">
           <header className="h-16 border-b border-[var(--color-border-faint)] bg-[var(--color-bg-base)]/60 backdrop-blur-md" />
           <main className="flex-1" />
         </div>
@@ -84,18 +93,30 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   }
 
   const sidebarW = collapsed ? 'w-16' : 'w-64';
-  const mainMl = collapsed ? 'ml-16' : 'ml-64';
+  // En móvil el contenido ocupa todo el ancho; el sidebar va por encima como drawer.
+  const mainMl = isMobile ? 'ml-0' : (collapsed ? 'ml-16' : 'ml-64');
 
   return (
     <div className="h-screen flex overflow-hidden">
-      {/* ─── Sidebar ──────────────────────────────────────── */}
+      {/* ─── Overlay (solo móvil, con drawer abierto) ─────── */}
+      {isMobile && mobileOpen && (
+        <div
+          onClick={() => setMobileOpen(false)}
+          className="fixed inset-0 z-30 bg-black/60 backdrop-blur-sm"
+          aria-hidden="true"
+        />
+      )}
+
+      {/* ─── Sidebar / Drawer ─────────────────────────────── */}
       <aside className={cn(
         sidebarW,
-        'shrink-0 h-screen fixed left-0 top-0 border-r border-[var(--color-border-faint)] bg-[var(--color-bg-deep)]/40 backdrop-blur-md flex flex-col z-30 transition-all duration-200',
+        'shrink-0 h-screen fixed left-0 top-0 border-r border-[var(--color-border-faint)] bg-[var(--color-bg-deep)]/95 md:bg-[var(--color-bg-deep)]/40 backdrop-blur-md flex flex-col z-40 transition-all duration-200',
+        isMobile && !mobileOpen && '-translate-x-full',
+        isMobile && mobileOpen && 'translate-x-0 shadow-[8px_0_40px_-12px_rgba(0,0,0,0.8)]',
       )}>
         {/* Brand + toggle */}
         <div className={cn('h-16 flex items-center border-b border-[var(--color-border-faint)]', collapsed ? 'justify-center px-2' : 'px-5 justify-between')}>
-          <Link href="/vault" className="flex items-center gap-2.5 group">
+          <Link href="/vault" onClick={() => setMobileOpen(false)} className="flex items-center gap-2.5 group">
             <Image src="/logo.png" alt="" width={32} height={32} priority className="rounded-lg shrink-0" />
             {!collapsed && (
               <div className="flex flex-col">
@@ -106,9 +127,9 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           </Link>
           {!collapsed && (
             <button
-              onClick={toggleSidebar}
+              onClick={() => (isMobile ? setMobileOpen(false) : toggleSidebar())}
               className="p-1.5 rounded-md hover:bg-[var(--color-bg-surface)] text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] transition-colors"
-              title="Colapsar sidebar"
+              title={isMobile ? 'Cerrar menú' : 'Colapsar sidebar'}
             >
               <PanelLeftClose className="size-4" />
             </button>
@@ -150,6 +171,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             <Link
               key={item.href}
               href={item.href as any}
+              onClick={() => setMobileOpen(false)}
               title={collapsed ? item.label : undefined}
               className={cn(
                 'flex items-center h-9 rounded-md text-sm transition-colors',
@@ -172,6 +194,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         <div className={cn('border-t border-[var(--color-border-faint)]', collapsed ? 'px-2 py-1' : 'px-3 py-1')}>
           <Link
             href={'/vault/manual' as any}
+            onClick={() => setMobileOpen(false)}
             title={collapsed ? 'Manual de usuario' : undefined}
             className={cn(
               'flex items-center h-9 rounded-md text-sm transition-colors',
@@ -223,16 +246,21 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             </Link>
             {!collapsed && (
               <>
-                <Link href={'/vault/profile' as any} className="flex-1 min-w-0 cursor-pointer">
+                <Link href={'/vault/profile' as any} onClick={() => setMobileOpen(false)} className="flex-1 min-w-0 cursor-pointer">
                   <div className="text-sm font-medium truncate hover:text-violet-300 transition-colors">{username ?? 'Usuario'}</div>
                   <div className="text-[10px] text-[var(--color-text-tertiary)]">Plan gratuito</div>
                 </Link>
-                <Link href="/vault/settings" className="opacity-0 group-hover:opacity-100 transition-opacity">
+                <Link
+                  href="/vault/settings"
+                  onClick={() => setMobileOpen(false)}
+                  aria-label="Ajustes"
+                  className="p-1.5 rounded-md hover:bg-[var(--color-bg-surface-2)] opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
+                >
                   <Settings className="size-4 text-[var(--color-text-tertiary)]" />
                 </Link>
                 <button
                   onClick={() => { resetVault(); logout(); router.push('/login'); }}
-                  className="opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="p-1.5 rounded-md hover:bg-[var(--color-bg-surface-2)] opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
                   aria-label="Cerrar sesión"
                 >
                   <LogOut className="size-4 text-[var(--color-text-tertiary)]" />
@@ -245,7 +273,16 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
       {/* ─── Main ─────────────────────────────────────────── */}
       <div className={cn('flex-1 flex flex-col min-w-0 transition-all duration-200', mainMl)}>
-        <header className="h-16 border-b border-[var(--color-border-faint)] bg-[var(--color-bg-base)]/60 backdrop-blur-md flex items-center px-6 gap-4 sticky top-0 z-20">
+        <header className="h-16 border-b border-[var(--color-border-faint)] bg-[var(--color-bg-base)]/60 backdrop-blur-md flex items-center px-4 md:px-6 gap-3 md:gap-4 sticky top-0 z-20">
+          {isMobile && (
+            <button
+              onClick={() => setMobileOpen(true)}
+              className="shrink-0 p-2 -ml-1 rounded-md hover:bg-[var(--color-bg-surface)] text-[var(--color-text-secondary)] transition-colors"
+              aria-label="Abrir menú"
+            >
+              <Menu className="size-5" />
+            </button>
+          )}
           <div className="flex-1 max-w-2xl relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-[var(--color-text-tertiary)]" />
             <input
