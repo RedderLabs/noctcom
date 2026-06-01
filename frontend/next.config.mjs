@@ -1,9 +1,18 @@
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import { readFileSync } from 'node:fs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const isDev = process.env.NODE_ENV !== 'production';
+
+// La versión sale del package.json y la fecha se sella aquí, en el build.
+// Como cada deploy reconstruye la imagen, esta marca es la hora del último deploy.
+const { version } = JSON.parse(readFileSync(resolve(__dirname, 'package.json'), 'utf8'));
+const builtAt = new Intl.DateTimeFormat('es-ES', {
+  day: 'numeric', month: 'short', year: 'numeric',
+  hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Madrid',
+}).format(new Date());
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -11,6 +20,10 @@ const nextConfig = {
   reactStrictMode: true,
   // En Next 15.5 typedRoutes dejó de ser experimental y subió a nivel raíz.
   typedRoutes: true,
+  env: {
+    NEXT_PUBLIC_APP_VERSION: version,
+    NEXT_PUBLIC_BUILT_AT: builtAt,
+  },
   async headers() {
     return [
       {

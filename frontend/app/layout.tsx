@@ -32,7 +32,7 @@ export const metadata: Metadata = {
   authors: [{ name: 'Noctcom', url: 'https://noctcom.com' }],
   creator: 'Noctcom',
   publisher: 'Noctcom',
-  icons: { icon: '/favicon.svg' },
+  icons: { icon: '/logo.png', apple: '/logo.png' },
   openGraph: {
     siteName: 'Noctcom',
     locale: 'es_ES',

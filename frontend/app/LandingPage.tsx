@@ -112,7 +112,7 @@ export default function LandingPage() {
                     leftIcon={<Download className="size-4" />}
                     onClick={() => {}}
                   >
-                    Descargar v0.1.0
+                    Descargar v{process.env.NEXT_PUBLIC_APP_VERSION}
                   </Button>
                   <Button
                     variant="outline"
@@ -186,7 +186,9 @@ export default function LandingPage() {
               </svg>
             </a>
           </div>
-          <span className="font-mono text-[10px]">v0.1.0</span>
+          <span className="font-mono text-[10px]">
+            v{process.env.NEXT_PUBLIC_APP_VERSION} · al día desde el {process.env.NEXT_PUBLIC_BUILT_AT}
+          </span>
         </div>
       </footer>
     </main>
