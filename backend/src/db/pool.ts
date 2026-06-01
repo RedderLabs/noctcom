@@ -7,15 +7,32 @@ export const db = new Pool({
   connectionString: env.DATABASE_URL,
   max: 20,
   idleTimeoutMillis: 30_000,
-  connectionTimeoutMillis: 5_000,
+  // Neon (free tier) suspende el compute cuando no hay tráfico y tarda unos
+  // segundos en despertar; le damos margen para no cortar el primer intento.
+  connectionTimeoutMillis: 15_000,
 });
 
 export async function initDb(): Promise<void> {
-  const client = await db.connect();
-  try {
-    await client.query('SELECT 1');
-  } finally {
-    client.release();
+  // Tras un deploy el compute de Neon puede estar dormido. En vez de morir al
+  // primer fallo (y quedarnos en bucle de reinicios), reintentamos con backoff
+  // hasta que la base despierte.
+  const maxAttempts = 8;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      const client = await db.connect();
+      try {
+        await client.query('SELECT 1');
+      } finally {
+        client.release();
+      }
+      if (attempt > 1) console.log(`DB lista tras ${attempt} intentos`);
+      return;
+    } catch (err) {
+      if (attempt === maxAttempts) throw err;
+      const waitMs = Math.min(2_000 * attempt, 10_000);
+      console.warn(`DB aún no responde (intento ${attempt}/${maxAttempts}), reintento en ${waitMs / 1000}s…`);
+      await new Promise((resolve) => setTimeout(resolve, waitMs));
+    }
   }
 }
 
