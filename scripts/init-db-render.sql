@@ -114,8 +114,12 @@ CREATE TABLE IF NOT EXISTS file_versions (
 );
 CREATE INDEX IF NOT EXISTS file_versions_node_idx ON file_versions(node_id, version_number DESC);
 
-ALTER TABLE nodes ADD CONSTRAINT IF NOT EXISTS nodes_current_version_fk
-    FOREIGN KEY (current_version_id) REFERENCES file_versions(id) DEFERRABLE INITIALLY DEFERRED;
+-- Postgres no soporta IF NOT EXISTS en ADD CONSTRAINT; lo hacemos idempotente
+-- con un bloque DO que ignora el duplicado.
+DO $$ BEGIN
+    ALTER TABLE nodes ADD CONSTRAINT nodes_current_version_fk
+        FOREIGN KEY (current_version_id) REFERENCES file_versions(id) DEFERRABLE INITIALLY DEFERRED;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 -- ─── STORAGE VOLUMES ───────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS storage_volumes (
