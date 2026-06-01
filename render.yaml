@@ -33,7 +33,7 @@ services:
       - key: S3_SECRET_KEY
         sync: false
       - key: S3_BUCKET
-        value: noctcom
+        value: noctcom-bucket
       - key: S3_REGION
         value: us-east-005
       - key: JWT_SECRET
