@@ -1,0 +1,17 @@
+title = "Noctcom gitleaks config"
+
+# Partimos de las reglas por defecto de gitleaks y añadimos allowlists propias.
+[extend]
+useDefault = true
+
+[allowlist]
+description = """
+La configuración web de Firebase es pública por diseño: identifica el proyecto
+en el cliente y la seguridad se aplica con Firebase Security Rules + allowlist de
+dominios autorizados, no ocultando la apiKey. El service worker DEBE llevarla
+hardcodeada porque se sirve como archivo estático y no puede leer variables de
+entorno en tiempo de ejecución. No es un secreto filtrado.
+"""
+paths = [
+  '''frontend/public/firebase-messaging-sw\.js''',
+]

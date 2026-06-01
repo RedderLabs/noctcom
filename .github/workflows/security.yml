@@ -63,6 +63,7 @@ jobs:
         with:
           scan-type: 'fs'
           scan-ref: '.'
+          scanners: 'vuln'    # los secretos los cubre Gitleaks; evitamos duplicar
           format: 'sarif'
           output: 'trivy-results.sarif'
           severity: 'CRITICAL,HIGH'
@@ -94,7 +95,8 @@ jobs:
           gitleaks version
       - name: Scan git history for secrets
         # En gitleaks 8.30 'detect' fue reemplazado por el subcomando 'git'.
-        run: gitleaks git . --redact --verbose --exit-code=1
+        # .gitleaks.toml allowlistea la config web pública de Firebase.
+        run: gitleaks git . --config .gitleaks.toml --redact --verbose --exit-code=1
 
   # ═══════════════════════════════════════════════════════════════
   # Semgrep — análisis estático buscando patrones inseguros
