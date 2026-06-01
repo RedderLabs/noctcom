@@ -25,8 +25,11 @@ export default function SecurityPage() {
           </div>
           <h1 className="font-display text-4xl font-light tracking-tight mb-3">Seguridad y criptografía</h1>
           <p className="text-[var(--color-text-secondary)] leading-relaxed max-w-2xl">
-            Estos documentos describen exactamente cómo Noctcom protege tus datos. Si encuentras una
-            discrepancia entre lo que dicen y lo que hace el código, abre un issue — el código es la verdad.
+            Otras nubes <em>prometen</em> no leer tus datos. Noctcom está diseñado para que
+            {' '}<strong className="text-[var(--color-text-primary)] font-medium">no pueda</strong>: tus
+            claves se derivan y viven en tu dispositivo, y el servidor solo almacena cifrado que no sabe abrir.
+            Estos documentos describen exactamente cómo. Si encuentras una discrepancia entre lo que dicen y
+            lo que hace el código, abre un issue — el código es la verdad.
           </p>
         </div>
 
