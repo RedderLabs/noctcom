@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Lock, Shield, KeyRound, FileSearch, ArrowRight, Server, Download, Github } from 'lucide-react';
+import { Lock, Shield, EyeOff, AtSign, Share2, ArrowRight, Server, Download, Github } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Navbar } from '@/components/ui/Navbar';
 
@@ -15,18 +15,19 @@ export default function LandingPage() {
         <div className="max-w-4xl mx-auto text-center">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-violet-500/20 bg-violet-500/5 mb-8">
             <span className="size-1.5 rounded-full bg-violet-400 animate-pulse" />
-            <span className="text-xs text-violet-300 font-medium">Zero-Knowledge · Cifrado E2E · Open Source</span>
+            <span className="text-xs text-violet-300 font-medium">Zero-Knowledge real · Cifrado en tu dispositivo · Open Source</span>
           </div>
 
           <h1 className="font-display text-6xl md:text-7xl font-light tracking-tight mb-6 leading-[1.05]">
             Tu bóveda privada.
             <br />
-            <span className="text-gradient-violet font-normal">Cifrada en tu dispositivo.</span>
+            <span className="text-gradient-violet font-normal">Cifrada antes de salir de tu dispositivo.</span>
           </h1>
 
           <p className="text-lg text-[var(--color-text-secondary)] max-w-xl mx-auto mb-10 leading-relaxed">
-            Almacenamiento privado donde ni siquiera nosotros podemos leer tus archivos.
-            Tu contraseña jamás abandona tu dispositivo. Tus claves jamás tocan nuestros servidores.
+            La mayoría de las nubes prometen no mirar tus archivos. Noctcom está construido para que
+            <strong className="text-[var(--color-text-primary)] font-medium"> no pueda</strong>, aunque quisiéramos.
+            Tu contraseña y tus claves jamás tocan nuestros servidores. Nosotros solo guardamos cifrado que no sabemos abrir.
           </p>
 
           <div className="flex items-center justify-center gap-3 flex-wrap">
@@ -46,10 +47,10 @@ export default function LandingPage() {
       <section className="px-6 pb-24">
         <div className="max-w-5xl mx-auto grid md:grid-cols-2 lg:grid-cols-4 gap-4">
           {[
-            { icon: Lock, title: 'Zero-Knowledge', body: 'Argon2id + XChaCha20. El servidor solo ve ciphertext.' },
-            { icon: Shield, title: '2FA + Passkeys', body: 'TOTP de base, WebAuthn opcional, phishing-resistant.' },
-            { icon: KeyRound, title: 'Recuperación segura', body: 'Frase de 12 palabras. Tú controlas el acceso.' },
-            { icon: FileSearch, title: 'Búsqueda local', body: 'Índice cifrado en tu navegador. Sin telemetría.' },
+            { icon: Lock, title: 'Zero-Knowledge por defecto', body: 'No es una opción que activas: es la única forma en que funciona. Argon2id + XChaCha20-Poly1305.' },
+            { icon: EyeOff, title: 'Ni los metadatos', body: 'Nombres, tamaños y etiquetas también van cifrados. No solo el contenido.' },
+            { icon: AtSign, title: 'Sin tu email en claro', body: 'Ni siquiera almacenamos tu correo: solo un hash. Un volcado de la BD no revela quién eres.' },
+            { icon: Share2, title: 'Compartir anónimo', body: 'Sealed boxes X25519: solo el destinatario abre el archivo. Ni nosotros, ni nadie con acceso al servidor.' },
           ].map((f, i) => (
             <div
               key={i}
@@ -62,6 +63,26 @@ export default function LandingPage() {
               <p className="text-sm text-[var(--color-text-tertiary)] leading-relaxed">{f.body}</p>
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* ─── Foco: lo que no hacemos ────────────────────────── */}
+      <section className="px-6 pb-24">
+        <div className="max-w-3xl mx-auto text-center">
+          <h2 className="font-display text-2xl md:text-3xl font-light tracking-tight mb-4">
+            Lo que <span className="text-gradient-violet font-normal">no</span> hacemos.
+          </h2>
+          <p className="text-[var(--color-text-secondary)] leading-relaxed">
+            Noctcom no es una suite de ofimática. No tenemos chat, ni videollamadas, ni editor de
+            documentos online. Es deliberado: cada función que añade un servidor capaz de{' '}
+            <em>leer</em> tus datos es una grieta en la privacidad. Hacemos{' '}
+            <strong className="text-[var(--color-text-primary)] font-medium">una sola cosa</strong>{' '}
+            —guardar tus archivos de forma que solo tú puedas leerlos— y la hacemos mejor que nadie.
+          </p>
+          <p className="text-sm text-[var(--color-text-tertiary)] leading-relaxed mt-5">
+            Versionado de algoritmos preparado para post-cuántico (Kyber/Dilithium en hoja de ruta).
+            Tu cifrado de hoy no caduca mañana.
+          </p>
         </div>
       </section>
 
