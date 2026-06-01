@@ -130,7 +130,17 @@ export async function buildServer() {
     try {
       await req.jwtVerify();
     } catch {
-      reply.unauthorized('invalid or expired token');
+      return reply.unauthorized('invalid or expired token');
+    }
+    // La revocación de sesiones tiene que ser efectiva: si el dispositivo del
+    // token fue revocado, el access token deja de valer aunque no haya expirado.
+    const deviceId = (req.user as { deviceId?: string | null }).deviceId;
+    if (deviceId) {
+      const r = await db.query(
+        `SELECT 1 FROM devices WHERE id = $1 AND user_id = $2 AND revoked_at IS NULL`,
+        [deviceId, req.user.sub],
+      );
+      if (r.rowCount === 0) return reply.unauthorized('sesión revocada');
     }
   });
 
