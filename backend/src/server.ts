@@ -103,6 +103,9 @@ export async function buildServer() {
         ].filter(Boolean)
       : true,
     credentials: true,
+    // El default de @fastify/cors es solo GET,HEAD,POST y bloqueaba el toggle de
+    // favoritos (PATCH) y el envío a papelera (DELETE). Lo declaramos explícito.
+    methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   });
 
   const redisClient = redis();
