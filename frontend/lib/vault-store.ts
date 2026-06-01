@@ -256,12 +256,16 @@ export const useVault = create<VaultState & VaultActions>((set, get) => ({
   // ─── Delete (soft — moves to trash) ───────────────────────
   deleteNode: async (nodeId) => {
     const node = get().nodes.find((n) => n.id === nodeId);
-    await apiFetch(`/api/v1/nodes/${nodeId}`, { method: 'DELETE' });
-    if (node) {
-      toast.success(`«${node.name}» movido a la papelera`);
-      get().logActivity({ type: 'delete', description: 'Archivo eliminado', target: node.name });
+    try {
+      await apiFetch(`/api/v1/nodes/${nodeId}`, { method: 'DELETE' });
+      if (node) {
+        toast.success(`«${node.name}» movido a la papelera`);
+        get().logActivity({ type: 'delete', description: 'Archivo eliminado', target: node.name });
+      }
+      await get().loadNodes(get().parentId);
+    } catch (err: any) {
+      toast.error(`No se pudo eliminar: ${err.message}`);
     }
-    await get().loadNodes(get().parentId);
   },
 
   // ─── Move node to another folder ──────────────────────────

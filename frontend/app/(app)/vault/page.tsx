@@ -91,7 +91,10 @@ function FolderCard({
         )}>
           <IconComp className={cn('size-5', color.text)} />
         </div>
-        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <div
+          className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
+          onPointerDown={(e) => e.stopPropagation()}
+        >
           <button
             type="button"
             className="p-1 rounded hover:bg-red-500/10"
@@ -143,7 +146,10 @@ function FileCard({
         <div className="size-11 rounded-lg grid place-items-center bg-[var(--color-bg-surface-2)] border border-[var(--color-border-faint)]">
           <FileIcon className="size-5 text-[var(--color-text-secondary)]" />
         </div>
-        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <div
+          className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
+          onPointerDown={(e) => e.stopPropagation()}
+        >
           <button
             type="button"
             className="p-1 rounded hover:bg-amber-500/10"
