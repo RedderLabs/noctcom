@@ -38,7 +38,7 @@ export default function Page() {
               '@type': 'Organization',
               name: 'Noctcom',
               url: BASE_URL,
-              logo: `${BASE_URL}/logo.svg`,
+              logo: `${BASE_URL}/logo.png`,
               sameAs: ['https://x.com/noctcom', 'https://github.com/RedderLabs/noctcom'],
             },
             {

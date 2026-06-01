@@ -3,6 +3,7 @@
 import { useState, useEffect, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import {
   FolderTree, Star, Share2, Trash2, Clock, Settings, LogOut,
   Search, Plus, ChevronDown, HardDrive, Activity, PanelLeftClose, PanelLeftOpen,
@@ -95,9 +96,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         {/* Brand + toggle */}
         <div className={cn('h-16 flex items-center border-b border-[var(--color-border-faint)]', collapsed ? 'justify-center px-2' : 'px-5 justify-between')}>
           <Link href="/vault" className="flex items-center gap-2.5 group">
-            <div className="size-8 rounded-lg bg-gradient-to-br from-violet-500 to-violet-700 grid place-items-center shadow-[0_0_20px_-4px_rgba(139,92,246,0.6)] shrink-0">
-              <span className="font-display text-white font-semibold text-sm">N</span>
-            </div>
+            <Image src="/logo.png" alt="" width={32} height={32} priority className="rounded-lg shrink-0" />
             {!collapsed && (
               <div className="flex flex-col">
                 <span className="font-display text-sm tracking-tight leading-tight">Noctcom</span>
