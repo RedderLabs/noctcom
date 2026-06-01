@@ -93,6 +93,8 @@ function FolderCard({
         </div>
         <div
           className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
+          onMouseDown={(e) => e.stopPropagation()}
+          onTouchStart={(e) => e.stopPropagation()}
           onPointerDown={(e) => e.stopPropagation()}
         >
           <button
@@ -148,6 +150,8 @@ function FileCard({
         </div>
         <div
           className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
+          onMouseDown={(e) => e.stopPropagation()}
+          onTouchStart={(e) => e.stopPropagation()}
           onPointerDown={(e) => e.stopPropagation()}
         >
           <button
