@@ -1,3 +1,9 @@
+import dns from 'node:dns';
+// En contenedores (Render/Frankfurt) la resolución suele preferir IPv6, pero el
+// egress IPv6 hacia Neon (us-east-1, publica AAAA) no rutea y la conexión a la
+// BD expira. Forzamos IPv4 primero para toda resolución saliente.
+dns.setDefaultResultOrder('ipv4first');
+
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
