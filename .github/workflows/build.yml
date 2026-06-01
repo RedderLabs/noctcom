@@ -185,9 +185,12 @@ jobs:
         env:
           IMAGE: ${{ env.REGISTRY }}/${{ env.IMAGE_BASE }}-${{ matrix.target }}@${{ steps.build.outputs.digest }}
         run: |
+          # Las referencias OCI deben ir en minúsculas; el owner (RedderLabs)
+          # tiene mayúsculas, así que normalizamos antes de pasárselo a syft/cosign.
+          IMAGE_LC="${IMAGE,,}"
           # Genera SBOM del image final y la attesta
-          syft "${IMAGE}" -o spdx-json > sbom.json
-          cosign attest --yes --predicate sbom.json --type spdxjson "${IMAGE}"
+          syft "${IMAGE_LC}" -o spdx-json > sbom.json
+          cosign attest --yes --predicate sbom.json --type spdxjson "${IMAGE_LC}"
 
   # ═══════════════════════════════════════════════════════════════
   # Release: empaquetar todo para publicación

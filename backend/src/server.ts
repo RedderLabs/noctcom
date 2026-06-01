@@ -31,7 +31,7 @@ import deviceRoutes from './routes/devices.js';
 import adminRoutes from './routes/admin.js';
 import vaultExportRoutes from './routes/vault-export.js';
 
-async function buildServer() {
+export async function buildServer() {
   const app = Fastify({
     logger: {
       level: env.NODE_ENV === 'production' ? 'info' : 'debug',

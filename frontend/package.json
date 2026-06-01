@@ -26,7 +26,7 @@
     "framer-motion": "^11.11.1",
     "libsodium-wrappers-sumo": "^0.7.13",
     "lucide-react": "^0.453.0",
-    "next": "15.0.0",
+    "next": "^15.5.18",
     "qrcode": "^1.5.4",
     "react": "19.0.0-rc-69d4b800-20241021",
     "react-dom": "19.0.0-rc-69d4b800-20241021",

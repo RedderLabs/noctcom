@@ -1,0 +1,12 @@
+# Vulnerabilidades transitivas sin parche disponible upstream.
+# Se ignoran de forma explícita y documentada (no globalmente) para no bloquear
+# el pipeline por dependencias que no podemos arreglar sin retroceder versiones.
+# Revisar periódicamente: si upstream publica un fix, eliminar la entrada.
+
+[[IgnoredVulns]]
+id = "GHSA-w5hq-g745-h8pq"
+reason = "uuid: bounds check en buffer opcional. Transitiva vía firebase-admin (ya en su última major, 13.x). No usamos la firma con buffer afectada. Sin fix upstream que no implique degradar firebase-admin."
+
+[[IgnoredVulns]]
+id = "GHSA-qx2v-qp2m-jg93"
+reason = "postcss: XSS en CSS Stringify. Bundleada dentro de next@15.5.18 (no es una dep directa). Solo afecta a la generación de CSS desde entrada no confiable, que no hacemos. Pendiente de que Next actualice su postcss interno."

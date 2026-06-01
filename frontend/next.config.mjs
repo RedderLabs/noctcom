@@ -9,9 +9,8 @@ const isDev = process.env.NODE_ENV !== 'production';
 const nextConfig = {
   output: 'standalone',
   reactStrictMode: true,
-  experimental: {
-    typedRoutes: true,
-  },
+  // En Next 15.5 typedRoutes dejó de ser experimental y subió a nivel raíz.
+  typedRoutes: true,
   async headers() {
     return [
       {
