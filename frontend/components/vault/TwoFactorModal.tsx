@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { QRCodeSVG } from 'qrcode.react';
 import { Loader2, Copy, Check, ShieldCheck, ShieldOff } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/Button';
@@ -29,7 +30,7 @@ export function TwoFactorModal({
   const { username, masterKey } = useAuth();
   const [secret, setSecret] = useState<Uint8Array | null>(null);
   const [base32, setBase32] = useState('');
-  const [qr, setQr] = useState('');
+  const [otpauth, setOtpauth] = useState('');
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
   const [backupCodes, setBackupCodes] = useState<string[] | null>(null);
@@ -40,21 +41,10 @@ export function TwoFactorModal({
     const s = generateTotpSecret();
     const b32 = toBase32(s);
     setSecret(s); setBase32(b32); setCode(''); setBackupCodes(null);
-    const otpauth =
+    setOtpauth(
       `otpauth://totp/Noctcom:${encodeURIComponent(username ?? 'cuenta')}` +
-      `?secret=${b32}&issuer=Noctcom&period=30&digits=6&algorithm=SHA1`;
-    // Import dinámico + try/catch: si qrcode falla (su build hace require de
-    // canvas), no rompe nada y mostramos solo la clave manual. toString(svg) no
-    // toca canvas, así que normalmente el QR sí se genera.
-    (async () => {
-      try {
-        const mod = await import('qrcode');
-        const QRCode = (mod as any).default ?? mod;
-        setQr(await QRCode.toString(otpauth, { type: 'svg', margin: 1, width: 200 }));
-      } catch {
-        setQr('');
-      }
-    })();
+      `?secret=${b32}&issuer=Noctcom&period=30&digits=6&algorithm=SHA1`,
+    );
   }, [open, enabled, username]);
 
   if (!open) return null;
@@ -171,11 +161,10 @@ export function TwoFactorModal({
               Escanea el QR con Google Authenticator, Aegis, 1Password… y luego introduce el código de 6 dígitos.
             </p>
             <div className="flex justify-center mb-3">
-              {qr
-                ? <div
-                    className="rounded-lg border border-[var(--color-border-faint)] bg-white p-2 [&_svg]:size-[176px] [&_svg]:block"
-                    dangerouslySetInnerHTML={{ __html: qr }}
-                  />
+              {otpauth
+                ? <div className="rounded-lg border border-[var(--color-border-faint)] bg-white p-2">
+                    <QRCodeSVG value={otpauth} size={176} level="M" />
+                  </div>
                 : <div className="size-[180px] grid place-items-center"><Loader2 className="size-6 animate-spin text-violet-400" /></div>}
             </div>
             <p className="text-[10px] text-center text-[var(--color-text-muted)] mb-1">¿No puedes escanear? Introduce esta clave:</p>
