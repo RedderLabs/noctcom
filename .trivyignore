@@ -1,0 +1,12 @@
+# Vulnerabilidades transitivas sin parche disponible upstream.
+# Mantener sincronizado con osv-scanner.toml. Revisar periódicamente.
+
+# uuid: bounds check en buffer opcional (GitHub: GHSA-w5hq-g745-h8pq, moderate;
+# Trivy lo rate HIGH). Transitiva vía firebase-admin (ya en su última major,
+# 13.x). No usamos la firma con buffer afectada. Sin fix upstream que no
+# implique degradar firebase-admin.
+CVE-2026-41907
+
+# postcss: XSS en CSS Stringify (GitHub: GHSA-qx2v-qp2m-jg93). Bundleada dentro
+# de next@15.5.18, no es dep directa. Pendiente de que Next actualice su postcss.
+CVE-2026-41305
