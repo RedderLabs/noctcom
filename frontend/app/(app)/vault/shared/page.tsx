@@ -78,7 +78,7 @@ export default function SharedPage() {
   }
 
   return (
-    <div className="px-8 py-6 max-w-5xl mx-auto">
+    <div className="px-8 py-6 max-w-5xl mx-auto flex flex-col min-h-full">
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="font-display text-2xl font-semibold tracking-tight">Compartidos</h1>
@@ -197,7 +197,7 @@ export default function SharedPage() {
         </div>
       )}
 
-      <div className="mt-8 p-4 rounded-xl bg-violet-500/5 border border-violet-500/20">
+      <div className="mt-auto p-4 rounded-xl bg-violet-500/5 border border-violet-500/20">
         <div className="flex items-start gap-3">
           <Shield className="size-5 text-violet-300 mt-0.5 shrink-0" />
           <div>
