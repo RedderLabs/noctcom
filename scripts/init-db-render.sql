@@ -40,7 +40,7 @@ CREATE TABLE IF NOT EXISTS users (
     totp_backup_codes_wrapped BYTEA,
     totp_backup_codes_nonce   BYTEA,
     totp_verified_at     TIMESTAMPTZ,
-    storage_quota_bytes  BIGINT NOT NULL DEFAULT 2147483648,
+    storage_quota_bytes  BIGINT NOT NULL DEFAULT 1073741824,
     storage_used_bytes   BIGINT NOT NULL DEFAULT 0,
     created_at           TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at           TIMESTAMPTZ NOT NULL DEFAULT now(),
