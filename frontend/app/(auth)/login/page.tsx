@@ -149,17 +149,17 @@ export default function LoginPage() {
     e.preventDefault();
     setLoading(true);
     try {
-      const unwrapKey = deriveSubKey(partial.masterKey, 'noctcom.totp.v1');
+      // El 2º factor lo verifica el servidor con su propia clave; aquí solo
+      // enviamos el código (TOTP o de respaldo). No se deriva ni se envía
+      // ninguna clave a partir de la Master Key.
       await apiFetch('/api/v1/2fa/totp/verify', {
         method: 'POST',
         body: JSON.stringify({
           userId: partial.userId,
           code: totpCode,
-          unwrapKey: toB64(unwrapKey),
         }),
         skipAuth: true,
       });
-      wipe(unwrapKey);
 
       setTokens(partial.accessToken, partial.refreshToken);
       setIdentity(partial);

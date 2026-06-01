@@ -14,6 +14,11 @@ const envSchema = z.object({
   S3_REGION: z.string().default('us-east-1'),
 
   JWT_SECRET: z.string().min(32),
+  // Clave de cifrado en reposo para los secrets TOTP (32 bytes base64url).
+  // Es una clave del SERVIDOR, independiente de la contraseña del usuario:
+  // así el TOTP es un 2º factor real. Si no se define, se deriva de JWT_SECRET
+  // con separación de dominio (ver two_factor.ts → serverTotpKey()).
+  TOTP_ENC_KEY: z.string().optional(),
   PUBLIC_URL: z.string().url(),
   FRONTEND_URL: z.string().url().optional(),
 

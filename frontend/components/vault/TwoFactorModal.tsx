@@ -7,9 +7,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/Button';
 import { useAuth } from '@/lib/auth-store';
 import { apiFetch } from '@/lib/api';
-import {
-  generateTotpSecret, toBase32, deriveSubKey, encrypt, encryptJSON, toB64,
-} from '@/lib/crypto';
+import { generateTotpSecret, toBase32, toB64 } from '@/lib/crypto';
 
 function genBackupCodes(n = 8): string[] {
   return Array.from({ length: n }, () => {
@@ -27,7 +25,7 @@ export function TwoFactorModal({
   onClose: () => void;
   onChanged: () => void;
 }) {
-  const { username, masterKey } = useAuth();
+  const { username } = useAuth();
   const [secret, setSecret] = useState<Uint8Array | null>(null);
   const [base32, setBase32] = useState('');
   const [otpauth, setOtpauth] = useState('');
@@ -50,19 +48,19 @@ export function TwoFactorModal({
   if (!open) return null;
 
   async function handleEnable() {
-    if (!masterKey || !secret || code.length !== 6) return;
+    if (!secret || code.length !== 6) return;
     setBusy(true);
     try {
-      const totpKey = deriveSubKey(masterKey, 'noctcom.totp.v1');
       const codes = genBackupCodes();
-      const sw = encrypt(secret, totpKey);
-      const bw = encryptJSON(codes, totpKey);
+      // El secret viaja una sola vez sobre TLS; el servidor lo cifra en reposo
+      // con su propia clave (independiente de la contraseña). No se envía
+      // ninguna clave derivada del usuario.
       await apiFetch('/api/v1/2fa/totp/enable', {
         method: 'POST',
         body: JSON.stringify({
-          secretWrapped: toB64(sw.ciphertext), secretNonce: toB64(sw.nonce),
-          backupCodesWrapped: toB64(bw.ciphertext), backupCodesNonce: toB64(bw.nonce),
-          initialCode: code, unwrapKey: toB64(totpKey),
+          secret: toB64(secret),
+          initialCode: code,
+          backupCodes: codes,
         }),
       });
       setBackupCodes(codes);
@@ -78,13 +76,12 @@ export function TwoFactorModal({
   }
 
   async function handleDisable() {
-    if (!masterKey || code.length !== 6) return;
+    if (code.length !== 6) return;
     setBusy(true);
     try {
-      const totpKey = deriveSubKey(masterKey, 'noctcom.totp.v1');
       await apiFetch('/api/v1/2fa/totp/disable', {
         method: 'POST',
-        body: JSON.stringify({ confirmCode: code, unwrapKey: toB64(totpKey) }),
+        body: JSON.stringify({ confirmCode: code }),
       });
       toast.success('2FA desactivado');
       onChanged();

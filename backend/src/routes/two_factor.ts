@@ -1,12 +1,24 @@
 /**
  * 2FA y recuperación de cuenta.
  *
- * TOTP zero-knowledge:
- *   - El secret TOTP lo genera el cliente.
- *   - El cliente cifra el secret con HKDF(MK, "noctcom.totp.v1") → totp_key.
- *   - Durante login, el cliente envía la totp_key wrapped junto al código.
- *   - El servidor desencripta el secret en memoria, verifica el código,
- *     borra totp_key inmediatamente. El secret nunca queda en claro persistido.
+ * TOTP (segundo factor real, server-side):
+ *   - El secret TOTP lo genera el cliente y lo envía UNA vez al activar,
+ *     sobre TLS, al endpoint autenticado /totp/enable.
+ *   - El servidor lo cifra EN REPOSO con una clave propia (serverTotpKey(),
+ *     independiente de la contraseña del usuario) y guarda el blob.
+ *   - Al hacer login, el cliente solo envía {userId, code}. El servidor
+ *     descifra el secret en memoria, verifica el código y lo descarta.
+ *
+ *   ¿Por qué NO se cifra con la Master Key del usuario? Porque la MK se
+ *   deriva de la contraseña: si el secret dependiera de ella, comprometer
+ *   la contraseña comprometería también el 2º factor → no sería un 2º
+ *   factor genuino. La clave del servidor lo hace independiente del 1º.
+ *   El servidor conoce el secret al verificar (intrínseco a TOTP, que es
+ *   un secreto compartido simétrico); la zero-knowledge de la BÓVEDA no se
+ *   ve afectada, ya que las claves de la bóveda nunca llegan al servidor.
+ *
+ *   Los códigos de respaldo se cifran con la misma clave del servidor y se
+ *   consumen (de un solo uso) al usarse en /totp/verify.
  *
  * WebAuthn / Passkeys:
  *   - Es un 2º factor genuino. El servidor guarda la public_key y verifica
@@ -25,13 +37,50 @@
 
 import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
-import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
+import { createHash, createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 import sodium from 'libsodium-wrappers-sumo';
 import { db } from '../db/pool.js';
+import { env } from '../config.js';
 
 const bytesB64 = z.string().regex(/^[A-Za-z0-9_-]+$/);
 const fromB64 = (s: string) => Buffer.from(s, 'base64url');
 const toB64 = (b: Buffer | Uint8Array) => Buffer.from(b).toString('base64url');
+
+// ─────────────────────────────────────────────────────────────────
+// Clave de cifrado en reposo de los secrets TOTP. Es del SERVIDOR, no
+// del usuario: independiente de la contraseña → el TOTP es un 2º factor
+// real. Si TOTP_ENC_KEY no está definida, se deriva de JWT_SECRET con
+// separación de dominio (BLAKE2b genérico de 32 bytes).
+// ─────────────────────────────────────────────────────────────────
+function serverTotpKey(): Buffer {
+  if (env.TOTP_ENC_KEY) {
+    const k = fromB64(env.TOTP_ENC_KEY);
+    if (k.length !== 32) throw new Error('TOTP_ENC_KEY must be 32 bytes (base64url)');
+    return k;
+  }
+  return Buffer.from(
+    sodium.crypto_generichash(32, sodium.from_string('noctcom.totp.server.v1'), sodium.from_string(env.JWT_SECRET)),
+  );
+}
+
+const aeadEncrypt = (plaintext: Buffer, key: Buffer) => {
+  const nonce = randomBytes(sodium.crypto_aead_xchacha20poly1305_ietf_NPUBBYTES);
+  const ciphertext = Buffer.from(
+    sodium.crypto_aead_xchacha20poly1305_ietf_encrypt(plaintext, null, null, nonce, key),
+  );
+  return { ciphertext, nonce };
+};
+
+const aeadDecrypt = (ciphertext: Buffer, nonce: Buffer, key: Buffer): Buffer =>
+  Buffer.from(sodium.crypto_aead_xchacha20poly1305_ietf_decrypt(null, ciphertext, null, nonce, key));
+
+// Compara dos strings en tiempo (cuasi) constante respecto al contenido.
+function constantTimeStrEqual(a: string, b: string): boolean {
+  const ba = Buffer.from(a);
+  const bb = Buffer.from(b);
+  if (ba.length !== bb.length) return false;
+  return timingSafeEqual(ba, bb);
+}
 
 // ─────────────────────────────────────────────────────────────────
 // TOTP verification (HOTP RFC 6238)
@@ -45,9 +94,6 @@ function verifyTotp(secret: Buffer, code: string, window = 1, period = 30, digit
     const counter = Buffer.alloc(8);
     counter.writeBigInt64BE(BigInt(now + offset));
 
-    const hmac = createHash('sha1');
-    // Node no expone HMAC vía createHash; usamos crypto.createHmac
-    const { createHmac } = require('node:crypto');
     const mac = createHmac('sha1', secret).update(counter).digest();
     const idx = (mac[mac.length - 1] ?? 0) & 0x0f;
     const truncated = ((mac[idx]! & 0x7f) << 24)
@@ -73,46 +119,63 @@ const twoFactorRoutes: FastifyPluginAsync = async (app) => {
   // TOTP
   // ═══════════════════════════════════════════════════════════
 
+  const SERVER_TOTP_KEY = serverTotpKey();
+
+  // Intenta consumir un código de respaldo (de un solo uso). Devuelve true
+  // si coincide; en ese caso lo elimina del blob cifrado y reescribe.
+  async function tryConsumeBackupCode(
+    userId: string,
+    row: { totp_backup_codes_wrapped: Buffer | null; totp_backup_codes_nonce: Buffer | null },
+    code: string,
+  ): Promise<boolean> {
+    if (!row.totp_backup_codes_wrapped || !row.totp_backup_codes_nonce) return false;
+    let codes: string[];
+    try {
+      const json = aeadDecrypt(row.totp_backup_codes_wrapped, row.totp_backup_codes_nonce, SERVER_TOTP_KEY);
+      codes = JSON.parse(json.toString('utf8'));
+      if (!Array.isArray(codes)) return false;
+    } catch {
+      return false;
+    }
+    const candidate = code.trim().toUpperCase();
+    const idx = codes.findIndex((c) => constantTimeStrEqual(String(c).toUpperCase(), candidate));
+    if (idx === -1) return false;
+
+    codes.splice(idx, 1);
+    const bw = aeadEncrypt(Buffer.from(JSON.stringify(codes), 'utf8'), SERVER_TOTP_KEY);
+    await db.query(
+      `UPDATE users SET totp_backup_codes_wrapped = $1, totp_backup_codes_nonce = $2 WHERE id = $3`,
+      [bw.ciphertext, bw.nonce, userId],
+    );
+    return true;
+  }
+
   // ─── POST /totp/enable ────────────────────────────────────
-  // El cliente genera el secret y los backup codes, ambos wrapped con
-  // HKDF(MK, "noctcom.totp.v1"). Server solo almacena los blobs.
+  // El cliente genera el secret y los backup codes y los envía UNA vez sobre
+  // TLS (endpoint autenticado). El servidor verifica el código inicial y los
+  // cifra EN REPOSO con su propia clave (independiente de la contraseña).
   app.post(
     '/totp/enable',
     { onRequest: [app.authenticate] },
     async (req, reply) => {
       const schema = z.object({
-        secretWrapped: bytesB64,
-        secretNonce: bytesB64,
-        backupCodesWrapped: bytesB64,
-        backupCodesNonce: bytesB64,
-        // Verificación inicial: el cliente envía el primer código TOTP
-        // junto con el secret desempaquetado temporalmente, para que el
-        // servidor confirme que está bien configurado.
-        initialCode: z.string().length(6),
-        unwrapKey: bytesB64,   // clave temporal HKDF que server usa SOLO para esta llamada
+        secret: bytesB64,                                   // secret TOTP en claro (sobre TLS)
+        initialCode: z.string().length(6),                  // primer código, para confirmar el alta
+        backupCodes: z.array(z.string().min(4).max(32)).min(1).max(20),
       });
       const body = schema.parse(req.body);
       const userId = req.user.sub;
 
-      // Desempaqueta el secret en memoria, verifica, descarta la unwrap key
-      const unwrapKey = fromB64(body.unwrapKey);
-      let secret: Buffer;
-      try {
-        const ct = fromB64(body.secretWrapped);
-        const nonce = fromB64(body.secretNonce);
-        secret = Buffer.from(
-          sodium.crypto_aead_xchacha20poly1305_ietf_decrypt(null, ct, null, nonce, unwrapKey),
-        );
-      } catch {
-        sodium.memzero(unwrapKey);
-        return reply.badRequest('invalid wrap key or secret');
-      } finally {
-        sodium.memzero(unwrapKey);
+      const secret = fromB64(body.secret);
+      const ok = verifyTotp(secret, body.initialCode);
+      if (!ok) {
+        sodium.memzero(secret);
+        return reply.badRequest('initial TOTP code invalid');
       }
 
-      const ok = verifyTotp(secret, body.initialCode);
+      const sw = aeadEncrypt(secret, SERVER_TOTP_KEY);
       sodium.memzero(secret);
-      if (!ok) return reply.badRequest('initial TOTP code invalid');
+      const bw = aeadEncrypt(Buffer.from(JSON.stringify(body.backupCodes), 'utf8'), SERVER_TOTP_KEY);
 
       await db.query(
         `UPDATE users SET
@@ -123,77 +186,97 @@ const twoFactorRoutes: FastifyPluginAsync = async (app) => {
           totp_backup_codes_nonce = $4,
           totp_verified_at = now()
          WHERE id = $5`,
-        [
-          fromB64(body.secretWrapped), fromB64(body.secretNonce),
-          fromB64(body.backupCodesWrapped), fromB64(body.backupCodesNonce),
-          userId,
-        ],
+        [sw.ciphertext, sw.nonce, bw.ciphertext, bw.nonce, userId],
       );
       return reply.send({ ok: true });
     },
   );
 
   // ─── POST /totp/verify ────────────────────────────────────
-  // Se llama durante login. El cliente envía la unwrap key derivada de MK
-  // junto al código. Server desempaqueta, verifica, descarta.
+  // Se llama durante login. El cliente solo envía {userId, code}; NO envía
+  // ninguna clave. El servidor descifra el secret con su clave, verifica el
+  // código (TOTP de 6 dígitos o un código de respaldo) y lo descarta.
   app.post('/totp/verify', async (req, reply) => {
     const schema = z.object({
       userId: z.string().uuid(),
-      code: z.string().length(6),
-      unwrapKey: bytesB64,
+      code: z.string().min(6).max(32),
     });
     const body = schema.parse(req.body);
 
     const r = await db.query(
-      `SELECT totp_secret_wrapped, totp_secret_nonce, totp_enabled
+      `SELECT totp_secret_wrapped, totp_secret_nonce,
+              totp_backup_codes_wrapped, totp_backup_codes_nonce, totp_enabled
        FROM users WHERE id = $1`,
       [body.userId],
     );
     if (r.rowCount === 0 || !r.rows[0].totp_enabled) {
       return reply.badRequest('TOTP not enabled');
     }
+    const row = r.rows[0];
 
-    const unwrapKey = fromB64(body.unwrapKey);
-    let secret: Buffer;
-    try {
-      secret = Buffer.from(sodium.crypto_aead_xchacha20poly1305_ietf_decrypt(
-        null,
-        r.rows[0].totp_secret_wrapped,
-        null,
-        r.rows[0].totp_secret_nonce,
-        unwrapKey,
-      ));
-    } catch {
-      sodium.memzero(unwrapKey);
-      return reply.unauthorized('invalid unwrap');
-    } finally {
-      sodium.memzero(unwrapKey);
+    // 1) Código TOTP de 6 dígitos
+    if (/^\d{6}$/.test(body.code)) {
+      let secret: Buffer;
+      try {
+        secret = aeadDecrypt(row.totp_secret_wrapped, row.totp_secret_nonce, SERVER_TOTP_KEY);
+      } catch {
+        return reply.unauthorized('totp secret undecryptable — re-enroll required');
+      }
+      const ok = verifyTotp(secret, body.code);
+      sodium.memzero(secret);
+      if (ok) return reply.send({ ok: true });
     }
 
-    const ok = verifyTotp(secret, body.code);
-    sodium.memzero(secret);
-    if (!ok) return reply.unauthorized('invalid TOTP code');
+    // 2) Código de respaldo (de un solo uso)
+    if (await tryConsumeBackupCode(body.userId, row, body.code)) {
+      return reply.send({ ok: true, backupCodeUsed: true });
+    }
 
-    return reply.send({ ok: true });
+    return reply.unauthorized('invalid TOTP code');
   });
 
   // ─── POST /totp/disable ───────────────────────────────────
+  // Requiere confirmar con un código TOTP o de respaldo válido antes de borrar.
   app.post(
     '/totp/disable',
     { onRequest: [app.authenticate] },
     async (req, reply) => {
-      const schema = z.object({ confirmCode: z.string().length(6), unwrapKey: bytesB64 });
+      const schema = z.object({ confirmCode: z.string().min(6).max(32) });
       const body = schema.parse(req.body);
-      // (Verificación TOTP previa requerida igual que arriba)
+      const userId = req.user.sub;
+
+      const r = await db.query(
+        `SELECT totp_secret_wrapped, totp_secret_nonce,
+                totp_backup_codes_wrapped, totp_backup_codes_nonce, totp_enabled
+         FROM users WHERE id = $1`,
+        [userId],
+      );
+      if (r.rowCount === 0 || !r.rows[0].totp_enabled) {
+        return reply.badRequest('TOTP not enabled');
+      }
+      const row = r.rows[0];
+
+      let verified = false;
+      if (/^\d{6}$/.test(body.confirmCode)) {
+        try {
+          const secret = aeadDecrypt(row.totp_secret_wrapped, row.totp_secret_nonce, SERVER_TOTP_KEY);
+          verified = verifyTotp(secret, body.confirmCode);
+          sodium.memzero(secret);
+        } catch { /* cae a backup code */ }
+      }
+      if (!verified) verified = await tryConsumeBackupCode(userId, row, body.confirmCode);
+      if (!verified) return reply.badRequest('invalid TOTP code');
+
       await db.query(
         `UPDATE users SET
           totp_enabled = FALSE,
           totp_secret_wrapped = NULL,
           totp_secret_nonce = NULL,
           totp_backup_codes_wrapped = NULL,
-          totp_backup_codes_nonce = NULL
+          totp_backup_codes_nonce = NULL,
+          totp_verified_at = NULL
          WHERE id = $1`,
-        [req.user.sub],
+        [userId],
       );
       return reply.send({ ok: true });
     },
