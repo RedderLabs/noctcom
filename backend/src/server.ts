@@ -134,13 +134,17 @@ export async function buildServer() {
     }
     // La revocación de sesiones tiene que ser efectiva: si el dispositivo del
     // token fue revocado, el access token deja de valer aunque no haya expirado.
+    // Solo rechazamos si el dispositivo existe Y está revocado — si no existe
+    // (sesión sin dispositivo registrado) no rompemos nada.
     const deviceId = (req.user as { deviceId?: string | null }).deviceId;
     if (deviceId) {
       const r = await db.query(
-        `SELECT 1 FROM devices WHERE id = $1 AND user_id = $2 AND revoked_at IS NULL`,
+        `SELECT revoked_at FROM devices WHERE id = $1 AND user_id = $2`,
         [deviceId, req.user.sub],
       );
-      if (r.rowCount === 0) return reply.unauthorized('sesión revocada');
+      if ((r.rowCount ?? 0) > 0 && r.rows[0].revoked_at) {
+        return reply.unauthorized('sesión revocada');
+      }
     }
   });
 
