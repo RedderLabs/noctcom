@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { apiFetch } from '@/lib/api';
+import { getStepUpToken } from '@/lib/step-up';
 import { cn } from '@/lib/utils';
 
 interface DiskInfoExtended {
@@ -61,8 +62,12 @@ export function FormatDiskModal({ open, onClose, disk, onFormatted }: Props) {
     setLoading(true);
 
     try {
+      // Re-autenticación obligatoria antes de una operación irreversible.
+      const stepUpToken = await getStepUpToken();
+
       const result = await apiFetch<{ ok: boolean; mountPath: string }>('/api/v1/storage/disks/format', {
         method: 'POST',
+        headers: { 'x-step-up-token': stepUpToken },
         body: JSON.stringify({
           device: disk.device,
           filesystem,

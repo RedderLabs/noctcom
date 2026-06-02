@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/Button';
 import { useAuth } from '@/lib/auth-store';
 import { useVault } from '@/lib/vault-store';
 import { apiFetch } from '@/lib/api';
+import { getStepUpToken } from '@/lib/step-up';
 import { fromB64, decryptString } from '@/lib/crypto';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
@@ -444,7 +445,11 @@ export default function SettingsPage() {
                   {!vol.active && (
                     <Button variant="ghost" size="sm" onClick={async () => {
                       try {
-                        await apiFetch(`/api/v1/storage/volumes/${vol.id}`, { method: 'DELETE' });
+                        const stepUpToken = await getStepUpToken();
+                        await apiFetch(`/api/v1/storage/volumes/${vol.id}`, {
+                          method: 'DELETE',
+                          headers: { 'x-step-up-token': stepUpToken },
+                        });
                         toast.success('Volumen eliminado');
                         fetchVolumes();
                         fetchDisks();

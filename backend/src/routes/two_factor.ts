@@ -457,6 +457,56 @@ const twoFactorRoutes: FastifyPluginAsync = async (app) => {
   });
 
   // ═══════════════════════════════════════════════════════════
+  // Step-up para operaciones sensibles (formatear/borrar discos)
+  // Re-autenticación: el cliente firma un challenge con su identity key
+  // (que solo posee si tiene la MK). Prueba presencia + posesión reciente,
+  // y protege contra una sesión secuestrada haciendo daño irreversible.
+  // ═══════════════════════════════════════════════════════════
+
+  // ─── POST /step-up/begin ──────────────────────────────────
+  app.post('/step-up/begin', { onRequest: [app.authenticate] }, async (req, reply) => {
+    const challenge = randomBytes(32);
+    const expires = new Date(Date.now() + 5 * 60 * 1000);
+    await db.query(
+      `INSERT INTO webauthn_challenges (user_id, challenge, purpose, expires_at)
+       VALUES ($1,$2,'step-up',$3)`,
+      [req.user.sub, challenge, expires],
+    );
+    return reply.send({ challenge: toB64(challenge) });
+  });
+
+  // ─── POST /step-up/finish ─────────────────────────────────
+  app.post('/step-up/finish', { onRequest: [app.authenticate] }, async (req, reply) => {
+    const schema = z.object({ challenge: bytesB64, signature: bytesB64 });
+    const body = schema.parse(req.body);
+
+    // Consume el challenge exacto (un solo uso, anti-replay).
+    const ch = await db.query(
+      `DELETE FROM webauthn_challenges
+        WHERE user_id = $1 AND purpose = 'step-up' AND challenge = $2 AND expires_at > now()
+        RETURNING id`,
+      [req.user.sub, fromB64(body.challenge)],
+    );
+    if (ch.rowCount === 0) return reply.unauthorized('challenge de step-up inválido o expirado');
+
+    const u = await db.query('SELECT identity_public_key FROM users WHERE id = $1', [req.user.sub]);
+    if (u.rowCount === 0) return reply.notFound();
+
+    const ok = sodium.crypto_sign_verify_detached(
+      fromB64(body.signature),
+      fromB64(body.challenge),
+      u.rows[0].identity_public_key,
+    );
+    if (!ok) return reply.unauthorized('firma de step-up inválida');
+
+    const stepUpToken = await reply.jwtSign(
+      { sub: req.user.sub, deviceId: req.user.deviceId ?? null, scope: 'step-up' },
+      { expiresIn: '5m' },
+    );
+    return reply.send({ stepUpToken });
+  });
+
+  // ═══════════════════════════════════════════════════════════
   // Recuperación con frase mnemónica
   // El cliente prueba conocer la recovery seed (12 palabras) firmando
   // un challenge. El servidor devuelve las privkeys wrapped con la

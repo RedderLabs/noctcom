@@ -197,6 +197,28 @@ const volumeSchema = z.object({
 
 const storageRoutes: FastifyPluginAsync = async (app) => {
 
+  // Exige un token de step-up (re-autenticación reciente) en la cabecera
+  // x-step-up-token para operaciones destructivas. Devuelve 'step-up-required'
+  // para que el cliente lance el flujo de re-auth y reintente.
+  async function requireStepUp(req: any, reply: any): Promise<boolean> {
+    const token = req.headers['x-step-up-token'];
+    if (typeof token !== 'string') {
+      reply.code(401).send({ error: 'step-up-required', message: 'se requiere re-autenticación' });
+      return false;
+    }
+    try {
+      const d = app.jwt.verify(token) as { sub: string; scope?: string };
+      if (d.scope !== 'step-up' || d.sub !== req.user.sub) {
+        reply.code(401).send({ error: 'step-up-required', message: 'token de step-up inválido' });
+        return false;
+      }
+    } catch {
+      reply.code(401).send({ error: 'step-up-required', message: 'token de step-up expirado' });
+      return false;
+    }
+    return true;
+  }
+
   // ─── Disk discovery ──────────────────────────────────────
 
   app.get('/disks', { onRequest: [app.authenticate] }, async (_req, reply) => {
@@ -247,6 +269,9 @@ const storageRoutes: FastifyPluginAsync = async (app) => {
     if (!adminCheck.rows[0]?.is_admin) {
       return reply.forbidden('se requiere acceso de administrador');
     }
+
+    // Re-autenticación reciente obligatoria para una operación irreversible.
+    if (!(await requireStepUp(req, reply))) return;
 
     // Resolve symlinks
     let realDevice: string;
@@ -497,6 +522,8 @@ const storageRoutes: FastifyPluginAsync = async (app) => {
     '/volumes/:id',
     { onRequest: [app.authenticate] },
     async (req, reply) => {
+      if (!(await requireStepUp(req, reply))) return;
+
       const hasChunks = await db.query(
         `SELECT 1 FROM chunks WHERE volume_id = $1 LIMIT 1`,
         [req.params.id],
