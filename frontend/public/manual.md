@@ -147,6 +147,59 @@ En el sidebar puedes ver cuánto espacio has usado. En **Configuración > Almace
 
 ---
 
+## Conectar discos de tu equipo (Noctcom Connector)
+
+En la versión web (en la nube), Noctcom **no puede ver ni gestionar los discos de tu propio ordenador**: el navegador lo impide por seguridad. Para usar un disco de tu equipo (por ejemplo un HDD o SSD por USB) como almacenamiento, instalas un pequeño programa llamado **Noctcom Connector** que hace de puente entre tu máquina y la web.
+
+- Abre una conexión **saliente** y cifrada hacia Noctcom: **no abre ningún puerto** en tu equipo.
+- Solo maneja **datos ya cifrados**: tus claves nunca salen de tu máquina (zero-knowledge).
+- Está atado a tu cuenta: ningún otro usuario puede ver ni tocar tus discos.
+
+> Disponible hoy para **Windows**. Las versiones de macOS y Linux llegan próximamente.
+
+### 1. Descargar el agente
+
+Ve a **Configuración > Noctcom Connector** y pulsa **Descargar para Windows**. Se descarga un único archivo, `noctcom-connector.exe`, que no necesita instalación.
+
+> La primera vez, Windows SmartScreen puede avisar de "editor desconocido" (el binario aún no está firmado). Pulsa **Más información** y luego **Ejecutar de todas formas**. Es seguro: se compila desde el código abierto del proyecto.
+
+### 2. Vincularlo con tu cuenta
+
+1. En **Configuración > Noctcom Connector**, pulsa **Vincular agente** y ponle un nombre. Obtendrás un **código** válido durante 10 minutos.
+2. Abre una terminal **en la carpeta donde se descargó** el archivo (normalmente Descargas). Truco: en el Explorador, dentro de esa carpeta, escribe `cmd` en la barra de direcciones y pulsa Enter.
+3. Ejecuta este comando pegando tu código:
+
+```text
+.\noctcom-connector.exe pair --code TU_CODIGO
+```
+
+### 3. Conectarlo
+
+Déjalo conectado con:
+
+```text
+.\noctcom-connector.exe run
+```
+
+Mantén esa ventana abierta mientras quieras gestionar tus discos desde la web. En una próxima versión el agente se instalará como servicio y arrancará solo en segundo plano, sin necesidad de la terminal.
+
+### 4. Ver tus discos
+
+Vuelve a **Configuración > Noctcom Connector** y refresca la página. El agente aparecerá como **en línea**. Pulsa **Ver discos** y verás las unidades de tu equipo (C:, D:, USB…) con su espacio libre y su sistema de archivos.
+
+### Comandos útiles
+
+| Comando | Para qué sirve |
+| --- | --- |
+| `.\noctcom-connector.exe status` | Ver si el agente está emparejado |
+| `.\noctcom-connector.exe pair --code CODIGO` | Vincularlo a tu cuenta (solo una vez) |
+| `.\noctcom-connector.exe run` | Conectarlo (deja la ventana abierta) |
+| `.\noctcom-connector.exe --help` | Ver todos los comandos |
+
+> Próximamente: montar y formatear discos desde la web, y guardar tus archivos directamente en el disco de tu equipo a través del agente.
+
+---
+
 ## Self-hosting
 
 Noctcom es 100% open source (AGPL-3.0). Puedes desplegarlo en tu propio servidor:
