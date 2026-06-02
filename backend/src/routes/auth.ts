@@ -5,6 +5,7 @@ import { db, tx } from '../db/pool.js';
 import { sendVerificationEmail } from '../mail.js';
 import { deleteBlob } from '../storage/s3.js';
 import { deleteFromDisk } from '../storage/disk.js';
+import { issueSession, hashIp, newRefreshToken } from '../session.js';
 
 // ─────────────────────────────────────────────────────────────────
 // Schemas
@@ -69,16 +70,7 @@ const loginFinalizeSchema = z.object({
 // ─────────────────────────────────────────────────────────────────
 const fromB64 = (s: string) => Buffer.from(s, 'base64url');
 const toB64 = (b: Buffer | Uint8Array) => Buffer.from(b).toString('base64url');
-
-function hashIp(ip: string): Buffer {
-  return createHash('blake2b512').update(`ip:${ip}`).digest().subarray(0, 32);
-}
-
-function newRefreshToken(): { plain: string; hash: Buffer } {
-  const plain = randomBytes(32).toString('base64url');
-  const hash = createHash('blake2b512').update(plain).digest().subarray(0, 32);
-  return { plain, hash };
-}
+// hashIp y newRefreshToken viven en ../session.js (compartidos con issueSession).
 
 // ─────────────────────────────────────────────────────────────────
 const authRoutes: FastifyPluginAsync = async (app) => {
@@ -279,58 +271,35 @@ const authRoutes: FastifyPluginAsync = async (app) => {
     );
     if (!ok) return reply.unauthorized('invalid credentials');
 
-    let deviceId: string | null = body.deviceId ?? null;
-    if (deviceId) {
-      const d = await db.query(
-        `SELECT id FROM devices WHERE id = $1 AND user_id = $2 AND revoked_at IS NULL`,
-        [deviceId, row.id],
-      );
-      if (d.rowCount === 0) {
-        deviceId = null;
-      } else {
-        await db.query(`UPDATE devices SET last_seen_at = now() WHERE id = $1`, [deviceId]);
-      }
-    }
-
-    const accessToken = await reply.jwtSign(
-      { sub: row.id, deviceId: deviceId ?? null },
-      { expiresIn: '7d' },
+    // ─── Gating de 2FA ──────────────────────────────────────
+    // La contraseña ya se verificó. Si el usuario tiene un segundo factor
+    // (passkey registrada o email-OTP activado) NO emitimos sesión todavía:
+    // devolvemos un pending2faToken que prueba "el paso de contraseña pasó" y
+    // que el cliente canjea al completar el 2º factor. Esto no rompe ZK: las
+    // claves wrapped solo se entregan junto con la sesión, tras el 2FA.
+    const tfa = await db.query(
+      `SELECT u.two_factor_email_enabled,
+              EXISTS(
+                SELECT 1 FROM webauthn_credentials w
+                 WHERE w.user_id = u.id AND w.revoked_at IS NULL
+              ) AS has_passkey
+       FROM users u WHERE u.id = $1`,
+      [row.id],
     );
+    const methods: string[] = [];
+    if (tfa.rows[0]?.has_passkey) methods.push('passkey');
+    if (tfa.rows[0]?.two_factor_email_enabled) methods.push('email');
 
-    const { plain, hash } = newRefreshToken();
-    const expires = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
-    if (deviceId) {
-      await db.query(
-        `UPDATE sessions SET revoked_at = now()
-         WHERE user_id = $1 AND device_id = $2 AND revoked_at IS NULL`,
-        [row.id, deviceId],
+    if (methods.length > 0) {
+      const pending2faToken = await reply.jwtSign(
+        { sub: row.id, deviceId: body.deviceId ?? null, scope: 'pending-2fa' },
+        { expiresIn: '5m' },
       );
-    }
-    await db.query(
-      `INSERT INTO sessions (user_id, device_id, refresh_token_hash, ip_address_hash, expires_at)
-       VALUES ($1,$2,$3,$4,$5)`,
-      [row.id, deviceId, hash, hashIp(req.ip), expires],
-    );
-
-    const adminExists = await db.query('SELECT 1 FROM users WHERE is_admin = true LIMIT 1');
-    if (adminExists.rowCount === 0) {
-      await db.query('UPDATE users SET is_admin = true WHERE id = $1', [row.id]);
+      return reply.send({ requires2FA: true, methods, pending2faToken });
     }
 
-    await db.query(`UPDATE users SET last_login_at = now() WHERE id = $1`, [row.id]);
-
-    return reply.send({
-      userId: row.id,
-      deviceId,
-      accessToken,
-      refreshToken: plain,
-      // Devolvemos las claves wrapped para que el cliente las desencripte con la MK
-      identityPrivateKeyWrapped: toB64(row.identity_private_key_wrapped),
-      identityPrivateKeyNonce: toB64(row.identity_private_key_nonce),
-      exchangePrivateKeyWrapped: toB64(row.exchange_private_key_wrapped),
-      exchangePrivateKeyNonce: toB64(row.exchange_private_key_nonce),
-      exchangePublicKey: toB64(row.exchange_public_key),
-    });
+    const payload = await issueSession(req, reply, row.id, body.deviceId ?? null);
+    return reply.send(payload);
   });
 
   // ─── POST /refresh ────────────────────────────────────────

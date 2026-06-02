@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import {
   Shield, KeyRound, Monitor, Lock, HardDrive,
   AlertTriangle, Fingerprint, Smartphone, Usb, Plus, Power, Trash2, Disc,
-  Download, Upload, Loader2,
+  Download, Upload, Loader2, Mail,
 } from 'lucide-react';
 import { FormatDiskModal } from '@/components/vault/FormatDiskModal';
 import { toast } from 'sonner';
@@ -235,6 +235,9 @@ export default function SettingsPage() {
 
       {/* Passkeys (WebAuthn) */}
       <PasskeysSection />
+
+      {/* 2FA por email (OTP) */}
+      <EmailOtp2FASection />
 
       {/* Devices */}
       <section className="mb-8">
@@ -843,6 +846,88 @@ function ExportImportSection() {
             )}
           </div>
         </div>
+      </div>
+    </section>
+  );
+}
+
+// ─── 2FA por email (OTP) Section ─────────────────────────────────
+
+function EmailOtp2FASection() {
+  const [loading, setLoading] = useState(true);
+  const [working, setWorking] = useState(false);
+  const [enabled, setEnabled] = useState(false);
+  const [emailVerified, setEmailVerified] = useState(false);
+
+  const fetchStatus = useCallback(async () => {
+    try {
+      const r = await apiFetch<{ emailVerified: boolean; emailOtpEnabled: boolean }>(
+        '/api/v1/2fa/email/status',
+      );
+      setEnabled(r.emailOtpEnabled);
+      setEmailVerified(r.emailVerified);
+    } catch {
+      /* sin sesión */
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchStatus(); }, [fetchStatus]);
+
+  async function toggle() {
+    setWorking(true);
+    try {
+      if (enabled) {
+        await apiFetch('/api/v1/2fa/email/disable', { method: 'POST' });
+        setEnabled(false);
+        toast.success('2FA por email desactivado');
+      } else {
+        await apiFetch('/api/v1/2fa/email/enable', { method: 'POST' });
+        setEnabled(true);
+        toast.success('2FA por email activado');
+      }
+    } catch (err: any) {
+      toast.error(err.message ?? 'No se pudo cambiar el 2FA por email');
+    } finally {
+      setWorking(false);
+    }
+  }
+
+  return (
+    <section className="mb-8">
+      <div className="flex items-center gap-2 mb-4">
+        <Mail className="size-4 text-violet-300" />
+        <h2 className="text-sm font-semibold uppercase tracking-wider text-[var(--color-text-secondary)]">
+          Código por email
+        </h2>
+      </div>
+
+      <div className="flex items-center gap-4 p-4 rounded-xl border border-[var(--color-border-faint)] bg-[var(--color-bg-surface)]">
+        <div className="size-10 rounded-lg bg-violet-500/10 border border-violet-500/20 grid place-items-center shrink-0">
+          <Mail className="size-4 text-violet-300" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <h3 className="text-sm font-medium">Verificación por email en el login</h3>
+          <p className="text-xs text-[var(--color-text-tertiary)] mt-0.5">
+            {emailVerified
+              ? 'Te pediremos un código de 6 dígitos enviado a tu email al iniciar sesión.'
+              : 'Verifica tu email primero para poder activar esta opción.'}
+          </p>
+        </div>
+        {loading ? (
+          <Loader2 className="size-4 animate-spin text-[var(--color-text-tertiary)]" />
+        ) : (
+          <Button
+            size="sm"
+            variant={enabled ? 'outline' : 'primary'}
+            loading={working}
+            disabled={!emailVerified && !enabled}
+            onClick={toggle}
+          >
+            {enabled ? 'Desactivar' : 'Activar'}
+          </Button>
+        )}
       </div>
     </section>
   );

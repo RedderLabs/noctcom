@@ -34,6 +34,11 @@ CREATE TABLE IF NOT EXISTS users (
     email_verified       BOOLEAN NOT NULL DEFAULT FALSE,
     verification_code_hash BYTEA,
     verification_code_expires TIMESTAMPTZ,
+    -- 2FA por email (OTP en login). El passkey se infiere de webauthn_credentials.
+    two_factor_email_enabled BOOLEAN NOT NULL DEFAULT FALSE,
+    login_otp_hash       BYTEA,
+    login_otp_expires    TIMESTAMPTZ,
+    login_otp_attempts   SMALLINT NOT NULL DEFAULT 0,
     totp_enabled         BOOLEAN NOT NULL DEFAULT FALSE,
     totp_secret_wrapped  BYTEA,
     totp_secret_nonce    BYTEA,
@@ -47,6 +52,13 @@ CREATE TABLE IF NOT EXISTS users (
     last_login_at        TIMESTAMPTZ
 );
 CREATE INDEX IF NOT EXISTS users_email_hash_idx ON users(email_hash);
+
+-- Migración idempotente para BD existentes (2FA por email / OTP de login)
+ALTER TABLE users
+    ADD COLUMN IF NOT EXISTS two_factor_email_enabled BOOLEAN NOT NULL DEFAULT FALSE,
+    ADD COLUMN IF NOT EXISTS login_otp_hash       BYTEA,
+    ADD COLUMN IF NOT EXISTS login_otp_expires    TIMESTAMPTZ,
+    ADD COLUMN IF NOT EXISTS login_otp_attempts   SMALLINT NOT NULL DEFAULT 0;
 
 -- ─── DEVICES ───────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS devices (

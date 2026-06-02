@@ -132,6 +132,11 @@ export async function buildServer() {
     } catch {
       return reply.unauthorized('invalid or expired token');
     }
+    // Los tokens con scope (pending-2fa, step-up) son de un solo propósito y NO
+    // valen como token de sesión: solo los access tokens (sin scope) dan acceso.
+    if ((req.user as { scope?: string }).scope) {
+      return reply.unauthorized('token de propósito limitado, no válido para sesión');
+    }
     // La revocación de sesiones tiene que ser efectiva: si el dispositivo del
     // token fue revocado, el access token deja de valer aunque no haya expirado.
     // Solo rechazamos si el dispositivo existe Y está revocado — si no existe

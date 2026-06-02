@@ -22,7 +22,7 @@
 
 import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
-import { createHash, randomBytes } from 'node:crypto';
+import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 import sodium from 'libsodium-wrappers-sumo';
 import {
   verifyRegistrationResponse,
@@ -30,6 +30,9 @@ import {
 } from '@simplewebauthn/server';
 import { db } from '../db/pool.js';
 import { env } from '../config.js';
+import { issueSession } from '../session.js';
+import { sendLoginCodeEmail } from '../mail.js';
+import { hashEmail } from '../crypto/index.js';
 
 const bytesB64 = z.string().regex(/^[A-Za-z0-9_-]+$/);
 const fromB64 = (s: string) => Buffer.from(s, 'base64url');
@@ -60,6 +63,48 @@ async function consumeChallenge(userId: string, purpose: string): Promise<Buffer
     [userId, purpose],
   );
   return r.rowCount ? r.rows[0].challenge : null;
+}
+
+// Verifica una aserción de passkey contra la public key almacenada, consume el
+// challenge y actualiza el counter. Devuelve el userId dueño de la credencial o
+// null si la credencial no existe / no hay challenge / la firma no verifica.
+// Puede lanzar si @simplewebauthn rechaza el formato → el caller lo captura.
+async function verifyAssertion(response: any): Promise<{ userId: string } | null> {
+  const credIdBytes = Buffer.from(response.id, 'base64url');
+  const c = await db.query(
+    `SELECT id, user_id, public_key, counter, transports
+       FROM webauthn_credentials
+      WHERE credential_id = $1 AND revoked_at IS NULL`,
+    [credIdBytes],
+  );
+  if (c.rowCount === 0) return null;
+  const cred = c.rows[0];
+
+  const challenge = await consumeChallenge(cred.user_id, 'authentication');
+  if (!challenge) return null;
+
+  const { rpID, origins } = rpConfig();
+  const verification = await verifyAuthenticationResponse({
+    response,
+    expectedChallenge: toB64(challenge),
+    expectedOrigin: origins,
+    expectedRPID: rpID,
+    requireUserVerification: false,
+    credential: {
+      id: response.id,
+      publicKey: new Uint8Array(cred.public_key),
+      counter: Number(cred.counter),
+      transports: (cred.transports ?? undefined) as any,
+    },
+  });
+  if (!verification.verified) return null;
+
+  // Counter actualizado → detecta clonación de authenticators.
+  await db.query(
+    `UPDATE webauthn_credentials SET counter = $1, last_used_at = now() WHERE id = $2`,
+    [verification.authenticationInfo.newCounter, cred.id],
+  );
+  return { userId: cred.user_id };
 }
 
 const twoFactorRoutes: FastifyPluginAsync = async (app) => {
@@ -211,50 +256,16 @@ const twoFactorRoutes: FastifyPluginAsync = async (app) => {
     const body = req.body as { response?: any };
     if (!body?.response?.id) return reply.badRequest('falta response de autenticación');
 
-    const credIdBytes = Buffer.from(body.response.id, 'base64url');
-    const c = await db.query(
-      `SELECT id, user_id, public_key, counter, transports
-         FROM webauthn_credentials
-        WHERE credential_id = $1 AND revoked_at IS NULL`,
-      [credIdBytes],
-    );
-    if (c.rowCount === 0) return reply.unauthorized('credential desconocida');
-    const cred = c.rows[0];
-
-    const challenge = await consumeChallenge(cred.user_id, 'authentication');
-    if (!challenge) return reply.unauthorized('challenge de autenticación expirado o inexistente');
-
-    const { rpID, origins } = rpConfig();
-    let verification;
+    let result;
     try {
-      verification = await verifyAuthenticationResponse({
-        response: body.response,
-        expectedChallenge: toB64(challenge),
-        expectedOrigin: origins,
-        expectedRPID: rpID,
-        requireUserVerification: false,
-        credential: {
-          id: body.response.id,
-          publicKey: new Uint8Array(cred.public_key),
-          counter: Number(cred.counter),
-          transports: (cred.transports ?? undefined) as any,
-        },
-      });
+      result = await verifyAssertion(body.response);
     } catch (err: any) {
       req.log.warn({ err: err?.message }, 'webauthn auth verify failed');
       return reply.unauthorized('verificación de passkey fallida');
     }
+    if (!result) return reply.unauthorized('passkey inválida o challenge expirado');
 
-    if (!verification.verified) return reply.unauthorized('passkey inválida');
-
-    // Actualiza el contador para detectar clonación de authenticators (un
-    // contador que no avanza o retrocede indica una credencial duplicada).
-    await db.query(
-      `UPDATE webauthn_credentials SET counter = $1, last_used_at = now() WHERE id = $2`,
-      [verification.authenticationInfo.newCounter, cred.id],
-    );
-
-    return reply.send({ ok: true, verified: true, userId: cred.user_id });
+    return reply.send({ ok: true, verified: true, userId: result.userId });
   });
 
   // ─── DELETE /webauthn/:id ─ revocar passkey ───────────────
@@ -281,6 +292,168 @@ const twoFactorRoutes: FastifyPluginAsync = async (app) => {
       [req.user.sub],
     );
     return reply.send({ passkeys: r.rows });
+  });
+
+  // ═══════════════════════════════════════════════════════════
+  // Completar login con 2FA
+  // El cliente llega aquí con un pending2faToken (emitido por
+  // /auth/login/finalize tras verificar la contraseña). Al superar el 2º
+  // factor, se canjea por una sesión completa vía issueSession.
+  // ═══════════════════════════════════════════════════════════
+
+  // Verifica el pending token y devuelve {userId, deviceId} o null.
+  function verifyPending(token: unknown): { userId: string; deviceId: string | null } | null {
+    if (typeof token !== 'string') return null;
+    try {
+      const d = app.jwt.verify(token) as { sub: string; deviceId?: string | null; scope?: string };
+      if (d.scope !== 'pending-2fa' || !d.sub) return null;
+      return { userId: d.sub, deviceId: d.deviceId ?? null };
+    } catch {
+      return null;
+    }
+  }
+
+  // ─── POST /login/passkey/finish ───────────────────────────
+  app.post('/login/passkey/finish', async (req, reply) => {
+    const body = req.body as { pending2faToken?: unknown; response?: any };
+    const pending = verifyPending(body.pending2faToken);
+    if (!pending) return reply.unauthorized('sesión de 2FA expirada, vuelve a iniciar sesión');
+    if (!body?.response?.id) return reply.badRequest('falta response de autenticación');
+
+    let result;
+    try {
+      result = await verifyAssertion(body.response);
+    } catch (err: any) {
+      req.log.warn({ err: err?.message }, 'webauthn login verify failed');
+      return reply.unauthorized('verificación de passkey fallida');
+    }
+    // La passkey debe pertenecer al MISMO usuario que pasó la contraseña.
+    if (!result || result.userId !== pending.userId) {
+      return reply.unauthorized('passkey inválida');
+    }
+
+    const payload = await issueSession(req, reply, pending.userId, pending.deviceId);
+    return reply.send(payload);
+  });
+
+  // ─── POST /login/email/send ───────────────────────────────
+  // El servidor no guarda el email en claro: el cliente lo reenvía aquí y
+  // verificamos que su hash coincide con el de la cuenta antes de enviar.
+  app.post('/login/email/send', async (req, reply) => {
+    const schema = z.object({ pending2faToken: z.string(), email: z.string().email().max(254) });
+    const body = schema.parse(req.body);
+    const pending = verifyPending(body.pending2faToken);
+    if (!pending) return reply.unauthorized('sesión de 2FA expirada, vuelve a iniciar sesión');
+
+    const u = await db.query(
+      `SELECT email_hash, two_factor_email_enabled FROM users WHERE id = $1`,
+      [pending.userId],
+    );
+    if (u.rowCount === 0 || !u.rows[0].two_factor_email_enabled) {
+      return reply.badRequest('2FA por email no está activado');
+    }
+    const emailHash = Buffer.from(hashEmail(body.email)); // BLAKE2b keyed (noctcom.email.v1)
+    if (!timingSafeEqual(emailHash, u.rows[0].email_hash)) {
+      return reply.badRequest('el email no coincide con la cuenta');
+    }
+
+    const code = String(Math.floor(100000 + Math.random() * 900000));
+    const codeHash = createHash('blake2b512').update(code).digest().subarray(0, 32);
+    const expires = new Date(Date.now() + 10 * 60 * 1000);
+    await db.query(
+      `UPDATE users SET login_otp_hash = $1, login_otp_expires = $2, login_otp_attempts = 0
+       WHERE id = $3`,
+      [codeHash, expires, pending.userId],
+    );
+    sendLoginCodeEmail(body.email, code).catch((err) =>
+      req.log.warn({ err }, 'failed to send login code email'),
+    );
+    return reply.send({ ok: true });
+  });
+
+  // ─── POST /login/email/verify ─────────────────────────────
+  app.post('/login/email/verify', async (req, reply) => {
+    const schema = z.object({ pending2faToken: z.string(), code: z.string().length(6) });
+    const body = schema.parse(req.body);
+    const pending = verifyPending(body.pending2faToken);
+    if (!pending) return reply.unauthorized('sesión de 2FA expirada, vuelve a iniciar sesión');
+
+    const u = await db.query(
+      `SELECT login_otp_hash, login_otp_expires, login_otp_attempts FROM users WHERE id = $1`,
+      [pending.userId],
+    );
+    if (u.rowCount === 0 || !u.rows[0].login_otp_hash) {
+      return reply.badRequest('no hay código pendiente');
+    }
+    const row = u.rows[0];
+    if (row.login_otp_attempts >= 5) {
+      await db.query(`UPDATE users SET login_otp_hash = NULL WHERE id = $1`, [pending.userId]);
+      return reply.unauthorized('demasiados intentos, pide un código nuevo');
+    }
+    if (new Date(row.login_otp_expires) < new Date()) {
+      return reply.unauthorized('código expirado');
+    }
+
+    const codeHash = createHash('blake2b512').update(body.code).digest().subarray(0, 32);
+    if (!timingSafeEqual(codeHash, row.login_otp_hash)) {
+      await db.query(
+        `UPDATE users SET login_otp_attempts = login_otp_attempts + 1 WHERE id = $1`,
+        [pending.userId],
+      );
+      return reply.unauthorized('código incorrecto');
+    }
+
+    await db.query(
+      `UPDATE users SET login_otp_hash = NULL, login_otp_expires = NULL, login_otp_attempts = 0
+       WHERE id = $1`,
+      [pending.userId],
+    );
+    const payload = await issueSession(req, reply, pending.userId, pending.deviceId);
+    return reply.send(payload);
+  });
+
+  // ═══════════════════════════════════════════════════════════
+  // Gestión de 2FA por email (activar / desactivar / estado)
+  // ═══════════════════════════════════════════════════════════
+
+  // ─── GET /email/status ────────────────────────────────────
+  app.get('/email/status', { onRequest: [app.authenticate] }, async (req, reply) => {
+    const r = await db.query(
+      `SELECT u.email_verified, u.two_factor_email_enabled,
+              EXISTS(
+                SELECT 1 FROM webauthn_credentials w
+                 WHERE w.user_id = u.id AND w.revoked_at IS NULL
+              ) AS has_passkey
+       FROM users u WHERE u.id = $1`,
+      [req.user.sub],
+    );
+    if (r.rowCount === 0) return reply.notFound();
+    const u = r.rows[0];
+    return reply.send({
+      emailVerified: u.email_verified,
+      emailOtpEnabled: u.two_factor_email_enabled,
+      hasPasskey: u.has_passkey,
+    });
+  });
+
+  // ─── POST /email/enable ───────────────────────────────────
+  app.post('/email/enable', { onRequest: [app.authenticate] }, async (req, reply) => {
+    const r = await db.query(`SELECT email_verified FROM users WHERE id = $1`, [req.user.sub]);
+    if (r.rowCount === 0) return reply.notFound();
+    if (!r.rows[0].email_verified) {
+      return reply.badRequest('verifica tu email antes de activar el 2FA por email');
+    }
+    await db.query(`UPDATE users SET two_factor_email_enabled = TRUE WHERE id = $1`, [req.user.sub]);
+    return reply.send({ ok: true });
+  });
+
+  // ─── POST /email/disable ──────────────────────────────────
+  app.post('/email/disable', { onRequest: [app.authenticate] }, async (req, reply) => {
+    await db.query(
+      `UPDATE users SET two_factor_email_enabled = FALSE, login_otp_hash = NULL WHERE id = $1`,
+      [req.user.sub],
+    );
+    return reply.send({ ok: true });
   });
 
   // ═══════════════════════════════════════════════════════════

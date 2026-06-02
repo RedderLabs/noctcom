@@ -80,6 +80,24 @@ export async function sendVerificationEmail(to: string, code: string) {
   );
 }
 
+export async function sendLoginCodeEmail(to: string, code: string) {
+  await sendEmail(
+    to,
+    `${code} es tu código de acceso — Noctcom`,
+    `Tu código de acceso es: ${code}\n\nExpira en 10 minutos. Si no intentaste iniciar sesión, alguien tiene tu contraseña: cámbiala cuanto antes.`,
+    `
+      <div style="font-family: system-ui, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px; background: #0f0f17; color: #ededf3; border-radius: 12px;">
+        <h2 style="color: #a78bfa; margin: 0 0 24px;">Noctcom</h2>
+        <p style="margin: 0 0 16px; color: #a0a0b8;">Tu código de acceso (expira en 10 min):</p>
+        <div style="background: #1c1c28; border: 1px solid #2a2a3d; border-radius: 8px; padding: 16px; text-align: center; margin: 0 0 24px;">
+          <code style="font-size: 28px; letter-spacing: 4px; color: #ededf3; font-weight: bold;">${code}</code>
+        </div>
+        <p style="margin: 0; font-size: 12px; color: #6b6b85;">Si no intentaste iniciar sesión, alguien podría tener tu contraseña. Cámbiala cuanto antes.</p>
+      </div>
+    `,
+  );
+}
+
 export async function sendPasswordResetEmail(to: string, code: string) {
   const resetUrl = `${env.FRONTEND_URL ?? env.PUBLIC_URL}/recovery?code=${code}`;
 
