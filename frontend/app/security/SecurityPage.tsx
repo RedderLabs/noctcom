@@ -139,7 +139,6 @@ export default function SecurityPage() {
                 <p className="text-emerald-300">Master Key (MK)</p>
                 <p className="text-[var(--color-text-tertiary)]">  ├── BLAKE2b(&quot;vault.wrap&quot;) → K_vault_wrap</p>
                 <p className="text-[var(--color-text-tertiary)]">  │     └── Unwrap → vault_key → file_key → chunks</p>
-                <p className="text-[var(--color-text-tertiary)]">  ├── BLAKE2b(&quot;totp.v1&quot;) → K_totp_wrap → TOTP secret</p>
                 <p className="text-[var(--color-text-tertiary)]">  ├── BLAKE2b(&quot;login.sign&quot;) → seed → Ed25519 keypair</p>
                 <p className="text-[var(--color-text-tertiary)]">  └── Unwrap → sk_exchange (X25519)</p>
               </div>

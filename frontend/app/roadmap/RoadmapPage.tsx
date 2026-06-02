@@ -9,7 +9,7 @@ type Status = 'done' | 'progress' | 'next';
 
 const MILESTONES: { status: Status; title: string; desc: string }[] = [
   { status: 'done', title: 'Núcleo criptográfico', desc: 'Argon2id, XChaCha20-Poly1305, Ed25519, X25519 y BLAKE2b, con la misma implementación en el navegador y en el servidor.' },
-  { status: 'done', title: 'Cuentas y acceso', desc: 'Registro con frase mnemónica (BIP39), inicio de sesión por reto-respuesta con Ed25519 y verificación en dos pasos (TOTP).' },
+  { status: 'done', title: 'Cuentas y acceso', desc: 'Registro con frase mnemónica (BIP39), inicio de sesión por reto-respuesta con Ed25519 y verificación en dos pasos (passkeys y código por email).' },
   { status: 'done', title: 'Tus archivos, cifrados', desc: 'Subida y descarga en trozos de 4 MiB, una clave por archivo, papelera y versiones. El servidor solo ve cifrado.' },
   { status: 'done', title: 'Compartir de extremo a extremo', desc: 'Compartes con otra persona usando sealed boxes (X25519): ni nosotros podemos abrir lo que circula.' },
   { status: 'done', title: 'Varios dispositivos', desc: 'Registras y revocas dispositivos, y tus claves se sincronizan desde tu contraseña sin pasar por el servidor en claro.' },

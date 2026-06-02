@@ -42,7 +42,7 @@ export const DEFAULT_KDF = {
   saltBytes: () => sodium.crypto_pwhash_SALTBYTES,
 };
 
-// ─── HKDF — para derivar sub-keys (TOTP wrap key, recovery, etc.) ─
+// ─── HKDF — para derivar sub-keys (vault wrap, login sign, etc.) ─
 export function deriveSubKey(masterKey: Bytes, context: string): Bytes {
   return sodium.crypto_generichash(KEY_BYTES, sodium.from_string(context), masterKey);
 }
@@ -105,28 +105,6 @@ export const fromB64 = (s: string) => sodium.from_base64(s, sodium.base64_varian
 export const toHex = (b: Bytes) => sodium.to_hex(b);
 export const fromHex = (s: string) => sodium.from_hex(s);
 
-// ─── TOTP secret base32 encoding (para QR) ───────────────────────
-const B32_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
-export function toBase32(bytes: Bytes): string {
-  let bits = 0;
-  let value = 0;
-  let out = '';
-  for (const byte of bytes) {
-    value = (value << 8) | byte;
-    bits += 8;
-    while (bits >= 5) {
-      out += B32_ALPHABET[(value >>> (bits - 5)) & 0x1f];
-      bits -= 5;
-    }
-  }
-  if (bits > 0) out += B32_ALPHABET[(value << (5 - bits)) & 0x1f];
-  return out;
-}
-
-// ─── Generar TOTP secret (20 bytes = 160 bits, recomendado por RFC) ─
-export function generateTotpSecret(): Bytes {
-  return randomBytes(20);
-}
 
 // ─── File chunking ───────────────────────────────────────────────
 export async function* encryptFileChunks(

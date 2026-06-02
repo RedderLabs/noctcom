@@ -6,7 +6,7 @@ import {
   deriveMasterKey, deriveSubKey, DEFAULT_KDF,
   generateIdentityKeyPair, generateExchangeKeyPair,
   sign, sealForRecipient, openSealed,
-  hashEmail, toBase32, generateTotpSecret,
+  hashEmail,
   decryptChunk,
   toB64, fromB64, toHex, fromHex,
   KEY_BYTES, NONCE_BYTES, CHUNK_SIZE,
@@ -176,27 +176,6 @@ describe('hashEmail', () => {
     const a = hashEmail('alice@example.com');
     const b = hashEmail('bob@example.com');
     expect(Buffer.from(a).equals(Buffer.from(b))).toBe(false);
-  });
-});
-
-// ─── Base32 ──────────────────────────────────────────────────
-describe('toBase32', () => {
-  it('RFC 4648 test vectors', () => {
-    const enc = new TextEncoder();
-    expect(toBase32(enc.encode(''))).toBe('');
-    expect(toBase32(enc.encode('f'))).toBe('MY');
-    expect(toBase32(enc.encode('fo'))).toBe('MZXQ');
-    expect(toBase32(enc.encode('foo'))).toBe('MZXW6');
-    expect(toBase32(enc.encode('foob'))).toBe('MZXW6YQ');
-    expect(toBase32(enc.encode('fooba'))).toBe('MZXW6YTB');
-    expect(toBase32(enc.encode('foobar'))).toBe('MZXW6YTBOI');
-  });
-});
-
-// ─── TOTP secret ─────────────────────────────────────────────
-describe('TOTP', () => {
-  it('generateTotpSecret is 20 bytes', () => {
-    expect(generateTotpSecret().length).toBe(20);
   });
 });
 
