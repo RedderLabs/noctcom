@@ -117,6 +117,8 @@ export default function SettingsPage() {
   const [volumes, setVolumes] = useState<VolumeInfo[]>([]);
   const [formatDisk, setFormatDisk] = useState<DiskInfo | null>(null);
   const [formatOpen, setFormatOpen] = useState(false);
+  const [agents, setAgents] = useState<AgentView[]>([]);
+  const [agentDisks, setAgentDisks] = useState<Record<string, AgentDisk[]>>({});
 
   const fetchDevices = useCallback(async () => {
     if (!masterKey) return;
@@ -163,6 +165,32 @@ export default function SettingsPage() {
 
   useEffect(() => { fetchDisks(); fetchVolumes(); }, [fetchDisks, fetchVolumes]);
 
+  // Discos servidos por los agentes online (cloud): listado real de la máquina
+  // del usuario vía el Noctcom Connector.
+  const fetchAgentStorage = useCallback(async () => {
+    if (!masterKey) return;
+    try {
+      const raw = await apiFetch<ApiAgent[]>('/api/v1/agent');
+      const views: AgentView[] = raw.map((a) => {
+        let name = 'Agente';
+        try { name = decryptString(fromB64(a.nameEncrypted), fromB64(a.nameNonce), masterKey); } catch { /* */ }
+        return { id: a.id, name, platform: a.platform, online: a.online };
+      });
+      setAgents(views);
+      const entries = await Promise.all(
+        views.filter((v) => v.online).map(async (a) => {
+          try {
+            const r = await apiFetch<{ disks: AgentDisk[] }>(`/api/v1/storage/disks?agentId=${a.id}`);
+            return [a.id, r.disks] as const;
+          } catch { return [a.id, [] as AgentDisk[]] as const; }
+        }),
+      );
+      setAgentDisks(Object.fromEntries(entries));
+    } catch { /* sin agentes */ }
+  }, [masterKey]);
+
+  useEffect(() => { fetchAgentStorage(); }, [fetchAgentStorage]);
+
   async function handleDeleteAccount() {
     setDeleting(true);
     try {
@@ -197,6 +225,8 @@ export default function SettingsPage() {
       ],
     },
   ];
+
+  const onlineAgents = agents.filter((a) => a.online);
 
   return (
     <div className="px-8 py-6 max-w-3xl mx-auto">
@@ -371,6 +401,28 @@ export default function SettingsPage() {
           </h2>
         </div>
 
+        {/* Discos servidos por el agente (cloud): los reales de tu máquina */}
+        {onlineAgents.map((a) => (
+          <div key={a.id} className="mb-4">
+            <p className="text-xs text-[var(--color-text-secondary)] mb-2 px-1 flex items-center gap-1.5">
+              <Server className="size-3.5 text-emerald-300" />
+              Discos de <strong className="font-medium">{a.name}</strong>
+            </p>
+            {(agentDisks[a.id] ?? []).length === 0 ? (
+              <p className="text-xs text-[var(--color-text-muted)] px-1">El agente no detectó discos.</p>
+            ) : (
+              <div className="space-y-1">
+                {(agentDisks[a.id] ?? []).map((d) => <AgentDiskCard key={d.id} disk={d} />)}
+              </div>
+            )}
+          </div>
+        ))}
+        {onlineAgents.length > 0 && (
+          <p className="text-[10px] text-[var(--color-text-muted)] px-1 mb-4">
+            Montar y formatear estos discos desde la web llega en la próxima versión del agente.
+          </p>
+        )}
+
         {/* Configured volumes */}
         {volumes.length > 0 && (
           <div className="space-y-1 mb-3">
@@ -467,8 +519,9 @@ export default function SettingsPage() {
           </div>
         )}
 
-        {/* Detected disks not yet configured */}
-        {disks.filter((d) => !d.active).length > 0 && (
+        {/* Discos detectados en el SERVIDOR (solo self-host). En cloud, los reales
+            vienen del agente arriba; ocultamos los del servidor para no confundir. */}
+        {!onlineAgents.length && disks.filter((d) => !d.active).length > 0 && (
           <>
             <p className="text-xs text-[var(--color-text-muted)] mb-2 px-1">Discos detectados:</p>
             <div className="space-y-1">
@@ -574,7 +627,7 @@ export default function SettingsPage() {
           </>
         )}
 
-        {disks.length === 0 && volumes.length === 0 && (
+        {!onlineAgents.length && disks.length === 0 && volumes.length === 0 && (
           <div className="p-3 rounded-lg bg-[var(--color-bg-surface)] border border-[var(--color-border-faint)] flex items-start gap-2">
             <AlertTriangle className="size-4 text-amber-300 mt-0.5 shrink-0" />
             <p className="text-xs text-[var(--color-text-tertiary)] leading-relaxed">
@@ -1115,14 +1168,66 @@ interface AgentDisk {
   needsFormat: boolean;
 }
 
+// Tarjeta detallada de un disco servido por un agente (uso, total/usado/libre, fs).
+function AgentDiskCard({ disk }: { disk: AgentDisk }) {
+  const usedPct = disk.totalBytes > 0 ? Math.min(100, (disk.usedBytes / disk.totalBytes) * 100) : 0;
+  return (
+    <div className="flex items-center gap-4 p-4 rounded-xl border border-[var(--color-border-faint)] bg-[var(--color-bg-surface)]">
+      <div className="size-10 rounded-lg grid place-items-center shrink-0 bg-[var(--color-bg-surface-2)] border border-[var(--color-border-faint)]">
+        {disk.removable
+          ? <Usb className="size-4 text-[var(--color-text-tertiary)]" />
+          : <HardDrive className="size-4 text-[var(--color-text-tertiary)]" />}
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2">
+          <h3 className="text-sm font-medium truncate">{disk.label || disk.device}</h3>
+          <span className="text-[10px] font-mono text-[var(--color-text-tertiary)] shrink-0">{disk.device}</span>
+          {disk.removable && (
+            <span className="text-[10px] font-mono uppercase tracking-wider text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded">
+              USB
+            </span>
+          )}
+        </div>
+        <div className="mt-2 p-2 rounded-lg bg-[var(--color-bg-surface-2)] border border-[var(--color-border-faint)]">
+          <div className="flex items-center gap-2 mb-1.5">
+            <div className="flex-1 h-1.5 bg-[var(--color-bg-surface-3)] rounded-full overflow-hidden">
+              <div className="h-full bg-blue-500 rounded-full" style={{ width: `${usedPct}%` }} />
+            </div>
+            <span className="text-[10px] text-[var(--color-text-muted)] font-mono shrink-0">{usedPct.toFixed(0)}%</span>
+          </div>
+          <div className="grid grid-cols-3 gap-1 text-center">
+            <div>
+              <p className="text-[10px] text-[var(--color-text-muted)] uppercase">Total</p>
+              <p className="text-xs font-mono font-medium">{fmtSize(disk.totalBytes)}</p>
+            </div>
+            <div>
+              <p className="text-[10px] text-[var(--color-text-muted)] uppercase">Usado</p>
+              <p className="text-xs font-mono font-medium text-amber-400">{fmtSize(disk.usedBytes)}</p>
+            </div>
+            <div>
+              <p className="text-[10px] text-[var(--color-text-muted)] uppercase">Libre</p>
+              <p className="text-xs font-mono font-medium text-emerald-400">{fmtSize(disk.freeBytes)}</p>
+            </div>
+          </div>
+          <div className="flex items-center justify-center gap-2 mt-1.5 pt-1.5 border-t border-[var(--color-border-faint)]">
+            <span className={cn('text-[10px] font-mono uppercase', disk.needsFormat ? 'text-amber-400' : 'text-[var(--color-text-muted)]')}>
+              {disk.filesystem || 'sin formato'}
+            </span>
+            {disk.needsFormat && <span className="text-[10px] text-amber-400 font-medium">(incompatible)</span>}
+            {!disk.removable && <span className="text-[10px] text-[var(--color-text-muted)]">· Interno</span>}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ConnectorAgentsSection() {
   const { masterKey } = useAuth();
   const [agents, setAgents] = useState<AgentView[]>([]);
   const [loading, setLoading] = useState(true);
   const [pairing, setPairing] = useState(false);
   const [pairCode, setPairCode] = useState<string | null>(null);
-  const [disksByAgent, setDisksByAgent] = useState<Record<string, AgentDisk[]>>({});
-  const [loadingDisks, setLoadingDisks] = useState<string | null>(null);
   const [os, setOs] = useState<'windows' | 'macos' | 'linux' | 'other'>('other');
 
   useEffect(() => {
@@ -1178,21 +1283,8 @@ function ConnectorAgentsSection() {
       await apiFetch(`/api/v1/agent/${id}`, { method: 'DELETE' });
       toast.success('Agente desvinculado');
       setAgents((a) => a.filter((x) => x.id !== id));
-      setDisksByAgent((m) => { const n = { ...m }; delete n[id]; return n; });
     } catch {
       toast.error('No se pudo desvincular el agente');
-    }
-  }
-
-  async function viewDisks(agentId: string) {
-    setLoadingDisks(agentId);
-    try {
-      const r = await apiFetch<{ disks: AgentDisk[] }>(`/api/v1/storage/disks?agentId=${agentId}`);
-      setDisksByAgent((m) => ({ ...m, [agentId]: r.disks }));
-    } catch (err: any) {
-      toast.error(err.message ?? 'No se pudieron obtener los discos del agente');
-    } finally {
-      setLoadingDisks(null);
     }
   }
 
@@ -1314,17 +1406,6 @@ function ConnectorAgentsSection() {
                     )}
                   </p>
                 </div>
-                {a.online && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    loading={loadingDisks === a.id}
-                    onClick={() => viewDisks(a.id)}
-                  >
-                    <HardDrive className="size-4" />
-                    Ver discos
-                  </Button>
-                )}
                 <button
                   onClick={() => handleRevoke(a.id)}
                   className="p-2 rounded-lg text-[var(--color-text-tertiary)] hover:text-red-400 hover:bg-red-500/10 transition-colors"
@@ -1333,38 +1414,6 @@ function ConnectorAgentsSection() {
                   <Trash2 className="size-4" />
                 </button>
               </div>
-
-              {disksByAgent[a.id] && (
-                <div className="border-t border-[var(--color-border-faint)] bg-[var(--color-bg-surface-2)]/40 px-4 py-3 space-y-1.5">
-                  {disksByAgent[a.id].length === 0 ? (
-                    <p className="text-xs text-[var(--color-text-muted)]">
-                      El agente no detectó discos.
-                    </p>
-                  ) : (
-                    disksByAgent[a.id].map((d) => (
-                      <div key={d.id} className="flex items-center justify-between gap-3 text-xs">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <Disc className="size-3.5 text-blue-300 shrink-0" />
-                          <span className="truncate font-medium">{d.label || d.path || d.device}</span>
-                          {d.removable && (
-                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--color-bg-surface-2)] text-[var(--color-text-tertiary)]">
-                              extraíble
-                            </span>
-                          )}
-                          {d.needsFormat && (
-                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400">
-                              sin formato
-                            </span>
-                          )}
-                        </div>
-                        <span className="font-mono text-[var(--color-text-tertiary)] shrink-0">
-                          {fmtSize(d.usedBytes)} / {fmtSize(d.totalBytes)} · {d.filesystem || '—'}
-                        </span>
-                      </div>
-                    ))
-                  )}
-                </div>
-              )}
             </div>
           ))
         )}
