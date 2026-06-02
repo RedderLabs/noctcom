@@ -50,23 +50,28 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     return () => mq.removeEventListener('change', apply);
   }, [hydrate, hydrateFontScale]);
 
+  // Sin sesión activa (autenticado Y desbloqueado) NO se entra al vault: se va
+  // al login SIEMPRE. La mera presencia de un access token viejo en localStorage
+  // no cuenta como sesión — el material cripto (MK) vive en sessionStorage y se
+  // pierde al cerrar la pestaña o caducar; sin él no hay nada que descifrar.
+  const hasSession = isAuthenticated && isUnlocked;
+
   useEffect(() => {
     if (!mounted) return;
     loadTokens();
-    if (!isAuthenticated || !isUnlocked) {
-      const { access } = loadTokens();
-      if (!access) router.push('/login');
-    } else {
-      initVault();
-      registerPushToken();
-      const unsub = onForegroundMessage((payload) => {
-        if (payload.notification?.title) {
-          toast.info(payload.notification.title, { description: payload.notification.body });
-        }
-      });
-      return unsub;
+    if (!hasSession) {
+      router.replace('/login'); // replace: el botón "atrás" no vuelve al vault
+      return;
     }
-  }, [mounted, isAuthenticated, isUnlocked, router, initVault]);
+    initVault();
+    registerPushToken();
+    const unsub = onForegroundMessage((payload) => {
+      if (payload.notification?.title) {
+        toast.info(payload.notification.title, { description: payload.notification.body });
+      }
+    });
+    return unsub;
+  }, [mounted, hasSession, router, initVault]);
 
   // En móvil el drawer siempre se muestra expandido (con etiquetas).
   const collapsed = isMobile ? false : sidebarCollapsed;
@@ -80,14 +85,13 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     { href: '/vault/trash', label: 'Papelera', icon: Trash2 },
   ];
 
-  if (!mounted) {
+  // Hasta confirmar sesión activa no se renderiza NADA del vault (ni chrome ni
+  // children): pantalla neutra mientras se hidrata o se redirige al login. Así
+  // no hay parpadeo de contenido protegido sin sesión.
+  if (!mounted || !hasSession) {
     return (
-      <div className="h-screen flex overflow-hidden">
-        <aside className="w-64 shrink-0 h-screen fixed left-0 top-0 border-r border-[var(--color-border-faint)] bg-[var(--color-bg-deep)]/40 backdrop-blur-md flex flex-col z-30 -translate-x-full md:translate-x-0" />
-        <div className="flex-1 flex flex-col min-w-0 ml-0 md:ml-64">
-          <header className="h-16 border-b border-[var(--color-border-faint)] bg-[var(--color-bg-base)]/60 backdrop-blur-md" />
-          <main className="flex-1" />
-        </div>
+      <div className="h-screen grid place-items-center bg-[var(--color-bg-base)]">
+        <div className="size-6 rounded-full border-2 border-[var(--color-border-subtle)] border-t-violet-500 animate-spin" />
       </div>
     );
   }
