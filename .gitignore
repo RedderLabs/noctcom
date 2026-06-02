@@ -38,6 +38,7 @@ redis/data/
 
 # Stitch HTML exports (reference only)
 noctcom-pages/
+pages error/
 
 # Claude Code / MCP config
 .claude/
@@ -52,6 +53,7 @@ dominios.txt
 recuperacion.txt
 posts_.txt
 PHASES.md
+ROADMAP_PRODUCCION.md
 NOCTCOM.md
 NOCTCOM_vs_NEXTCLOUD_INTERNAL.md
 NOCTCOM_vs_SELFHOSTED_INTERNAL.md

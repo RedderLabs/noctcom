@@ -24,18 +24,49 @@ import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 import { createHash, randomBytes } from 'node:crypto';
 import sodium from 'libsodium-wrappers-sumo';
+import {
+  verifyRegistrationResponse,
+  verifyAuthenticationResponse,
+} from '@simplewebauthn/server';
 import { db } from '../db/pool.js';
+import { env } from '../config.js';
 
 const bytesB64 = z.string().regex(/^[A-Za-z0-9_-]+$/);
 const fromB64 = (s: string) => Buffer.from(s, 'base64url');
 const toB64 = (b: Buffer | Uint8Array) => Buffer.from(b).toString('base64url');
 
+// ─── Config de Relying Party ────────────────────────────────────
+// rpID = hostname del FRONTEND (donde corre la passkey, no el API). El origin
+// debe coincidir exacto con lo que envía el navegador; aceptamos frontend + API
+// por si comparten dominio o estamos en dev.
+function rpConfig(): { rpName: string; rpID: string; origins: string[] } {
+  const frontend = env.FRONTEND_URL ?? env.PUBLIC_URL;
+  const url = new URL(frontend);
+  const origins = new Set<string>([url.origin]);
+  origins.add(new URL(env.PUBLIC_URL).origin);
+  return { rpName: 'Noctcom', rpID: url.hostname, origins: [...origins] };
+}
+
+// Consume (borra) el challenge válido más reciente para un propósito dado.
+// Garantiza un solo uso y limpia la fila para que no pueda reutilizarse.
+async function consumeChallenge(userId: string, purpose: string): Promise<Buffer | null> {
+  const r = await db.query(
+    `DELETE FROM webauthn_challenges
+      WHERE id = (
+        SELECT id FROM webauthn_challenges
+         WHERE user_id = $1 AND purpose = $2 AND expires_at > now()
+         ORDER BY created_at DESC LIMIT 1)
+      RETURNING challenge`,
+    [userId, purpose],
+  );
+  return r.rowCount ? r.rows[0].challenge : null;
+}
+
 const twoFactorRoutes: FastifyPluginAsync = async (app) => {
   await sodium.ready;
 
   // ═══════════════════════════════════════════════════════════
-  // WebAuthn / Passkeys
-  // En producción usa @simplewebauthn/server. Aquí mostramos la estructura.
+  // WebAuthn / Passkeys — verificación real con @simplewebauthn/server
   // ═══════════════════════════════════════════════════════════
 
   // ─── POST /webauthn/register/begin ────────────────────────
@@ -54,10 +85,11 @@ const twoFactorRoutes: FastifyPluginAsync = async (app) => {
       );
 
       const u = await db.query('SELECT username FROM users WHERE id = $1', [userId]);
+      const { rpName, rpID } = rpConfig();
 
       return reply.send({
         challenge: toB64(challenge),
-        rp: { name: 'Noctcom', id: new URL(process.env.PUBLIC_URL ?? 'https://localhost').hostname },
+        rp: { name: rpName, id: rpID },
         user: {
           id: toB64(Buffer.from(userId.replace(/-/g, ''), 'hex')),
           name: u.rows[0].username,
@@ -82,27 +114,50 @@ const twoFactorRoutes: FastifyPluginAsync = async (app) => {
     '/webauthn/register/finish',
     { onRequest: [app.authenticate] },
     async (req, reply) => {
-      const schema = z.object({
-        credentialId: bytesB64,
-        publicKey: bytesB64,
-        transports: z.array(z.string()).optional(),
-        nickname: z.string().max(64).optional(),
-        clientDataJSON: bytesB64,
-        attestationObject: bytesB64,
-      });
-      const body = schema.parse(req.body);
       const userId = req.user.sub;
+      const body = req.body as { response?: any; nickname?: string };
+      if (!body?.response?.id) return reply.badRequest('falta response de registro');
 
-      // TODO: validar attestationObject con @simplewebauthn/server en prod.
-      // Aquí confiamos en que la publicKey decodificada es válida.
+      const challenge = await consumeChallenge(userId, 'registration');
+      if (!challenge) return reply.unauthorized('challenge de registro expirado o inexistente');
 
+      const { rpID, origins } = rpConfig();
+      let verification;
+      try {
+        verification = await verifyRegistrationResponse({
+          response: body.response,
+          expectedChallenge: toB64(challenge),
+          expectedOrigin: origins,
+          expectedRPID: rpID,
+          requireUserVerification: false,
+        });
+      } catch (err: any) {
+        req.log.warn({ err: err?.message }, 'webauthn register verify failed');
+        return reply.badRequest('attestation inválida');
+      }
+
+      if (!verification.verified || !verification.registrationInfo) {
+        return reply.badRequest('registro de passkey no verificado');
+      }
+
+      const { credential, credentialDeviceType, credentialBackedUp } = verification.registrationInfo;
+      const nickname = typeof body.nickname === 'string' ? body.nickname.slice(0, 64) : null;
+
+      // ON CONFLICT: re-registrar la misma passkey no es un error, es idempotente.
       await db.query(
         `INSERT INTO webauthn_credentials
-          (user_id, credential_id, public_key, transports, nickname)
-         VALUES ($1,$2,$3,$4,$5)`,
+          (user_id, credential_id, public_key, counter, transports, device_type, backed_up, nickname)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+         ON CONFLICT (credential_id) DO NOTHING`,
         [
-          userId, fromB64(body.credentialId), fromB64(body.publicKey),
-          body.transports ?? [], body.nickname ?? null,
+          userId,
+          Buffer.from(credential.id, 'base64url'),
+          Buffer.from(credential.publicKey),
+          credential.counter,
+          credential.transports ?? [],
+          credentialDeviceType,
+          credentialBackedUp,
+          nickname,
         ],
       );
       return reply.code(201).send({ ok: true });
@@ -138,6 +193,7 @@ const twoFactorRoutes: FastifyPluginAsync = async (app) => {
 
     return reply.send({
       challenge: toB64(challenge),
+      rpId: rpConfig().rpID,
       allowCredentials: creds.rows.map((c) => ({
         type: 'public-key',
         id: toB64(c.credential_id),
@@ -149,10 +205,56 @@ const twoFactorRoutes: FastifyPluginAsync = async (app) => {
   });
 
   // ─── POST /webauthn/authenticate/finish ───────────────────
+  // Verifica la firma de la passkey contra la public key almacenada. Esto
+  // cierra el agujero anterior (antes devolvía {ok:true} sin comprobar nada).
   app.post('/webauthn/authenticate/finish', async (req, reply) => {
-    // TODO: verificar la firma con la public_key almacenada.
-    // En prod usa @simplewebauthn/server.verifyAuthenticationResponse
-    return reply.send({ ok: true });
+    const body = req.body as { response?: any };
+    if (!body?.response?.id) return reply.badRequest('falta response de autenticación');
+
+    const credIdBytes = Buffer.from(body.response.id, 'base64url');
+    const c = await db.query(
+      `SELECT id, user_id, public_key, counter, transports
+         FROM webauthn_credentials
+        WHERE credential_id = $1 AND revoked_at IS NULL`,
+      [credIdBytes],
+    );
+    if (c.rowCount === 0) return reply.unauthorized('credential desconocida');
+    const cred = c.rows[0];
+
+    const challenge = await consumeChallenge(cred.user_id, 'authentication');
+    if (!challenge) return reply.unauthorized('challenge de autenticación expirado o inexistente');
+
+    const { rpID, origins } = rpConfig();
+    let verification;
+    try {
+      verification = await verifyAuthenticationResponse({
+        response: body.response,
+        expectedChallenge: toB64(challenge),
+        expectedOrigin: origins,
+        expectedRPID: rpID,
+        requireUserVerification: false,
+        credential: {
+          id: body.response.id,
+          publicKey: new Uint8Array(cred.public_key),
+          counter: Number(cred.counter),
+          transports: (cred.transports ?? undefined) as any,
+        },
+      });
+    } catch (err: any) {
+      req.log.warn({ err: err?.message }, 'webauthn auth verify failed');
+      return reply.unauthorized('verificación de passkey fallida');
+    }
+
+    if (!verification.verified) return reply.unauthorized('passkey inválida');
+
+    // Actualiza el contador para detectar clonación de authenticators (un
+    // contador que no avanza o retrocede indica una credencial duplicada).
+    await db.query(
+      `UPDATE webauthn_credentials SET counter = $1, last_used_at = now() WHERE id = $2`,
+      [verification.authenticationInfo.newCounter, cred.id],
+    );
+
+    return reply.send({ ok: true, verified: true, userId: cred.user_id });
   });
 
   // ─── DELETE /webauthn/:id ─ revocar passkey ───────────────

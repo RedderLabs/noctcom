@@ -182,12 +182,6 @@ export default function SettingsPage() {
       icon: Shield,
       items: [
         {
-          label: 'Passkeys (WebAuthn)',
-          description: 'Usa tu huella digital o Face ID para autenticarte',
-          icon: Fingerprint,
-          action: SOON,
-        },
-        {
           label: 'Cambiar contraseña maestra',
           description: 'Re-cifra todas tus claves con una nueva contraseña',
           icon: Lock,
@@ -238,6 +232,9 @@ export default function SettingsPage() {
           ))}
         </div>
       </section>
+
+      {/* Passkeys (WebAuthn) */}
+      <PasskeysSection />
 
       {/* Devices */}
       <section className="mb-8">
@@ -846,6 +843,147 @@ function ExportImportSection() {
             )}
           </div>
         </div>
+      </div>
+    </section>
+  );
+}
+
+// ─── Passkeys (WebAuthn) Section ─────────────────────────────────
+
+interface PasskeyView {
+  id: string;
+  nickname: string | null;
+  device_type: string | null;
+  last_used_at: string | null;
+  created_at: string;
+}
+
+function PasskeysSection() {
+  const [passkeys, setPasskeys] = useState<PasskeyView[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [registering, setRegistering] = useState(false);
+
+  const fetchPasskeys = useCallback(async () => {
+    try {
+      const r = await apiFetch<{ passkeys: PasskeyView[] }>('/api/v1/2fa/webauthn');
+      setPasskeys(r.passkeys ?? []);
+    } catch {
+      /* sin passkeys todavía */
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchPasskeys(); }, [fetchPasskeys]);
+
+  async function handleRegister() {
+    if (typeof window !== 'undefined' && !window.PublicKeyCredential) {
+      toast.error('Este navegador no soporta passkeys');
+      return;
+    }
+    setRegistering(true);
+    try {
+      const options = await apiFetch('/api/v1/2fa/webauthn/register/begin', { method: 'POST' });
+      const { startRegistration } = await import('@simplewebauthn/browser');
+
+      let attResp;
+      try {
+        attResp = await startRegistration({ optionsJSON: options as any });
+      } catch (err: any) {
+        if (err?.name === 'NotAllowedError' || err?.name === 'AbortError') {
+          toast.info('Registro de passkey cancelado');
+          return;
+        }
+        if (err?.name === 'InvalidStateError') {
+          toast.info('Esta passkey ya está registrada');
+          return;
+        }
+        throw err;
+      }
+
+      const nickname =
+        (typeof navigator !== 'undefined' && (navigator as any).platform) || 'Passkey';
+
+      await apiFetch('/api/v1/2fa/webauthn/register/finish', {
+        method: 'POST',
+        body: JSON.stringify({ response: attResp, nickname }),
+      });
+      toast.success('Passkey registrada');
+      fetchPasskeys();
+    } catch {
+      toast.error('No se pudo registrar la passkey');
+    } finally {
+      setRegistering(false);
+    }
+  }
+
+  async function handleRevoke(id: string) {
+    try {
+      await apiFetch(`/api/v1/2fa/webauthn/${id}`, { method: 'DELETE' });
+      toast.success('Passkey revocada');
+      setPasskeys((p) => p.filter((k) => k.id !== id));
+    } catch {
+      toast.error('No se pudo revocar la passkey');
+    }
+  }
+
+  return (
+    <section className="mb-8">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <Fingerprint className="size-4 text-violet-300" />
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-[var(--color-text-secondary)]">
+            Passkeys (WebAuthn)
+          </h2>
+        </div>
+        <Button size="sm" loading={registering} onClick={handleRegister}>
+          <Plus className="size-4" />
+          Añadir passkey
+        </Button>
+      </div>
+
+      <p className="text-xs text-[var(--color-text-tertiary)] mb-4">
+        Usa tu huella, Face ID o una llave de seguridad física como segundo factor.
+        La clave privada nunca sale de tu dispositivo.
+      </p>
+
+      <div className="space-y-1">
+        {loading ? (
+          <div className="flex items-center gap-2 p-4 text-sm text-[var(--color-text-tertiary)]">
+            <Loader2 className="size-4 animate-spin" />
+            Cargando passkeys…
+          </div>
+        ) : passkeys.length === 0 ? (
+          <div className="p-4 rounded-xl border border-dashed border-[var(--color-border-faint)] text-sm text-[var(--color-text-tertiary)]">
+            No tienes ninguna passkey registrada todavía.
+          </div>
+        ) : (
+          passkeys.map((pk) => (
+            <div
+              key={pk.id}
+              className="flex items-center gap-4 p-4 rounded-xl border border-[var(--color-border-faint)] bg-[var(--color-bg-surface)]"
+            >
+              <div className="size-10 rounded-lg bg-violet-500/10 border border-violet-500/20 grid place-items-center shrink-0">
+                <KeyRound className="size-4 text-violet-300" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-sm font-medium truncate">{pk.nickname || 'Passkey'}</h3>
+                <p className="text-xs text-[var(--color-text-tertiary)] mt-0.5">
+                  {pk.device_type === 'multiDevice' ? 'Sincronizada' : 'Este dispositivo'}
+                  {' · '}
+                  {pk.last_used_at ? `usada ${timeAgo(pk.last_used_at)}` : 'sin usar'}
+                </p>
+              </div>
+              <button
+                onClick={() => handleRevoke(pk.id)}
+                className="p-2 rounded-lg text-[var(--color-text-tertiary)] hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                title="Revocar passkey"
+              >
+                <Trash2 className="size-4" />
+              </button>
+            </div>
+          ))
+        )}
       </div>
     </section>
   );
