@@ -49,12 +49,16 @@ class Store {
   users = new Map<string, FakeUser>();
   challenges: ChallengeRow[] = [];
   credentials: CredentialRow[] = [];
+  agents: any[] = [];
+  pairingTokens: any[] = [];
   private seq = 0;
 
   reset(): void {
     this.users.clear();
     this.challenges = [];
     this.credentials = [];
+    this.agents = [];
+    this.pairingTokens = [];
     this.seq = 0;
   }
 
@@ -211,6 +215,94 @@ async function query(text: string, params: any[] = []): Promise<QueryResult> {
   if (sql.includes('SELECT identity_public_key FROM users WHERE id = $1')) {
     const u = store.users.get(params[0]);
     return u ? { rows: [{ identity_public_key: u.identity_public_key }], rowCount: 1 } : { rows: [], rowCount: 0 };
+  }
+
+  // ─── agent_pairing_tokens ─────────────────────────────────
+  if (sql.startsWith('INSERT INTO agent_pairing_tokens')) {
+    store.pairingTokens.push({
+      id: randomUUID(),
+      user_id: params[0],
+      code_hash: asBuf(params[1]),
+      name_encrypted: asBuf(params[2]),
+      name_nonce: asBuf(params[3]),
+      expires_at: params[4] as Date,
+      used_at: null,
+      created_at: store.nextSeq(),
+    });
+    return { rows: [], rowCount: 1 };
+  }
+
+  if (sql.includes('FROM agent_pairing_tokens') && sql.includes('code_hash = $1')) {
+    const hash = asBuf(params[0]);
+    const now = Date.now();
+    const tok = store.pairingTokens
+      .filter((t) => t.code_hash.equals(hash) && t.used_at === null && t.expires_at.getTime() > now)
+      .sort((a, b) => b.created_at - a.created_at)[0];
+    if (!tok) return { rows: [], rowCount: 0 };
+    return {
+      rows: [{ id: tok.id, user_id: tok.user_id, name_encrypted: tok.name_encrypted, name_nonce: tok.name_nonce }],
+      rowCount: 1,
+    };
+  }
+
+  if (sql.startsWith('UPDATE agent_pairing_tokens SET used_at')) {
+    const tok = store.pairingTokens.find((t) => t.id === params[0]);
+    if (tok) tok.used_at = new Date();
+    return { rows: [], rowCount: tok ? 1 : 0 };
+  }
+
+  // ─── agents ───────────────────────────────────────────────
+  if (sql.startsWith('INSERT INTO agents')) {
+    const id = randomUUID();
+    store.agents.push({
+      id,
+      user_id: params[0],
+      agent_public_key: asBuf(params[1]),
+      name_encrypted: asBuf(params[2]),
+      name_nonce: asBuf(params[3]),
+      platform: params[4] ?? null,
+      last_seen_at: new Date(),
+      created_at: store.nextSeq(),
+      revoked_at: null,
+    });
+    return { rows: [{ id }], rowCount: 1 };
+  }
+
+  // Listado de agentes del usuario.
+  if (sql.includes('FROM agents') && sql.includes('user_id = $1') && sql.includes('ORDER BY created_at')) {
+    const rows = store.agents
+      .filter((a) => a.user_id === params[0] && a.revoked_at === null)
+      .sort((a, b) => a.created_at - b.created_at)
+      .map((a) => ({
+        id: a.id,
+        name_encrypted: a.name_encrypted,
+        name_nonce: a.name_nonce,
+        platform: a.platform,
+        last_seen_at: a.last_seen_at,
+        created_at: new Date(),
+      }));
+    return { rows, rowCount: rows.length };
+  }
+
+  // Carga de clave pública para el challenge del WS.
+  if (sql.includes('SELECT user_id, agent_public_key FROM agents WHERE id = $1')) {
+    const a = store.agents.find((x) => x.id === params[0] && x.revoked_at === null);
+    return a
+      ? { rows: [{ user_id: a.user_id, agent_public_key: a.agent_public_key }], rowCount: 1 }
+      : { rows: [], rowCount: 0 };
+  }
+
+  // Revocar agente.
+  if (sql.startsWith('UPDATE agents SET revoked_at')) {
+    const a = store.agents.find((x) => x.id === params[0] && x.user_id === params[1] && x.revoked_at === null);
+    if (a) a.revoked_at = new Date();
+    return { rows: a ? [{ id: a.id }] : [], rowCount: a ? 1 : 0 };
+  }
+
+  if (sql.startsWith('UPDATE agents SET last_seen_at')) {
+    const a = store.agents.find((x) => x.id === params[0]);
+    if (a) a.last_seen_at = new Date();
+    return { rows: [], rowCount: a ? 1 : 0 };
   }
 
   throw new Error(`fake-db: consulta no contemplada → ${sql}`);

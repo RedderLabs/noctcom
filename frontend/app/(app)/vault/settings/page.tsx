@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import {
   Shield, KeyRound, Monitor, Lock, HardDrive,
   AlertTriangle, Fingerprint, Smartphone, Usb, Plus, Power, Trash2, Disc,
-  Download, Upload, Loader2, Mail,
+  Download, Upload, Loader2, Mail, Server, Copy,
 } from 'lucide-react';
 import { FormatDiskModal } from '@/components/vault/FormatDiskModal';
 import { toast } from 'sonner';
@@ -13,7 +13,7 @@ import { useAuth } from '@/lib/auth-store';
 import { useVault } from '@/lib/vault-store';
 import { apiFetch } from '@/lib/api';
 import { getStepUpToken } from '@/lib/step-up';
-import { fromB64, decryptString } from '@/lib/crypto';
+import { fromB64, decryptString, encryptString, toB64 } from '@/lib/crypto';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
@@ -358,6 +358,9 @@ export default function SettingsPage() {
           </p>
         </div>
       </section>
+
+      {/* Noctcom Connector (agente local) */}
+      <ConnectorAgentsSection />
 
       {/* Physical disks */}
       <section className="mb-8">
@@ -1068,6 +1071,176 @@ function PasskeysSection() {
                 onClick={() => handleRevoke(pk.id)}
                 className="p-2 rounded-lg text-[var(--color-text-tertiary)] hover:text-red-400 hover:bg-red-500/10 transition-colors"
                 title="Revocar passkey"
+              >
+                <Trash2 className="size-4" />
+              </button>
+            </div>
+          ))
+        )}
+      </div>
+    </section>
+  );
+}
+
+// ─── Noctcom Connector (agente local) ────────────────────────────
+
+interface ApiAgent {
+  id: string;
+  nameEncrypted: string;
+  nameNonce: string;
+  platform: string | null;
+  online: boolean;
+  lastSeenAt: string | null;
+  createdAt: string;
+}
+
+interface AgentView {
+  id: string;
+  name: string;
+  platform: string | null;
+  online: boolean;
+}
+
+function ConnectorAgentsSection() {
+  const { masterKey } = useAuth();
+  const [agents, setAgents] = useState<AgentView[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [pairing, setPairing] = useState(false);
+  const [pairCode, setPairCode] = useState<string | null>(null);
+
+  const fetchAgents = useCallback(async () => {
+    if (!masterKey) return;
+    try {
+      const raw = await apiFetch<ApiAgent[]>('/api/v1/agent');
+      setAgents(
+        raw.map((a) => {
+          let name = 'Agente';
+          try {
+            name = decryptString(fromB64(a.nameEncrypted), fromB64(a.nameNonce), masterKey);
+          } catch { /* nombre no descifrable */ }
+          return { id: a.id, name, platform: a.platform, online: a.online };
+        }),
+      );
+    } catch { /* sin agentes todavía */ }
+    setLoading(false);
+  }, [masterKey]);
+
+  useEffect(() => { fetchAgents(); }, [fetchAgents]);
+
+  async function handlePair() {
+    if (!masterKey) return;
+    const name = window.prompt('Nombre para este agente (p. ej. "PC del salón"):', 'Mi equipo');
+    if (!name?.trim()) return;
+    setPairing(true);
+    try {
+      const enc = encryptString(name.trim().slice(0, 64), masterKey);
+      const r = await apiFetch<{ code: string }>('/api/v1/agent/pair/begin', {
+        method: 'POST',
+        body: JSON.stringify({ nameEncrypted: toB64(enc.ciphertext), nameNonce: toB64(enc.nonce) }),
+      });
+      setPairCode(r.code);
+    } catch (err: any) {
+      toast.error(err.message ?? 'No se pudo generar el código de emparejamiento');
+    } finally {
+      setPairing(false);
+    }
+  }
+
+  async function handleRevoke(id: string) {
+    try {
+      await apiFetch(`/api/v1/agent/${id}`, { method: 'DELETE' });
+      toast.success('Agente desvinculado');
+      setAgents((a) => a.filter((x) => x.id !== id));
+    } catch {
+      toast.error('No se pudo desvincular el agente');
+    }
+  }
+
+  return (
+    <section className="mb-8">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <Server className="size-4 text-emerald-300" />
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-[var(--color-text-secondary)]">
+            Noctcom Connector
+          </h2>
+        </div>
+        <Button size="sm" loading={pairing} onClick={handlePair}>
+          <Plus className="size-4" />
+          Vincular agente
+        </Button>
+      </div>
+
+      <p className="text-xs text-[var(--color-text-tertiary)] mb-4">
+        Instala el agente en tu equipo para gestionar sus discos desde aquí. Abre una
+        conexión saliente cifrada (sin puertos abiertos) y tus claves nunca salen de tu máquina.
+      </p>
+
+      {pairCode && (
+        <div className="mb-4 p-4 rounded-xl border border-emerald-500/30 bg-emerald-500/5">
+          <p className="text-xs text-[var(--color-text-secondary)]">
+            En el equipo donde instalaste el agente, ejecuta:
+          </p>
+          <div className="flex items-center gap-2 mt-2">
+            <code className="flex-1 text-xs font-mono bg-[var(--color-bg-surface-2)] px-3 py-2 rounded-lg break-all">
+              noctcom-connector pair --code {pairCode}
+            </code>
+            <button
+              onClick={() => {
+                navigator.clipboard?.writeText(`noctcom-connector pair --code ${pairCode}`);
+                toast.success('Comando copiado');
+              }}
+              className="p-2 rounded-lg text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-surface-2)] transition-colors"
+              title="Copiar"
+            >
+              <Copy className="size-4" />
+            </button>
+          </div>
+          <p className="text-[10px] text-[var(--color-text-muted)] mt-2">
+            El código caduca en 10 minutos y es de un solo uso.
+          </p>
+          <div className="mt-3">
+            <Button size="sm" variant="outline" onClick={() => { setPairCode(null); fetchAgents(); }}>
+              Ya lo he vinculado
+            </Button>
+          </div>
+        </div>
+      )}
+
+      <div className="space-y-1">
+        {loading ? (
+          <div className="flex items-center gap-2 p-4 text-sm text-[var(--color-text-tertiary)]">
+            <Loader2 className="size-4 animate-spin" />
+            Cargando agentes…
+          </div>
+        ) : agents.length === 0 ? (
+          <p className="text-xs text-[var(--color-text-muted)] px-1">
+            No tienes ningún agente vinculado todavía.
+          </p>
+        ) : (
+          agents.map((a) => (
+            <div
+              key={a.id}
+              className="flex items-center gap-4 p-4 rounded-xl border border-[var(--color-border-faint)] bg-[var(--color-bg-surface)]"
+            >
+              <div className="size-10 rounded-lg bg-emerald-500/10 border border-emerald-500/20 grid place-items-center shrink-0">
+                <Server className="size-4 text-emerald-300" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-sm font-medium truncate">{a.name}</h3>
+                <p className="text-xs text-[var(--color-text-tertiary)] mt-0.5">
+                  {a.platform ?? 'desconocido'} ·{' '}
+                  {a.online ? (
+                    <span className="text-emerald-400">en línea</span>
+                  ) : (
+                    <span>desconectado</span>
+                  )}
+                </p>
+              </div>
+              <button
+                onClick={() => handleRevoke(a.id)}
+                className="p-2 rounded-lg text-[var(--color-text-tertiary)] hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                title="Desvincular agente"
               >
                 <Trash2 className="size-4" />
               </button>

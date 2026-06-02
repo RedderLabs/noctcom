@@ -1,0 +1,29 @@
+[package]
+name = "noctcom-connector"
+version = "0.1.0"
+edition = "2021"
+description = "Agente local de Noctcom: gestiona los discos de tu máquina desde la web cloud"
+license = "AGPL-3.0"
+
+[[bin]]
+name = "noctcom-connector"
+path = "src/main.rs"
+
+[dependencies]
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "time", "signal"] }
+tokio-tungstenite = { version = "0.24", features = ["rustls-tls-native-roots"] }
+futures-util = "0.3"
+ureq = { version = "2", features = ["json", "tls"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+ed25519-dalek = { version = "2", features = ["rand_core"] }
+rand = "0.8"
+base64 = "0.22"
+clap = { version = "4", features = ["derive"] }
+directories = "5"
+anyhow = "1"
+
+[profile.release]
+strip = true
+lto = true
+opt-level = "z"

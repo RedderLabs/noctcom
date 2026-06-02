@@ -304,3 +304,42 @@ CREATE TRIGGER users_updated_at BEFORE UPDATE ON users FOR EACH ROW EXECUTE FUNC
 
 DROP TRIGGER IF EXISTS nodes_updated_at ON nodes;
 CREATE TRIGGER nodes_updated_at BEFORE UPDATE ON nodes FOR EACH ROW EXECUTE FUNCTION trigger_set_updated_at();
+
+-- ─── AGENTS (Noctcom Connector) ────────────────────────────────
+-- Demonio local que el usuario instala para gestionar sus discos desde la web
+-- cloud. Atado a UNA cuenta. Solo guardamos su clave pública (Ed25519); la
+-- privada nunca sale de la máquina del agente. El nombre va cifrado con la MK
+-- del usuario (zero-knowledge, igual que devices).
+CREATE TABLE IF NOT EXISTS agents (
+    id                 UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id            UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    agent_public_key   BYTEA NOT NULL,            -- Ed25519 (32 bytes)
+    name_encrypted     BYTEA NOT NULL,
+    name_nonce         BYTEA NOT NULL,
+    platform           TEXT,                       -- 'windows' | 'linux' | 'macos'
+    last_seen_at       TIMESTAMPTZ,
+    created_at         TIMESTAMPTZ NOT NULL DEFAULT now(),
+    revoked_at         TIMESTAMPTZ
+);
+CREATE INDEX IF NOT EXISTS agents_user_idx ON agents(user_id) WHERE revoked_at IS NULL;
+
+-- Códigos de emparejamiento de un solo uso (TTL corto). Guardamos solo el hash
+-- del código; el nombre cifrado lo aporta la web al iniciar el pairing.
+CREATE TABLE IF NOT EXISTS agent_pairing_tokens (
+    id                 UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id            UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    code_hash          BYTEA NOT NULL,
+    name_encrypted     BYTEA NOT NULL,
+    name_nonce         BYTEA NOT NULL,
+    expires_at         TIMESTAMPTZ NOT NULL,
+    used_at            TIMESTAMPTZ,
+    created_at         TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS agent_pairing_user_idx ON agent_pairing_tokens(user_id) WHERE used_at IS NULL;
+
+-- Un volumen puede vivir en la máquina de un agente (cloud) o ser local al
+-- backend (self-host → agent_id NULL, flujo actual intacto).
+-- NOTA (M2/M3): cuando se registren volúmenes vía agente habrá que añadir
+-- user_id a storage_volumes y relajar el UNIQUE(path) global a (agent_id, path).
+ALTER TABLE storage_volumes ADD COLUMN IF NOT EXISTS agent_id UUID REFERENCES agents(id) ON DELETE CASCADE;
+ALTER TABLE disk_format_log ADD COLUMN IF NOT EXISTS agent_id UUID REFERENCES agents(id) ON DELETE SET NULL;
