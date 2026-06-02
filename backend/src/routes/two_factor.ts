@@ -39,15 +39,38 @@ const fromB64 = (s: string) => Buffer.from(s, 'base64url');
 const toB64 = (b: Buffer | Uint8Array) => Buffer.from(b).toString('base64url');
 
 // ─── Config de Relying Party ────────────────────────────────────
-// rpID = hostname del FRONTEND (donde corre la passkey, no el API). El origin
-// debe coincidir exacto con lo que envía el navegador; aceptamos frontend + API
-// por si comparten dominio o estamos en dev.
+// rpID = dominio registrable (apex) del FRONTEND, NO el hostname tal cual. Una
+// passkey con rpID=apex (noctcom.com) vale tanto en el apex como en cualquier
+// subdominio (www.noctcom.com), así evitamos OriginRpMismatch según por dónde
+// entre el usuario. Lo derivamos también si FRONTEND_URL no estuviera definido
+// (cae a PUBLIC_URL=api.noctcom.com → su apex sigue siendo noctcom.com).
+function registrableDomain(hostname: string): string {
+  // localhost / IPv4 / IPv6 no tienen dominio registrable: se usan tal cual.
+  if (hostname === 'localhost' || /^\d+(\.\d+){3}$/.test(hostname) || hostname.includes(':')) {
+    return hostname;
+  }
+  const parts = hostname.split('.');
+  if (parts.length <= 2) return hostname;
+  // Heurística eTLD+1: las dos últimas etiquetas. Cubre TLDs simples (.com/.org…).
+  // No cubre TLDs compuestos (.co.uk); un rpID demasiado amplio lo rechaza el
+  // navegador → falla seguro, no es un agujero. Si se usaran, haría falta una PSL.
+  return parts.slice(-2).join('.');
+}
+
 function rpConfig(): { rpName: string; rpID: string; origins: string[] } {
-  const frontend = env.FRONTEND_URL ?? env.PUBLIC_URL;
-  const url = new URL(frontend);
-  const origins = new Set<string>([url.origin]);
+  const frontend = new URL(env.FRONTEND_URL ?? env.PUBLIC_URL);
+  const rpID = registrableDomain(frontend.hostname);
+
+  // Orígenes aceptados en la verificación (register/authenticate finish). Deben
+  // coincidir EXACTO con lo que envía el navegador. Aceptamos apex y www del
+  // dominio del frontend, su origin literal, y el del API (dev / dominio común).
+  const origins = new Set<string>([frontend.origin]);
+  if (rpID === frontend.hostname.replace(/^www\./, '')) {
+    origins.add(`${frontend.protocol}//${rpID}`);
+    origins.add(`${frontend.protocol}//www.${rpID}`);
+  }
   origins.add(new URL(env.PUBLIC_URL).origin);
-  return { rpName: 'Noctcom', rpID: url.hostname, origins: [...origins] };
+  return { rpName: 'Noctcom', rpID, origins: [...origins] };
 }
 
 // Consume (borra) el challenge válido más reciente para un propósito dado.
