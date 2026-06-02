@@ -18,7 +18,14 @@ import { createHash, randomBytes } from 'node:crypto';
 import sodium from 'libsodium-wrappers-sumo';
 import { db } from '../db/pool.js';
 import { publishChange } from '../db/redis.js';
+import { presignDownload } from '../storage/s3.js';
 import * as registry from '../agents/registry.js';
+
+// Binarios del agente disponibles para descarga (subidos a B2 con
+// scripts/upload-agent-release.ts). Solo se ofrecen los que existen de verdad.
+const DOWNLOADS: Record<string, string> = {
+  windows: 'downloads/noctcom-connector-windows.exe',
+};
 
 const bytesB64 = z.string().regex(/^[A-Za-z0-9_-]+$/, 'base64url required');
 const fromB64 = (s: string) => Buffer.from(s, 'base64url');
@@ -101,6 +108,16 @@ const agentRoutes: FastifyPluginAsync = async (app) => {
       return reply.code(201).send({ agentId: a.rows[0].id });
     },
   );
+
+  // ─── GET /download ─ descarga del binario del agente ──────
+  // Público (es un instalador): redirige a una URL firmada de B2.
+  app.get<{ Querystring: { platform?: string } }>('/download', async (req, reply) => {
+    const platform = (req.query.platform ?? '').toLowerCase();
+    const key = DOWNLOADS[platform];
+    if (!key) return reply.notFound('no hay binario para esa plataforma todavía');
+    const url = await presignDownload(key, 300);
+    return reply.redirect(url, 302);
+  });
 
   // ─── GET / (auth) ─ listar agentes del usuario ────────────
   app.get('/', { onRequest: [app.authenticate] }, async (req, reply) => {

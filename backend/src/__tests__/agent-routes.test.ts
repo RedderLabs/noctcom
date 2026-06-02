@@ -17,6 +17,11 @@ vi.mock('../config.js', () => ({
     FRONTEND_URL: 'https://noctcom.com',
     PUBLIC_URL: 'https://api.noctcom.com',
     JWT_SECRET: 'test-secret-must-be-at-least-32-chars-long',
+    S3_ENDPOINT: 'https://s3.example.com',
+    S3_REGION: 'us-east-005',
+    S3_ACCESS_KEY: 'test-access',
+    S3_SECRET_KEY: 'test-secret',
+    S3_BUCKET: 'test-bucket',
   },
 }));
 vi.mock('../db/pool.js', async () => ({ db: (await import('./fake-db.js')).db }));

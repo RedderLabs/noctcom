@@ -1123,6 +1123,17 @@ function ConnectorAgentsSection() {
   const [pairCode, setPairCode] = useState<string | null>(null);
   const [disksByAgent, setDisksByAgent] = useState<Record<string, AgentDisk[]>>({});
   const [loadingDisks, setLoadingDisks] = useState<string | null>(null);
+  const [os, setOs] = useState<'windows' | 'macos' | 'linux' | 'other'>('other');
+
+  useEffect(() => {
+    const ua = navigator.userAgent.toLowerCase();
+    setOs(
+      ua.includes('win') ? 'windows'
+        : ua.includes('mac') ? 'macos'
+        : (ua.includes('linux') || ua.includes('x11')) ? 'linux'
+        : 'other',
+    );
+  }, []);
 
   const fetchAgents = useCallback(async () => {
     if (!masterKey) return;
@@ -1205,18 +1216,46 @@ function ConnectorAgentsSection() {
         conexión saliente cifrada (sin puertos abiertos) y tus claves nunca salen de tu máquina.
       </p>
 
+      {/* Paso 1: descargar el binario */}
+      <div className="mb-4 p-4 rounded-xl border border-[var(--color-border-faint)] bg-[var(--color-bg-surface)]">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div className="min-w-0">
+            <h3 className="text-sm font-medium">1 · Descarga e instala el agente</h3>
+            <p className="text-xs text-[var(--color-text-tertiary)] mt-0.5">
+              {os === 'windows'
+                ? 'Detectamos Windows. Descarga el ejecutable y ábrelo.'
+                : os === 'macos' || os === 'linux'
+                  ? `Detectamos ${os === 'macos' ? 'macOS' : 'Linux'}: su binario llega pronto. De momento hay versión de Windows.`
+                  : 'Descarga el agente para tu sistema.'}
+            </p>
+          </div>
+          <a
+            href={`${process.env.NEXT_PUBLIC_API_URL ?? ''}/api/v1/agent/download?platform=windows`}
+            className="inline-flex items-center gap-2 h-9 px-4 rounded-lg bg-violet-600 hover:bg-violet-500 text-white text-sm font-medium transition-colors shrink-0"
+          >
+            <Download className="size-4" />
+            Descargar para Windows
+          </a>
+        </div>
+        {(os === 'macos' || os === 'linux') && (
+          <p className="text-[10px] text-[var(--color-text-muted)] mt-2">
+            Builds para macOS y Linux: próximamente.
+          </p>
+        )}
+      </div>
+
       {pairCode && (
         <div className="mb-4 p-4 rounded-xl border border-emerald-500/30 bg-emerald-500/5">
           <p className="text-xs text-[var(--color-text-secondary)]">
-            En el equipo donde instalaste el agente, ejecuta:
+            2 · En el equipo donde descargaste el agente, ejecútalo con el código:
           </p>
           <div className="flex items-center gap-2 mt-2">
             <code className="flex-1 text-xs font-mono bg-[var(--color-bg-surface-2)] px-3 py-2 rounded-lg break-all">
-              noctcom-connector pair --code {pairCode}
+              noctcom-connector.exe pair --code {pairCode}
             </code>
             <button
               onClick={() => {
-                navigator.clipboard?.writeText(`noctcom-connector pair --code ${pairCode}`);
+                navigator.clipboard?.writeText(`noctcom-connector.exe pair --code ${pairCode}`);
                 toast.success('Comando copiado');
               }}
               className="p-2 rounded-lg text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-surface-2)] transition-colors"
@@ -1226,6 +1265,8 @@ function ConnectorAgentsSection() {
             </button>
           </div>
           <p className="text-[10px] text-[var(--color-text-muted)] mt-2">
+            Luego déjalo conectado con{' '}
+            <span className="font-mono text-[var(--color-text-tertiary)]">noctcom-connector.exe run</span>.
             El código caduca en 10 minutos y es de un solo uso.
           </p>
           <div className="mt-3">
