@@ -6,6 +6,7 @@ import os from 'node:os';
 import { z } from 'zod';
 import { db } from '../db/pool.js';
 import { validateVolumePath } from '../storage/disk.js';
+import * as registry from '../agents/registry.js';
 
 const execFile = promisify(execFileCb);
 
@@ -221,7 +222,31 @@ const storageRoutes: FastifyPluginAsync = async (app) => {
 
   // ─── Disk discovery ──────────────────────────────────────
 
-  app.get('/disks', { onRequest: [app.authenticate] }, async (_req, reply) => {
+  app.get<{ Querystring: { agentId?: string } }>(
+    '/disks',
+    { onRequest: [app.authenticate] },
+    async (req, reply) => {
+    // Si se pide un agente concreto, el listado se enruta a SU máquina (cloud).
+    // Sin agentId, el flujo local de siempre (self-host: discos del backend).
+    const agentId = req.query.agentId;
+    if (agentId) {
+      const a = await db.query(
+        `SELECT id FROM agents WHERE id = $1 AND user_id = $2 AND revoked_at IS NULL`,
+        [agentId, req.user.sub],
+      );
+      if (a.rowCount === 0) return reply.notFound('agente no encontrado');
+      if (!registry.isOnline(agentId)) {
+        return reply.code(409).send({ error: 'agent-offline', message: 'el agente no está conectado' });
+      }
+      try {
+        const result = (await registry.sendCommand(agentId, 'list-disks', {})) as { disks?: DiskInfo[] };
+        return reply.send({ disks: result?.disks ?? [] });
+      } catch (err: any) {
+        req.log.warn({ err: err?.message }, 'list-disks vía agente falló');
+        return reply.code(504).send({ error: 'agent-error', message: 'el agente no respondió a tiempo' });
+      }
+    }
+
     let disks: DiskInfo[];
 
     if (os.platform() === 'win32') {

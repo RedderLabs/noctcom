@@ -1101,12 +1101,28 @@ interface AgentView {
   online: boolean;
 }
 
+interface AgentDisk {
+  id: string;
+  device: string;
+  path: string;
+  label: string;
+  totalBytes: number;
+  freeBytes: number;
+  usedBytes: number;
+  filesystem: string;
+  removable: boolean;
+  mounted: boolean;
+  needsFormat: boolean;
+}
+
 function ConnectorAgentsSection() {
   const { masterKey } = useAuth();
   const [agents, setAgents] = useState<AgentView[]>([]);
   const [loading, setLoading] = useState(true);
   const [pairing, setPairing] = useState(false);
   const [pairCode, setPairCode] = useState<string | null>(null);
+  const [disksByAgent, setDisksByAgent] = useState<Record<string, AgentDisk[]>>({});
+  const [loadingDisks, setLoadingDisks] = useState<string | null>(null);
 
   const fetchAgents = useCallback(async () => {
     if (!masterKey) return;
@@ -1151,8 +1167,21 @@ function ConnectorAgentsSection() {
       await apiFetch(`/api/v1/agent/${id}`, { method: 'DELETE' });
       toast.success('Agente desvinculado');
       setAgents((a) => a.filter((x) => x.id !== id));
+      setDisksByAgent((m) => { const n = { ...m }; delete n[id]; return n; });
     } catch {
       toast.error('No se pudo desvincular el agente');
+    }
+  }
+
+  async function viewDisks(agentId: string) {
+    setLoadingDisks(agentId);
+    try {
+      const r = await apiFetch<{ disks: AgentDisk[] }>(`/api/v1/storage/disks?agentId=${agentId}`);
+      setDisksByAgent((m) => ({ ...m, [agentId]: r.disks }));
+    } catch (err: any) {
+      toast.error(err.message ?? 'No se pudieron obtener los discos del agente');
+    } finally {
+      setLoadingDisks(null);
     }
   }
 
@@ -1221,29 +1250,74 @@ function ConnectorAgentsSection() {
           agents.map((a) => (
             <div
               key={a.id}
-              className="flex items-center gap-4 p-4 rounded-xl border border-[var(--color-border-faint)] bg-[var(--color-bg-surface)]"
+              className="rounded-xl border border-[var(--color-border-faint)] bg-[var(--color-bg-surface)] overflow-hidden"
             >
-              <div className="size-10 rounded-lg bg-emerald-500/10 border border-emerald-500/20 grid place-items-center shrink-0">
-                <Server className="size-4 text-emerald-300" />
+              <div className="flex items-center gap-4 p-4">
+                <div className="size-10 rounded-lg bg-emerald-500/10 border border-emerald-500/20 grid place-items-center shrink-0">
+                  <Server className="size-4 text-emerald-300" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-sm font-medium truncate">{a.name}</h3>
+                  <p className="text-xs text-[var(--color-text-tertiary)] mt-0.5">
+                    {a.platform ?? 'desconocido'} ·{' '}
+                    {a.online ? (
+                      <span className="text-emerald-400">en línea</span>
+                    ) : (
+                      <span>desconectado</span>
+                    )}
+                  </p>
+                </div>
+                {a.online && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    loading={loadingDisks === a.id}
+                    onClick={() => viewDisks(a.id)}
+                  >
+                    <HardDrive className="size-4" />
+                    Ver discos
+                  </Button>
+                )}
+                <button
+                  onClick={() => handleRevoke(a.id)}
+                  className="p-2 rounded-lg text-[var(--color-text-tertiary)] hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                  title="Desvincular agente"
+                >
+                  <Trash2 className="size-4" />
+                </button>
               </div>
-              <div className="flex-1 min-w-0">
-                <h3 className="text-sm font-medium truncate">{a.name}</h3>
-                <p className="text-xs text-[var(--color-text-tertiary)] mt-0.5">
-                  {a.platform ?? 'desconocido'} ·{' '}
-                  {a.online ? (
-                    <span className="text-emerald-400">en línea</span>
+
+              {disksByAgent[a.id] && (
+                <div className="border-t border-[var(--color-border-faint)] bg-[var(--color-bg-surface-2)]/40 px-4 py-3 space-y-1.5">
+                  {disksByAgent[a.id].length === 0 ? (
+                    <p className="text-xs text-[var(--color-text-muted)]">
+                      El agente no detectó discos.
+                    </p>
                   ) : (
-                    <span>desconectado</span>
+                    disksByAgent[a.id].map((d) => (
+                      <div key={d.id} className="flex items-center justify-between gap-3 text-xs">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <Disc className="size-3.5 text-blue-300 shrink-0" />
+                          <span className="truncate font-medium">{d.label || d.path || d.device}</span>
+                          {d.removable && (
+                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--color-bg-surface-2)] text-[var(--color-text-tertiary)]">
+                              extraíble
+                            </span>
+                          )}
+                          {d.needsFormat && (
+                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400">
+                              sin formato
+                            </span>
+                          )}
+                        </div>
+                        <span className="font-mono text-[var(--color-text-tertiary)] shrink-0">
+                          {fmtSize(d.usedBytes)} / {fmtSize(d.totalBytes)} · {d.filesystem || '—'}
+                        </span>
+                      </div>
+                    ))
                   )}
-                </p>
-              </div>
-              <button
-                onClick={() => handleRevoke(a.id)}
-                className="p-2 rounded-lg text-[var(--color-text-tertiary)] hover:text-red-400 hover:bg-red-500/10 transition-colors"
-                title="Desvincular agente"
-              >
-                <Trash2 className="size-4" />
-              </button>
+                </div>
+              )}
             </div>
           ))
         )}

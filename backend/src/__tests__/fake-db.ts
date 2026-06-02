@@ -284,6 +284,12 @@ async function query(text: string, params: any[] = []): Promise<QueryResult> {
     return { rows, rowCount: rows.length };
   }
 
+  // Comprobación de propiedad del agente (ownership + no revocado).
+  if (sql.startsWith('SELECT id FROM agents') && sql.includes('user_id = $2')) {
+    const a = store.agents.find((x) => x.id === params[0] && x.user_id === params[1] && x.revoked_at === null);
+    return a ? { rows: [{ id: a.id }], rowCount: 1 } : { rows: [], rowCount: 0 };
+  }
+
   // Carga de clave pública para el challenge del WS.
   if (sql.includes('SELECT user_id, agent_public_key FROM agents WHERE id = $1')) {
     const a = store.agents.find((x) => x.id === params[0] && x.revoked_at === null);

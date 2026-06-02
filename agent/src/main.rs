@@ -5,6 +5,7 @@
 //! discos (listar/montar/formatear/chunks) llega en M1–M3.
 
 mod config;
+mod disk;
 mod identity;
 mod protocol;
 mod util;
@@ -136,7 +137,7 @@ async fn run(server_override: Option<String>) -> Result<()> {
                 let Some(item) = maybe else { println!("El servidor cerró la conexión."); break; };
                 match item.context("error de WebSocket")? {
                     Message::Text(txt) => {
-                        if let Some(reply) = handle_text(&identity, txt.as_str()) {
+                        if let Some(reply) = handle_message(&identity, txt.as_str()).await {
                             write.send(Message::Text(reply.into())).await?;
                         }
                     }
@@ -155,8 +156,8 @@ async fn run(server_override: Option<String>) -> Result<()> {
     Ok(())
 }
 
-/// Procesa un mensaje de texto del servidor; devuelve la respuesta a enviar (si la hay).
-fn handle_text(identity: &Identity, txt: &str) -> Option<String> {
+/// Procesa un mensaje del servidor; devuelve la respuesta a enviar (si la hay).
+async fn handle_message(identity: &Identity, txt: &str) -> Option<String> {
     let msg: ServerMsg = serde_json::from_str(txt).ok()?;
     match msg {
         ServerMsg::Challenge { nonce } => {
@@ -170,18 +171,30 @@ fn handle_text(identity: &Identity, txt: &str) -> Option<String> {
             None
         }
         ServerMsg::HeartbeatAck { .. } => None,
-        ServerMsg::Cmd { id, cmd, .. } => {
-            // M0 todavía no ejecuta comandos de disco (llegan en M1).
-            println!("Comando '{cmd}' recibido (aún no soportado en M0).");
-            serde_json::to_string(&ClientMsg::Res {
-                id,
-                ok: false,
-                data: None,
-                error: Some("comando no soportado todavía (M0)".into()),
-            })
-            .ok()
+        ServerMsg::Cmd { id, cmd, args } => {
+            let reply = match handle_cmd(&cmd, &args).await {
+                Ok(data) => ClientMsg::Res { id, ok: true, data: Some(data), error: None },
+                Err(e) => {
+                    println!("Comando '{cmd}' falló: {e}");
+                    ClientMsg::Res { id, ok: false, data: None, error: Some(e.to_string()) }
+                }
+            };
+            serde_json::to_string(&reply).ok()
         }
         ServerMsg::Unknown => None,
+    }
+}
+
+/// Ejecuta un comando del backend. M1: list-disks (solo lectura).
+async fn handle_cmd(cmd: &str, _args: &serde_json::Value) -> Result<serde_json::Value> {
+    match cmd {
+        "list-disks" => {
+            let disks = tokio::task::spawn_blocking(disk::list)
+                .await
+                .context("tarea de listado de discos")??;
+            Ok(serde_json::json!({ "disks": disks }))
+        }
+        other => anyhow::bail!("comando no soportado: {other}"),
     }
 }
 
@@ -212,6 +225,17 @@ mod tests {
             to_ws_url("http://localhost:3000/", "x1"),
             "ws://localhost:3000/api/v1/agent/ws?agentId=x1"
         );
+    }
+
+    #[test]
+    fn list_disks_runs_on_this_platform() {
+        // Ejerce el camino real del SO (PowerShell en Windows, lsblk en Linux).
+        // En cualquier máquina real hay al menos un volumen montado.
+        let disks = disk::list().expect("disk::list debe devolver Ok");
+        assert!(!disks.is_empty(), "se esperaba al menos un disco/volumen");
+        for d in &disks {
+            assert!(!d.id.is_empty(), "cada disco debe tener id");
+        }
     }
 
     #[test]
