@@ -1247,15 +1247,16 @@ function ConnectorAgentsSection() {
       {pairCode && (
         <div className="mb-4 p-4 rounded-xl border border-emerald-500/30 bg-emerald-500/5">
           <p className="text-xs text-[var(--color-text-secondary)]">
-            2 · En el equipo donde descargaste el agente, ejecútalo con el código:
+            2 · Abre una terminal <strong>en la carpeta donde se descargó</strong> (normalmente
+            Descargas) y ejecuta:
           </p>
           <div className="flex items-center gap-2 mt-2">
             <code className="flex-1 text-xs font-mono bg-[var(--color-bg-surface-2)] px-3 py-2 rounded-lg break-all">
-              noctcom-connector.exe pair --code {pairCode}
+              .\noctcom-connector.exe pair --code {pairCode}
             </code>
             <button
               onClick={() => {
-                navigator.clipboard?.writeText(`noctcom-connector.exe pair --code ${pairCode}`);
+                navigator.clipboard?.writeText(`.\\noctcom-connector.exe pair --code ${pairCode}`);
                 toast.success('Comando copiado');
               }}
               className="p-2 rounded-lg text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-surface-2)] transition-colors"
@@ -1266,8 +1267,13 @@ function ConnectorAgentsSection() {
           </div>
           <p className="text-[10px] text-[var(--color-text-muted)] mt-2">
             Luego déjalo conectado con{' '}
-            <span className="font-mono text-[var(--color-text-tertiary)]">noctcom-connector.exe run</span>.
+            <span className="font-mono text-[var(--color-text-tertiary)]">.\noctcom-connector.exe run</span>.
             El código caduca en 10 minutos y es de un solo uso.
+            <br />
+            <span className="text-[var(--color-text-tertiary)]">
+              Truco: en el Explorador, entra en la carpeta de descargas, escribe <span className="font-mono">cmd</span> en
+              la barra de direcciones y pulsa Enter para abrir la terminal ahí.
+            </span>
           </p>
           <div className="mt-3">
             <Button size="sm" variant="outline" onClick={() => { setPairCode(null); fetchAgents(); }}>
