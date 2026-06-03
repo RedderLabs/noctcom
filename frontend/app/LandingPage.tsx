@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Lock, Shield, EyeOff, AtSign, Share2, ArrowRight, Server, Download, Github } from 'lucide-react';
+import { Lock, Shield, EyeOff, AtSign, Share2, ArrowRight, Server, Download, Github, Newspaper, Megaphone, Scale, FileSignature } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Navbar } from '@/components/ui/Navbar';
 
@@ -83,6 +83,57 @@ export default function LandingPage() {
             Versionado de algoritmos preparado para post-cuántico (Kyber/Dilithium en hoja de ruta).
             Tu cifrado de hoy no caduca mañana.
           </p>
+        </div>
+      </section>
+
+      {/* ─── ¿Para quién? ───────────────────────────────────── */}
+      <section className="px-6 pb-24">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-10">
+            <h2 className="font-display text-2xl md:text-3xl font-light tracking-tight mb-4">
+              Para quien la privacidad <span className="text-gradient-violet font-normal">no es opcional</span>.
+            </h2>
+            <p className="text-[var(--color-text-secondary)] max-w-2xl mx-auto leading-relaxed">
+              Si manejas material que no puede filtrarse —una investigación, una fuente, un expediente—
+              necesitas algo más que la promesa de un proveedor de «no mirar». Necesitas que{' '}
+              <strong className="text-[var(--color-text-primary)] font-medium">no pueda</strong>.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {[
+              { icon: Newspaper, title: 'Periodismo de investigación', body: 'Guarda material sensible cifrado en tu dispositivo antes de que salga de él. Ni nosotros podemos abrirlo.' },
+              { icon: Megaphone, title: 'Fuentes y denuncia', body: 'Comparte con tu redacción por sealed boxes X25519: solo el destinatario lo abre, ni con acceso al servidor.' },
+              { icon: FileSignature, title: 'Secreto profesional', body: 'Abogados, médicos, periodistas: datos de clientes, pacientes o fuentes con cifrado que el proveedor no puede romper.' },
+              { icon: Scale, title: 'Control y jurisdicción', body: 'Self-host AGPL: tus datos en tu propio hardware, fuera de jurisdicciones y proveedores ajenos.' },
+            ].map((f, i) => (
+              <div
+                key={i}
+                className="group relative p-5 rounded-xl border border-[var(--color-border-faint)] bg-[var(--color-bg-surface)] hover:border-[var(--color-border-subtle)] transition-all duration-200"
+              >
+                <div className="size-9 rounded-lg bg-violet-500/10 border border-violet-500/20 grid place-items-center mb-4 group-hover:bg-violet-500/15 transition-colors">
+                  <f.icon className="size-4 text-violet-300" />
+                </div>
+                <h3 className="font-medium mb-1.5 tracking-tight">{f.title}</h3>
+                <p className="text-sm text-[var(--color-text-tertiary)] leading-relaxed">{f.body}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Nota honesta: lo que viene + el modelo de amenaza real */}
+          <div className="mt-6 rounded-xl border border-[var(--color-border-faint)] bg-[var(--color-bg-surface)] p-5 md:p-6">
+            <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed">
+              <span className="text-violet-300 font-medium">En hoja de ruta — cadena de custodia verificable:</span>{' '}
+              firma de autoría y sellado de tiempo para demostrar a un editor o un juez que un archivo es
+              íntegro y de qué fecha es, <em>sin que nadie más lo lea</em>. Todo sobre hashes y firmas;
+              el contenido nunca sale de tu control.
+            </p>
+            <p className="text-xs text-[var(--color-text-tertiary)] leading-relaxed mt-3">
+              Honestidad ante todo: el cifrado zero-knowledge protege tus archivos en reposo, no te da
+              anonimato de red. Para ocultar <em>con quién</em> hablas, combínalo con herramientas como
+              Tor según tu modelo de amenaza. Y como todo en Noctcom, el código es abierto y auditable.
+            </p>
+          </div>
         </div>
       </section>
 
