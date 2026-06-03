@@ -54,6 +54,54 @@ fn display_path(p: &Path) -> String {
     p.to_string_lossy().into_owned()
 }
 
+/// Resuelve la ruta absoluta de un blob dentro de `noctcom-blobs/`, rechazando
+/// cualquier intento de salirse de esa carpeta (path traversal). La `key` solo
+/// puede contener componentes normales (p.ej. `a1/deadbeef…`), nunca `..` ni
+/// rutas absolutas.
+fn blob_file(path: &str, key: &str) -> Result<PathBuf> {
+    let base = PathBuf::from(path).join(BLOBS_DIR);
+    let mut full = base.clone();
+    for comp in Path::new(key).components() {
+        match comp {
+            std::path::Component::Normal(c) => full.push(c),
+            _ => return Err(anyhow!("clave de chunk inválida: '{key}'")),
+        }
+    }
+    if !full.starts_with(&base) {
+        return Err(anyhow!("clave de chunk fuera del volumen"));
+    }
+    Ok(full)
+}
+
+/// Escribe un blob YA cifrado en el volumen (M3). El agente nunca ve plaintext.
+pub fn write_chunk(path: &str, key: &str, data: &[u8]) -> Result<()> {
+    let target = blob_file(path, key)?;
+    if let Some(parent) = target.parent() {
+        std::fs::create_dir_all(parent)
+            .with_context(|| format!("no se pudo crear '{}'", parent.display()))?;
+    }
+    std::fs::write(&target, data)
+        .with_context(|| format!("no se pudo escribir el chunk '{}'", target.display()))?;
+    Ok(())
+}
+
+/// Lee un blob cifrado del volumen (M3) y devuelve sus bytes tal cual.
+pub fn read_chunk(path: &str, key: &str) -> Result<Vec<u8>> {
+    let target = blob_file(path, key)?;
+    std::fs::read(&target)
+        .with_context(|| format!("no se pudo leer el chunk '{}'", target.display()))
+}
+
+/// Borra un blob del volumen (M3). Es idempotente: si ya no existe, no falla.
+pub fn delete_chunk(path: &str, key: &str) -> Result<()> {
+    let target = blob_file(path, key)?;
+    match std::fs::remove_file(&target) {
+        Ok(()) => Ok(()),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(()),
+        Err(e) => Err(e).with_context(|| format!("no se pudo borrar '{}'", target.display())),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -81,5 +129,42 @@ mod tests {
         let missing = std::env::temp_dir().join("noctcom-does-not-exist-xyz-123");
         let _ = std::fs::remove_dir_all(&missing);
         assert!(register(&missing.to_string_lossy()).is_err());
+    }
+
+    #[test]
+    fn chunk_write_read_delete_roundtrip() {
+        let base = std::env::temp_dir().join(format!("noctcom-chunk-{}", std::process::id()));
+        std::fs::create_dir_all(&base).unwrap();
+        let path = base.to_string_lossy().into_owned();
+        register(&path).unwrap();
+
+        let key = "a1/deadbeefcafebabe";
+        let data = b"ciphertext-blob-bytes";
+        write_chunk(&path, key, data).expect("write");
+        // El blob vive bajo noctcom-blobs/, con sus subcarpetas.
+        assert!(base.join(BLOBS_DIR).join("a1").join("deadbeefcafebabe").is_file());
+
+        let got = read_chunk(&path, key).expect("read");
+        assert_eq!(got, data);
+
+        delete_chunk(&path, key).expect("delete");
+        assert!(read_chunk(&path, key).is_err(), "el chunk ya no debe existir");
+        // Borrar de nuevo es idempotente.
+        delete_chunk(&path, key).expect("delete idempotente");
+
+        let _ = std::fs::remove_dir_all(&base);
+    }
+
+    #[test]
+    fn chunk_rejects_path_traversal() {
+        let base = std::env::temp_dir().join(format!("noctcom-trav-{}", std::process::id()));
+        std::fs::create_dir_all(&base).unwrap();
+        let path = base.to_string_lossy().into_owned();
+
+        assert!(write_chunk(&path, "../escape", b"x").is_err());
+        assert!(read_chunk(&path, "../../etc/passwd").is_err());
+        assert!(delete_chunk(&path, "..\\..\\windows").is_err());
+
+        let _ = std::fs::remove_dir_all(&base);
     }
 }

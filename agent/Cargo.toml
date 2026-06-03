@@ -10,7 +10,7 @@ name = "noctcom-connector"
 path = "src/main.rs"
 
 [dependencies]
-tokio = { version = "1", features = ["rt-multi-thread", "macros", "time", "signal"] }
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "time", "signal", "sync"] }
 tokio-tungstenite = { version = "0.24", features = ["rustls-tls-native-roots"] }
 futures-util = "0.3"
 ureq = { version = "2", features = ["json", "tls"] }

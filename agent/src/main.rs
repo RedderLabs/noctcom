@@ -6,6 +6,7 @@
 
 mod config;
 mod disk;
+mod format;
 mod identity;
 mod protocol;
 mod util;
@@ -17,7 +18,9 @@ use config::State;
 use futures_util::{SinkExt, StreamExt};
 use identity::Identity;
 use protocol::{ClientMsg, ServerMsg};
+use std::sync::Arc;
 use std::time::Duration;
+use tokio::sync::mpsc;
 use tokio::time::Instant;
 use tokio_tungstenite::connect_async;
 use tokio_tungstenite::tungstenite::Message;
@@ -109,8 +112,13 @@ fn status() -> Result<()> {
 }
 
 /// Conecta el canal WS, se autentica firmando el reto y mantiene el heartbeat.
+///
+/// Los comandos se procesan en tareas independientes y sus respuestas se
+/// encolan por un canal (`mpsc`) hacia el único escritor del socket. Así una
+/// operación lenta (escribir un chunk, formatear) no bloquea ni el heartbeat ni
+/// la recepción de otros comandos.
 async fn run(server_override: Option<String>) -> Result<()> {
-    let identity = Identity::load_or_create(&config::identity_path()?)?;
+    let identity = Arc::new(Identity::load_or_create(&config::identity_path()?)?);
     let state = State::load()?;
     let agent_id = state
         .agent_id
@@ -126,6 +134,10 @@ async fn run(server_override: Option<String>) -> Result<()> {
         .context("no se pudo abrir el WebSocket")?;
     let (mut write, mut read) = stream.split();
 
+    // Canal de salida: todo lo que se escribe en el socket pasa por aquí, de modo
+    // que solo el bucle principal toca `write` (sin condiciones de carrera).
+    let (tx, mut rx) = mpsc::unbounded_channel::<Message>();
+
     let mut hb = tokio::time::interval_at(
         Instant::now() + Duration::from_secs(HEARTBEAT_SECS),
         Duration::from_secs(HEARTBEAT_SECS),
@@ -137,15 +149,14 @@ async fn run(server_override: Option<String>) -> Result<()> {
             maybe = read.next() => {
                 let Some(item) = maybe else { println!("El servidor cerró la conexión."); break; };
                 match item.context("error de WebSocket")? {
-                    Message::Text(txt) => {
-                        if let Some(reply) = handle_message(&identity, txt.as_str()).await {
-                            write.send(Message::Text(reply.into())).await?;
-                        }
-                    }
-                    Message::Ping(p) => write.send(Message::Pong(p)).await?,
+                    Message::Text(txt) => process_incoming(identity.clone(), txt.to_string(), &tx),
+                    Message::Ping(p) => { let _ = tx.send(Message::Pong(p)); }
                     Message::Close(_) => { println!("Conexión cerrada."); break; }
                     _ => {}
                 }
+            }
+            Some(out) = rx.recv() => {
+                write.send(out).await?;
             }
             _ = hb.tick() => {
                 let msg = serde_json::to_string(&ClientMsg::Heartbeat)?;
@@ -157,37 +168,54 @@ async fn run(server_override: Option<String>) -> Result<()> {
     Ok(())
 }
 
-/// Procesa un mensaje del servidor; devuelve la respuesta a enviar (si la hay).
-async fn handle_message(identity: &Identity, txt: &str) -> Option<String> {
-    let msg: ServerMsg = serde_json::from_str(txt).ok()?;
+/// Procesa un mensaje entrante. Lo rápido (reto/auth) se resuelve en el acto; un
+/// comando se ejecuta en una tarea aparte y su respuesta se encola por `tx`.
+fn process_incoming(identity: Arc<Identity>, txt: String, tx: &mpsc::UnboundedSender<Message>) {
+    let msg: ServerMsg = match serde_json::from_str(&txt) {
+        Ok(m) => m,
+        Err(_) => return,
+    };
     match msg {
         ServerMsg::Challenge { nonce } => {
-            let nonce_bytes = util::unb64(&nonce).ok()?;
+            let Ok(nonce_bytes) = util::unb64(&nonce) else { return };
             let signature = identity.sign_b64(&nonce_bytes);
             println!("Reto recibido; firmando…");
-            serde_json::to_string(&ClientMsg::Auth { signature }).ok()
+            if let Ok(reply) = serde_json::to_string(&ClientMsg::Auth { signature }) {
+                let _ = tx.send(Message::Text(reply.into()));
+            }
         }
-        ServerMsg::Ready => {
-            println!("✓ Autenticado. Canal operativo.");
-            None
-        }
-        ServerMsg::HeartbeatAck { .. } => None,
+        ServerMsg::Ready => println!("✓ Autenticado. Canal operativo."),
+        ServerMsg::HeartbeatAck { .. } => {}
         ServerMsg::Cmd { id, cmd, args } => {
-            let reply = match handle_cmd(&cmd, &args).await {
-                Ok(data) => ClientMsg::Res { id, ok: true, data: Some(data), error: None },
-                Err(e) => {
-                    println!("Comando '{cmd}' falló: {e}");
-                    ClientMsg::Res { id, ok: false, data: None, error: Some(e.to_string()) }
+            let tx = tx.clone();
+            tokio::spawn(async move {
+                let reply = match handle_cmd(&cmd, &args).await {
+                    Ok(data) => ClientMsg::Res { id, ok: true, data: Some(data), error: None },
+                    Err(e) => {
+                        println!("Comando '{cmd}' falló: {e}");
+                        ClientMsg::Res { id, ok: false, data: None, error: Some(e.to_string()) }
+                    }
+                };
+                if let Ok(s) = serde_json::to_string(&reply) {
+                    let _ = tx.send(Message::Text(s.into()));
                 }
-            };
-            serde_json::to_string(&reply).ok()
+            });
         }
-        ServerMsg::Unknown => None,
+        ServerMsg::Unknown => {}
     }
 }
 
+/// Lee un argumento de tipo string de los `args` de un comando.
+fn arg_str(args: &serde_json::Value, key: &str) -> Result<String> {
+    args.get(key)
+        .and_then(|v| v.as_str())
+        .map(|s| s.to_string())
+        .ok_or_else(|| anyhow!("falta el argumento '{key}'"))
+}
+
 /// Ejecuta un comando del backend.
-/// M1: list-disks (solo lectura). M2: register-volume (no destructivo).
+/// M1: list-disks (solo lectura). M2a: register-volume. M2b: format-volume
+/// (destructivo). M3: write/read/delete-chunk (blobs YA cifrados).
 async fn handle_cmd(cmd: &str, args: &serde_json::Value) -> Result<serde_json::Value> {
     match cmd {
         "list-disks" => {
@@ -197,16 +225,46 @@ async fn handle_cmd(cmd: &str, args: &serde_json::Value) -> Result<serde_json::V
             Ok(serde_json::json!({ "disks": disks }))
         }
         "register-volume" => {
-            let path = args
-                .get("path")
-                .and_then(|v| v.as_str())
-                .ok_or_else(|| anyhow!("falta el argumento 'path'"))?
-                .to_string();
+            let path = arg_str(args, "path")?;
             println!("Registrando volumen en '{path}' (no destructivo)…");
             let info = tokio::task::spawn_blocking(move || volume::register(&path))
                 .await
                 .context("tarea de registro de volumen")??;
             Ok(serde_json::json!(info))
+        }
+        "format-volume" => {
+            let drive_letter = arg_str(args, "driveLetter")?;
+            let label = arg_str(args, "label")?;
+            println!("Formateando volumen '{drive_letter}:' (DESTRUCTIVO)…");
+            let info = tokio::task::spawn_blocking(move || format::format_volume(&drive_letter, &label))
+                .await
+                .context("tarea de formateo")??;
+            Ok(serde_json::json!(info))
+        }
+        "write-chunk" => {
+            let path = arg_str(args, "path")?;
+            let key = arg_str(args, "key")?;
+            let data = util::unb64(&arg_str(args, "dataB64")?)?;
+            tokio::task::spawn_blocking(move || volume::write_chunk(&path, &key, &data))
+                .await
+                .context("tarea de escritura de chunk")??;
+            Ok(serde_json::json!({ "ok": true }))
+        }
+        "read-chunk" => {
+            let path = arg_str(args, "path")?;
+            let key = arg_str(args, "key")?;
+            let data = tokio::task::spawn_blocking(move || volume::read_chunk(&path, &key))
+                .await
+                .context("tarea de lectura de chunk")??;
+            Ok(serde_json::json!({ "dataB64": util::b64(&data) }))
+        }
+        "delete-chunk" => {
+            let path = arg_str(args, "path")?;
+            let key = arg_str(args, "key")?;
+            tokio::task::spawn_blocking(move || volume::delete_chunk(&path, &key))
+                .await
+                .context("tarea de borrado de chunk")??;
+            Ok(serde_json::json!({ "ok": true }))
         }
         other => anyhow::bail!("comando no soportado: {other}"),
     }

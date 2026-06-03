@@ -16,7 +16,9 @@ import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 import { db, tx } from '../db/pool.js';
 import { presignUpload, presignDownload, generateS3Key, deleteBlob } from '../storage/s3.js';
-import { writeToDisk, readFromDisk, deleteFromDisk, generateDiskKey } from '../storage/disk.js';
+import { generateDiskKey } from '../storage/disk.js';
+import { writeChunk, readChunk, deleteChunk, type VolumeRef } from '../storage/volume-io.js';
+import * as registry from '../agents/registry.js';
 import { env } from '../config.js';
 import { publishChange } from '../db/redis.js';
 
@@ -135,11 +137,23 @@ const uploadRoutes: FastifyPluginAsync = async (app) => {
       );
       const versionId = v.rows[0].id;
 
-      // Select storage backend: prefer active disk volume, fallback to S3
+      // Select storage backend: prefer the user's active disk volume, fallback
+      // to S3. Un volumen de agente (agent_id) solo sirve si su agente está
+      // conectado ahora mismo; si está offline, caemos a S3 para no crear chunks
+      // que nadie podría escribir.
       const activeVol = await client.query(
-        `SELECT id, path FROM storage_volumes WHERE active = true LIMIT 1`,
+        `SELECT id, path, agent_id FROM storage_volumes
+          WHERE active = true AND (user_id = $1 OR user_id IS NULL)
+          ORDER BY (user_id = $1) DESC NULLS LAST
+          LIMIT 1`,
+        [userId],
       );
-      const diskVolume = activeVol.rows[0] as { id: string; path: string } | undefined;
+      let diskVolume = activeVol.rows[0] as
+        | { id: string; path: string; agent_id: string | null }
+        | undefined;
+      if (diskVolume?.agent_id && !registry.isOnline(diskVolume.agent_id)) {
+        diskVolume = undefined; // agente desconectado → almacenar en S3
+      }
 
       const presignedUrls: Array<{ index: number; uploadUrl: string; s3Key: string }> = [];
       for (const ch of body.chunks) {
@@ -313,12 +327,14 @@ const uploadRoutes: FastifyPluginAsync = async (app) => {
       for (const c of chunks.rows) {
         try {
           if (c.storage_type === 'disk' && c.volume_id) {
-            const vol = await db.query(`SELECT path FROM storage_volumes WHERE id = $1`, [c.volume_id]);
-            if (vol.rows[0]) await deleteFromDisk(vol.rows[0].path, c.s3_key);
+            const vol = await db.query(`SELECT path, agent_id FROM storage_volumes WHERE id = $1`, [c.volume_id]);
+            if (vol.rows[0]) {
+              await deleteChunk({ path: vol.rows[0].path, agentId: vol.rows[0].agent_id }, c.s3_key);
+            }
           } else {
             await deleteBlob(c.s3_key);
           }
-        } catch { /* ignore cleanup errors */ }
+        } catch { /* ignore cleanup errors (p.ej. agente offline; se limpia luego) */ }
       }
 
       await tx(async (client) => {
@@ -354,14 +370,23 @@ const uploadRoutes: FastifyPluginAsync = async (app) => {
       if (r.rows[0].storage_type !== 'disk') return reply.badRequest('chunk is not disk-backed');
 
       const vol = await db.query(
-        `SELECT path FROM storage_volumes WHERE id = $1`,
+        `SELECT path, agent_id FROM storage_volumes WHERE id = $1`,
         [r.rows[0].volume_id],
       );
       if (vol.rowCount === 0) return reply.notFound('volume not found');
+      const volRef: VolumeRef = { path: vol.rows[0].path, agentId: vol.rows[0].agent_id };
 
       const data = Buffer.isBuffer(req.body) ? req.body : Buffer.from(req.body as any);
 
-      await writeToDisk(vol.rows[0].path, r.rows[0].s3_key, data);
+      try {
+        await writeChunk(volRef, r.rows[0].s3_key, data);
+      } catch (err: any) {
+        if (err?.message === 'agent-offline') {
+          return reply.code(409).send({ error: 'agent-offline', message: 'el disco de tu agente no está conectado' });
+        }
+        req.log.warn({ err: err?.message }, 'write-chunk falló');
+        return reply.code(502).send({ error: 'storage-error', message: 'no se pudo guardar el chunk' });
+      }
       return reply.send({ ok: true });
     },
   );
@@ -398,12 +423,22 @@ const uploadRoutes: FastifyPluginAsync = async (app) => {
       if (row.storage_type !== 'disk') return reply.badRequest('chunk is not disk-backed');
 
       const vol = await db.query(
-        `SELECT path FROM storage_volumes WHERE id = $1`,
+        `SELECT path, agent_id FROM storage_volumes WHERE id = $1`,
         [row.volume_id],
       );
       if (vol.rowCount === 0) return reply.notFound('volume not found');
+      const volRef: VolumeRef = { path: vol.rows[0].path, agentId: vol.rows[0].agent_id };
 
-      const data = await readFromDisk(vol.rows[0].path, row.s3_key);
+      let data: Buffer;
+      try {
+        data = await readChunk(volRef, row.s3_key);
+      } catch (err: any) {
+        if (err?.message === 'agent-offline') {
+          return reply.code(409).send({ error: 'agent-offline', message: 'el disco de tu agente no está conectado' });
+        }
+        req.log.warn({ err: err?.message }, 'read-chunk falló');
+        return reply.code(502).send({ error: 'storage-error', message: 'no se pudo leer el chunk' });
+      }
       return reply.type('application/octet-stream').send(data);
     },
   );
