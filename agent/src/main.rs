@@ -9,6 +9,7 @@ mod disk;
 mod identity;
 mod protocol;
 mod util;
+mod volume;
 
 use anyhow::{anyhow, Context, Result};
 use clap::{Parser, Subcommand};
@@ -185,14 +186,27 @@ async fn handle_message(identity: &Identity, txt: &str) -> Option<String> {
     }
 }
 
-/// Ejecuta un comando del backend. M1: list-disks (solo lectura).
-async fn handle_cmd(cmd: &str, _args: &serde_json::Value) -> Result<serde_json::Value> {
+/// Ejecuta un comando del backend.
+/// M1: list-disks (solo lectura). M2: register-volume (no destructivo).
+async fn handle_cmd(cmd: &str, args: &serde_json::Value) -> Result<serde_json::Value> {
     match cmd {
         "list-disks" => {
             let disks = tokio::task::spawn_blocking(disk::list)
                 .await
                 .context("tarea de listado de discos")??;
             Ok(serde_json::json!({ "disks": disks }))
+        }
+        "register-volume" => {
+            let path = args
+                .get("path")
+                .and_then(|v| v.as_str())
+                .ok_or_else(|| anyhow!("falta el argumento 'path'"))?
+                .to_string();
+            println!("Registrando volumen en '{path}' (no destructivo)…");
+            let info = tokio::task::spawn_blocking(move || volume::register(&path))
+                .await
+                .context("tarea de registro de volumen")??;
+            Ok(serde_json::json!(info))
         }
         other => anyhow::bail!("comando no soportado: {other}"),
     }

@@ -74,6 +74,7 @@ interface EmailLayoutOptions {
 }
 
 function renderEmail(opts: EmailLayoutOptions): string {
+  const logoUrl = `${env.FRONTEND_URL ?? env.PUBLIC_URL}/logo.png`;
   const button = opts.button
     ? `
               <tr>
@@ -110,8 +111,11 @@ function renderEmail(opts: EmailLayoutOptions): string {
             <td style="padding: 36px 40px 8px;">
               <table role="presentation" cellpadding="0" cellspacing="0">
                 <tr>
-                  <td style="font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; font-size: 22px; font-weight: 700; letter-spacing: 0.5px; color: #ffffff;">
-                    <span style="color: #a78bfa;">●</span>&nbsp; Noctcom
+                  <td style="vertical-align: middle;">
+                    <img src="${logoUrl}" width="36" height="36" alt="Noctcom" style="display: block; border-radius: 9px;">
+                  </td>
+                  <td style="vertical-align: middle; padding-left: 12px; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; font-size: 22px; font-weight: 700; letter-spacing: 0.5px; color: #ffffff;">
+                    Noctcom
                   </td>
                 </tr>
               </table>

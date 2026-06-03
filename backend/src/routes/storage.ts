@@ -238,13 +238,24 @@ const storageRoutes: FastifyPluginAsync = async (app) => {
       if (!registry.isOnline(agentId)) {
         return reply.code(409).send({ error: 'agent-offline', message: 'el agente no está conectado' });
       }
+      let disks: DiskInfo[];
       try {
         const result = (await registry.sendCommand(agentId, 'list-disks', {})) as { disks?: DiskInfo[] };
-        return reply.send({ disks: result?.disks ?? [] });
+        disks = result?.disks ?? [];
       } catch (err: any) {
         req.log.warn({ err: err?.message }, 'list-disks vía agente falló');
         return reply.code(504).send({ error: 'agent-error', message: 'el agente no respondió a tiempo' });
       }
+      // Marca como activos los discos ya registrados como volumen de este agente.
+      try {
+        const vols = await db.query(
+          `SELECT path FROM storage_volumes WHERE agent_id = $1 AND active = true`,
+          [agentId],
+        );
+        const activePaths = new Set(vols.rows.map((v: any) => v.path));
+        for (const d of disks) if (activePaths.has(d.path)) d.active = true;
+      } catch { /* sin volúmenes registrados / tabla aún sin columna */ }
+      return reply.send({ disks });
     }
 
     let disks: DiskInfo[];
@@ -271,6 +282,93 @@ const storageRoutes: FastifyPluginAsync = async (app) => {
     } catch { /* table may not exist yet */ }
 
     return reply.send({ disks });
+  });
+
+  // ─── Usar un disco del agente como volumen (M2, no destructivo) ──
+  // "Usar este disco": el agente crea una carpeta noctcom-blobs/ en el disco y
+  // lo registramos como volumen del usuario. NO formatea ni borra nada. Los
+  // blobs que se guarden ahí (M3) ya van cifrados → sigue siendo zero-knowledge.
+
+  const useDiskSchema = z.object({
+    agentId: z.string().uuid(),
+    path: z.string().min(1).max(1024),
+    label: z.string().min(1).max(128),
+  });
+  const unuseDiskSchema = z.object({
+    agentId: z.string().uuid(),
+    path: z.string().min(1).max(1024),
+  });
+
+  async function ownedOnlineAgent(req: any, reply: any, agentId: string): Promise<boolean> {
+    const a = await db.query(
+      `SELECT id FROM agents WHERE id = $1 AND user_id = $2 AND revoked_at IS NULL`,
+      [agentId, req.user.sub],
+    );
+    if (a.rowCount === 0) { reply.notFound('agente no encontrado'); return false; }
+    if (!registry.isOnline(agentId)) {
+      reply.code(409).send({ error: 'agent-offline', message: 'el agente no está conectado' });
+      return false;
+    }
+    return true;
+  }
+
+  app.post('/disks/use', { onRequest: [app.authenticate] }, async (req, reply) => {
+    const body = useDiskSchema.parse(req.body);
+    if (!(await ownedOnlineAgent(req, reply, body.agentId))) return;
+
+    let result: { path?: string; blobPath?: string };
+    try {
+      result = (await registry.sendCommand(body.agentId, 'register-volume', { path: body.path })) as {
+        path?: string;
+        blobPath?: string;
+      };
+    } catch (err: any) {
+      req.log.warn({ err: err?.message }, 'register-volume vía agente falló');
+      return reply.code(502).send({
+        error: 'agent-error',
+        message: err?.message ?? 'el agente no pudo preparar el disco',
+      });
+    }
+
+    const volPath = result?.path ?? body.path;
+    // Idempotente: si ya está registrado en este agente, lo reactivamos.
+    const existing = await db.query(
+      `SELECT id FROM storage_volumes WHERE agent_id = $1 AND path = $2`,
+      [body.agentId, volPath],
+    );
+    if (existing.rowCount && existing.rowCount > 0) {
+      await db.query(
+        `UPDATE storage_volumes SET active = true, label = $2 WHERE id = $1`,
+        [existing.rows[0].id, body.label],
+      );
+      return reply.send({ id: existing.rows[0].id, path: volPath, alreadyRegistered: true });
+    }
+
+    const r = await db.query(
+      `INSERT INTO storage_volumes (path, label, agent_id, user_id, active)
+       VALUES ($1, $2, $3, $4, true) RETURNING id`,
+      [volPath, body.label, body.agentId, req.user.sub],
+    );
+    return reply.code(201).send({ id: r.rows[0].id, path: volPath });
+  });
+
+  // "Dejar de usar": da de baja el volumen (no toca los datos del disco). Solo
+  // si aún no guarda chunks; si ya hay datos, hay que migrarlos primero.
+  app.post('/disks/unuse', { onRequest: [app.authenticate] }, async (req, reply) => {
+    const body = unuseDiskSchema.parse(req.body);
+    const vol = await db.query(
+      `SELECT id FROM storage_volumes WHERE agent_id = $1 AND path = $2 AND user_id = $3`,
+      [body.agentId, body.path, req.user.sub],
+    );
+    if (vol.rowCount === 0) return reply.notFound('volumen no encontrado');
+    const volId = vol.rows[0].id;
+
+    const hasChunks = await db.query(`SELECT 1 FROM chunks WHERE volume_id = $1 LIMIT 1`, [volId]);
+    if (hasChunks.rowCount && hasChunks.rowCount > 0) {
+      return reply.badRequest('el volumen ya guarda archivos — migra o elimínalos primero');
+    }
+    await db.query(`DELETE FROM storage_volumes WHERE id = $1`, [volId]);
+    return reply.send({ ok: true });
   });
 
   // ─── Format disk ─────────────────────────────────────────

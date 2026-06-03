@@ -339,7 +339,17 @@ CREATE INDEX IF NOT EXISTS agent_pairing_user_idx ON agent_pairing_tokens(user_i
 
 -- Un volumen puede vivir en la máquina de un agente (cloud) o ser local al
 -- backend (self-host → agent_id NULL, flujo actual intacto).
--- NOTA (M2/M3): cuando se registren volúmenes vía agente habrá que añadir
--- user_id a storage_volumes y relajar el UNIQUE(path) global a (agent_id, path).
 ALTER TABLE storage_volumes ADD COLUMN IF NOT EXISTS agent_id UUID REFERENCES agents(id) ON DELETE CASCADE;
 ALTER TABLE disk_format_log ADD COLUMN IF NOT EXISTS agent_id UUID REFERENCES agents(id) ON DELETE SET NULL;
+
+-- M2: volúmenes registrados vía agente pertenecen a un usuario. El mismo path
+-- ("C:\" en varias máquinas) puede repetirse entre agentes distintos, así que
+-- relajamos el UNIQUE(path) global a unicidad por (agent_id, path); para los
+-- volúmenes locales del backend (agent_id NULL) mantenemos path único.
+ALTER TABLE storage_volumes ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES users(id) ON DELETE CASCADE;
+ALTER TABLE storage_volumes DROP CONSTRAINT IF EXISTS storage_volumes_path_key;
+CREATE UNIQUE INDEX IF NOT EXISTS storage_volumes_agent_path_idx
+    ON storage_volumes(agent_id, path) WHERE agent_id IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS storage_volumes_local_path_idx
+    ON storage_volumes(path) WHERE agent_id IS NULL;
+CREATE INDEX IF NOT EXISTS storage_volumes_user_idx ON storage_volumes(user_id);

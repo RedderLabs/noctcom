@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import {
   Shield, KeyRound, Monitor, Lock, HardDrive,
   AlertTriangle, Fingerprint, Smartphone, Usb, Plus, Power, Trash2, Disc,
-  Download, Upload, Loader2, Mail, Server, Copy,
+  Download, Upload, Loader2, Mail, Server, Copy, Check, FolderPlus,
 } from 'lucide-react';
 import { FormatDiskModal } from '@/components/vault/FormatDiskModal';
 import { toast } from 'sonner';
@@ -412,14 +412,17 @@ export default function SettingsPage() {
               <p className="text-xs text-[var(--color-text-muted)] px-1">El agente no detectó discos.</p>
             ) : (
               <div className="space-y-1">
-                {(agentDisks[a.id] ?? []).map((d) => <AgentDiskCard key={d.id} disk={d} />)}
+                {(agentDisks[a.id] ?? []).map((d) => (
+                  <AgentDiskCard key={d.id} disk={d} agentId={a.id} onChanged={fetchAgentStorage} />
+                ))}
               </div>
             )}
           </div>
         ))}
         {onlineAgents.length > 0 && (
           <p className="text-[10px] text-[var(--color-text-muted)] px-1 mb-4">
-            Montar y formatear estos discos desde la web llega en la próxima versión del agente.
+            «Usar este disco» crea una carpeta <span className="font-mono">noctcom-blobs</span> en él para guardar tus
+            archivos cifrados; no formatea ni borra nada. El formateo de discos llega en la próxima versión del agente.
           </p>
         )}
 
@@ -1166,13 +1169,56 @@ interface AgentDisk {
   removable: boolean;
   mounted: boolean;
   needsFormat: boolean;
+  active: boolean;
 }
 
 // Tarjeta detallada de un disco servido por un agente (uso, total/usado/libre, fs).
-function AgentDiskCard({ disk }: { disk: AgentDisk }) {
+// M2: permite "Usar este disco" (no destructivo) → registra un volumen en él.
+function AgentDiskCard({ disk, agentId, onChanged }: {
+  disk: AgentDisk;
+  agentId: string;
+  onChanged: () => void;
+}) {
   const usedPct = disk.totalBytes > 0 ? Math.min(100, (disk.usedBytes / disk.totalBytes) * 100) : 0;
+  const [busy, setBusy] = useState(false);
+
+  async function handleUse() {
+    setBusy(true);
+    try {
+      await apiFetch('/api/v1/storage/disks/use', {
+        method: 'POST',
+        body: JSON.stringify({ agentId, path: disk.path, label: disk.label || disk.device || disk.path }),
+      });
+      toast.success(`Disco "${disk.label || disk.device}" listo para almacenar`);
+      onChanged();
+    } catch (err: any) {
+      toast.error(err.message ?? 'No se pudo preparar el disco');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleUnuse() {
+    setBusy(true);
+    try {
+      await apiFetch('/api/v1/storage/disks/unuse', {
+        method: 'POST',
+        body: JSON.stringify({ agentId, path: disk.path }),
+      });
+      toast.success('Disco dado de baja (tus datos siguen intactos)');
+      onChanged();
+    } catch (err: any) {
+      toast.error(err.message ?? 'No se pudo dar de baja el disco');
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
-    <div className="flex items-center gap-4 p-4 rounded-xl border border-[var(--color-border-faint)] bg-[var(--color-bg-surface)]">
+    <div className={cn(
+      'flex items-center gap-4 p-4 rounded-xl border bg-[var(--color-bg-surface)]',
+      disk.active ? 'border-emerald-500/30' : 'border-[var(--color-border-faint)]',
+    )}>
       <div className="size-10 rounded-lg grid place-items-center shrink-0 bg-[var(--color-bg-surface-2)] border border-[var(--color-border-faint)]">
         {disk.removable
           ? <Usb className="size-4 text-[var(--color-text-tertiary)]" />
@@ -1185,6 +1231,11 @@ function AgentDiskCard({ disk }: { disk: AgentDisk }) {
           {disk.removable && (
             <span className="text-[10px] font-mono uppercase tracking-wider text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded">
               USB
+            </span>
+          )}
+          {disk.active && (
+            <span className="text-[10px] font-mono uppercase tracking-wider text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded flex items-center gap-1">
+              <Check className="size-3" /> En uso
             </span>
           )}
         </div>
@@ -1217,6 +1268,17 @@ function AgentDiskCard({ disk }: { disk: AgentDisk }) {
             {!disk.removable && <span className="text-[10px] text-[var(--color-text-muted)]">· Interno</span>}
           </div>
         </div>
+      </div>
+      <div className="shrink-0">
+        {disk.active ? (
+          <Button variant="ghost" size="sm" loading={busy} onClick={handleUnuse}>
+            <Power className="size-3.5 mr-1" /> Dejar de usar
+          </Button>
+        ) : (
+          <Button variant="secondary" size="sm" loading={busy} onClick={handleUse}>
+            <FolderPlus className="size-3.5 mr-1" /> Usar este disco
+          </Button>
+        )}
       </div>
     </div>
   );
