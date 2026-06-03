@@ -36,7 +36,7 @@ export default function Page() {
               jobTitle: 'Fundador y desarrollador',
               worksFor: { '@type': 'Organization', name: 'Redder Labs' },
               url: BASE_URL,
-              sameAs: ['https://github.com/RedderLabs', 'https://x.com/noctcom', 'https://xero-trace.com'],
+              sameAs: ['https://github.com/RedderLabs', 'https://x.com/noctcom', 'https://noctcom.com'],
             },
           }),
         }}

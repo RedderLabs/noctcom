@@ -115,13 +115,13 @@ export default function AboutPage() {
               </div>
             </a>
             <a
-              href="mailto:hello@xero-trace.com"
+              href="mailto:hello@noctcom.com"
               className="flex items-center gap-3 p-4 rounded-xl border border-[var(--color-border-faint)] bg-[var(--color-bg-surface)] hover:border-[var(--color-border-subtle)] transition-all group"
             >
               <Mail className="size-4 text-[var(--color-text-secondary)]" />
               <div className="flex-1 min-w-0">
                 <span className="text-sm font-medium block">Email</span>
-                <span className="text-[10px] text-[var(--color-text-tertiary)] font-mono">hello@xero-trace.com</span>
+                <span className="text-[10px] text-[var(--color-text-tertiary)] font-mono">hello@noctcom.com</span>
               </div>
             </a>
           </div>
