@@ -10,7 +10,7 @@ export const metadata: Metadata = {
     default: 'Noctcom — Zero-Knowledge Storage',
     template: '%s | Noctcom',
   },
-  description: 'Tu bóveda privada. Cifrada en tu dispositivo. Nadie más puede abrirla.',
+  description: 'Tu bóveda privada. Cifrada en tu dispositivo. Nadie más puede abrirla. Open source y self-hosteable, hecho por Redder Labs.',
   keywords: [
     'zero-knowledge storage',
     'almacenamiento cifrado',
@@ -26,12 +26,19 @@ export const metadata: Metadata = {
     'bóveda cifrada',
     'encrypted vault',
     'privacidad digital',
-    'alternativa Proton Drive',
+    'alternativa Drive',
+    'almacenamiento privado para periodistas',
+    'privacidad para investigación',
+    'Redder Labs',
     'AGPL-3.0',
   ],
-  authors: [{ name: 'Noctcom', url: 'https://noctcom.com' }],
-  creator: 'Noctcom',
-  publisher: 'Noctcom',
+  authors: [
+    { name: 'Julián Rodríguez', url: 'https://noctcom.com/about' },
+    { name: 'Redder Labs', url: 'https://github.com/RedderLabs' },
+  ],
+  creator: 'Redder Labs',
+  publisher: 'Redder Labs',
+  category: 'technology',
   icons: { icon: '/logo.png', apple: '/logo.png' },
   openGraph: {
     siteName: 'Noctcom',
@@ -41,6 +48,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     site: '@noctcom',
+    creator: '@noctcom',
   },
   robots: {
     index: true,

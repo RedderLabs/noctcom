@@ -222,6 +222,9 @@ export default function LandingPage() {
         <div className="max-w-6xl mx-auto px-6 text-xs text-[var(--color-text-tertiary)] flex justify-between items-center">
           <div className="flex items-center gap-4">
             <span>© {new Date().getFullYear()} Noctcom · AGPL-3.0</span>
+            <Link href="/about" className="hover:text-[var(--color-text-secondary)] transition-colors">
+              Nosotros
+            </Link>
             <Link href="/security" className="hover:text-[var(--color-text-secondary)] transition-colors">
               Seguridad
             </Link>
