@@ -52,6 +52,7 @@ class Store {
   agents: any[] = [];
   pairingTokens: any[] = [];
   volumes: any[] = [];
+  chunks: any[] = [];
   private seq = 0;
 
   reset(): void {
@@ -61,6 +62,7 @@ class Store {
     this.agents = [];
     this.pairingTokens = [];
     this.volumes = [];
+    this.chunks = [];
     this.seq = 0;
   }
 
@@ -322,16 +324,24 @@ async function query(text: string, params: any[] = []): Promise<QueryResult> {
 
   if (sql.startsWith('UPDATE storage_volumes SET active = true, label')) {
     const v = store.volumes.find((x) => x.id === params[0]);
-    if (v) { v.active = true; v.label = params[1]; }
+    if (v) { v.active = true; v.label = params[1]; v.total_bytes = Number(params[2] ?? 0); }
     return { rows: [], rowCount: v ? 1 : 0 };
   }
 
   if (sql.startsWith('INSERT INTO storage_volumes')) {
     const id = randomUUID();
     store.volumes.push({
-      id, path: params[0], label: params[1], agent_id: params[2], user_id: params[3], active: true,
+      id, path: params[0], label: params[1], agent_id: params[2], user_id: params[3],
+      active: true, total_bytes: Number(params[4] ?? 0),
     });
     return { rows: [{ id }], rowCount: 1 };
+  }
+
+  // ─── chunks (solo lo que consultan las rutas de disco) ────
+  // Guarda de "¿este volumen ya tiene archivos?" antes de formatear/dar de baja.
+  if (sql.startsWith('SELECT 1 FROM chunks WHERE volume_id')) {
+    const has = store.chunks.some((c) => c.volume_id === params[0]);
+    return has ? { rows: [{ '?column?': 1 }], rowCount: 1 } : { rows: [], rowCount: 0 };
   }
 
   throw new Error(`fake-db: consulta no contemplada → ${sql}`);

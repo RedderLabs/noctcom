@@ -74,7 +74,7 @@ describe('POST /storage/disks/agent-format', () => {
   });
 
   const body = (over: Record<string, unknown> = {}) => ({
-    agentId, driveLetter: 'D', label: 'datos', confirmLabel: 'datos', ...over,
+    agentId, driveLetter: 'D', label: 'datos', confirmLabel: 'datos', totalBytes: 1000, ...over,
   });
 
   it('400 si la etiqueta de confirmación no coincide', async () => {
@@ -117,6 +117,24 @@ describe('POST /storage/disks/agent-format', () => {
     expect(res.json().error).toBe('step-up-required');
   });
 
+  it('400 si el disco (en uso) ya guarda archivos de Noctcom', async () => {
+    seedAgent(agentId, userId);
+    connectFormattingAgent(agentId, userId);
+    // Volumen ya registrado en D:\ con un chunk almacenado.
+    const volId = randomUUID();
+    store.volumes.push({ id: volId, path: 'D:\\', agent_id: agentId, user_id: userId, active: true, total_bytes: 1000 });
+    store.chunks.push({ volume_id: volId });
+
+    const res = await app.inject({
+      method: 'POST', url: '/disks/agent-format',
+      headers: { 'x-test-sub': userId, 'x-step-up-token': stepUp },
+      payload: body(),
+    });
+    expect(res.statusCode).toBe(400);
+    // No se llegó a formatear: el volumen sigue ahí.
+    expect(store.volumes).toHaveLength(1);
+  });
+
   it('formatea y registra el volumen como activo (201), idempotente', async () => {
     seedAgent(agentId, userId);
     connectFormattingAgent(agentId, userId);
@@ -129,7 +147,7 @@ describe('POST /storage/disks/agent-format', () => {
     expect(res.statusCode).toBe(201);
     expect(res.json().path).toBe('D:\\');
     expect(store.volumes).toHaveLength(1);
-    expect(store.volumes[0]).toMatchObject({ agent_id: agentId, user_id: userId, active: true, label: 'datos' });
+    expect(store.volumes[0]).toMatchObject({ agent_id: agentId, user_id: userId, active: true, label: 'datos', total_bytes: 1000 });
 
     // Segunda llamada: no duplica, reactiva el existente.
     const res2 = await app.inject({

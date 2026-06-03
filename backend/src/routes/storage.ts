@@ -293,6 +293,9 @@ const storageRoutes: FastifyPluginAsync = async (app) => {
     agentId: z.string().uuid(),
     path: z.string().min(1).max(1024),
     label: z.string().min(1).max(128),
+    // Capacidad del disco (la conoce el cliente por el listado del agente). Solo
+    // para mostrar el almacenamiento total del usuario; no es un límite real.
+    totalBytes: z.number().int().nonnegative().optional(),
   });
   const unuseDiskSchema = z.object({
     agentId: z.string().uuid(),
@@ -338,16 +341,16 @@ const storageRoutes: FastifyPluginAsync = async (app) => {
     );
     if (existing.rowCount && existing.rowCount > 0) {
       await db.query(
-        `UPDATE storage_volumes SET active = true, label = $2 WHERE id = $1`,
-        [existing.rows[0].id, body.label],
+        `UPDATE storage_volumes SET active = true, label = $2, total_bytes = $3 WHERE id = $1`,
+        [existing.rows[0].id, body.label, body.totalBytes ?? 0],
       );
       return reply.send({ id: existing.rows[0].id, path: volPath, alreadyRegistered: true });
     }
 
     const r = await db.query(
-      `INSERT INTO storage_volumes (path, label, agent_id, user_id, active)
-       VALUES ($1, $2, $3, $4, true) RETURNING id`,
-      [volPath, body.label, body.agentId, req.user.sub],
+      `INSERT INTO storage_volumes (path, label, agent_id, user_id, active, total_bytes)
+       VALUES ($1, $2, $3, $4, true, $5) RETURNING id`,
+      [volPath, body.label, body.agentId, req.user.sub, body.totalBytes ?? 0],
     );
     return reply.code(201).send({ id: r.rows[0].id, path: volPath });
   });
@@ -381,6 +384,7 @@ const storageRoutes: FastifyPluginAsync = async (app) => {
     driveLetter: z.string().regex(/^[A-Za-z]$/, 'letra de unidad inválida'),
     label: z.string().min(1).max(12).regex(/^[a-zA-Z0-9_-]+$/, 'solo alfanumérico, guion y guion bajo'),
     confirmLabel: z.string(),
+    totalBytes: z.number().int().nonnegative().optional(),
   });
 
   app.post('/disks/agent-format', { onRequest: [app.authenticate] }, async (req, reply) => {
@@ -395,6 +399,26 @@ const storageRoutes: FastifyPluginAsync = async (app) => {
     if (!(await ownedOnlineAgent(req, reply, body.agentId))) return;
     // Operación irreversible → re-autenticación reciente obligatoria.
     if (!(await requireStepUp(req, reply))) return;
+
+    // Se puede formatear un disco aunque esté EN USO (activo), pero nunca si ya
+    // guarda archivos de Noctcom: eso destruiría datos del usuario y dejaría
+    // chunks huérfanos. En ese caso hay que eliminarlos / dejar de usar primero.
+    const targetPath = `${letter}:\\`;
+    const existingVol = await db.query(
+      `SELECT id FROM storage_volumes WHERE agent_id = $1 AND path = $2 AND user_id = $3`,
+      [body.agentId, targetPath, req.user.sub],
+    );
+    if (existingVol.rowCount && existingVol.rowCount > 0) {
+      const hasChunks = await db.query(
+        `SELECT 1 FROM chunks WHERE volume_id = $1 LIMIT 1`,
+        [existingVol.rows[0].id],
+      );
+      if (hasChunks.rowCount && hasChunks.rowCount > 0) {
+        return reply.badRequest(
+          'este disco ya guarda archivos de Noctcom; elimínalos o déjalo de usar antes de formatear',
+        );
+      }
+    }
 
     let result: { path?: string; blobPath?: string };
     try {
@@ -420,15 +444,15 @@ const storageRoutes: FastifyPluginAsync = async (app) => {
     );
     if (existing.rowCount && existing.rowCount > 0) {
       await db.query(
-        `UPDATE storage_volumes SET active = true, label = $2 WHERE id = $1`,
-        [existing.rows[0].id, body.label],
+        `UPDATE storage_volumes SET active = true, label = $2, total_bytes = $3 WHERE id = $1`,
+        [existing.rows[0].id, body.label, body.totalBytes ?? 0],
       );
       return reply.send({ id: existing.rows[0].id, path: volPath, alreadyRegistered: true });
     }
     const r = await db.query(
-      `INSERT INTO storage_volumes (path, label, agent_id, user_id, active)
-       VALUES ($1, $2, $3, $4, true) RETURNING id`,
-      [volPath, body.label, body.agentId, req.user.sub],
+      `INSERT INTO storage_volumes (path, label, agent_id, user_id, active, total_bytes)
+       VALUES ($1, $2, $3, $4, true, $5) RETURNING id`,
+      [volPath, body.label, body.agentId, req.user.sub, body.totalBytes ?? 0],
     );
     return reply.code(201).send({ id: r.rows[0].id, path: volPath });
   });

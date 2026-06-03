@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { apiFetch } from '@/lib/api';
 import { getStepUpToken } from '@/lib/step-up';
+import { useVault } from '@/lib/vault-store';
 
 interface AgentDiskLite {
   device: string;
@@ -73,10 +74,18 @@ export function AgentFormatModal({ open, onClose, agentId, disk, onFormatted }: 
       await apiFetch('/api/v1/storage/disks/agent-format', {
         method: 'POST',
         headers: { 'x-step-up-token': stepUpToken },
-        body: JSON.stringify({ agentId, driveLetter: letter, label, confirmLabel: confirmText }),
+        body: JSON.stringify({
+          agentId,
+          driveLetter: letter,
+          label,
+          confirmLabel: confirmText,
+          totalBytes: disk.totalBytes,
+        }),
       });
       toast.success('Disco formateado y listo para almacenar');
       onFormatted();
+      // El disco queda activo → refresca el "Almacenamiento" total.
+      void useVault.getState().refreshStorage();
       handleClose();
     } catch (err: any) {
       toast.error(err.message ?? 'Error al formatear el disco');

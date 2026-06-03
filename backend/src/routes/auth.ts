@@ -343,18 +343,25 @@ const authRoutes: FastifyPluginAsync = async (app) => {
   // ─── GET /me ──────────────────────────────────────────────
   app.get('/me', { onRequest: [app.authenticate] }, async (req, reply) => {
     const r = await db.query(
-      `SELECT id, username, storage_quota_bytes, storage_used_bytes,
-              identity_public_key, exchange_public_key, is_admin
-       FROM users WHERE id = $1`,
+      `SELECT u.id, u.username, u.storage_quota_bytes, u.storage_used_bytes,
+              u.identity_public_key, u.exchange_public_key, u.is_admin,
+              COALESCE((
+                SELECT SUM(total_bytes) FROM storage_volumes
+                 WHERE active = true AND (user_id = u.id OR user_id IS NULL)
+              ), 0) AS disk_bytes
+       FROM users u WHERE u.id = $1`,
       [req.user.sub],
     );
     if (r.rowCount === 0) return reply.notFound();
     const u = r.rows[0];
+    // La cuota efectiva = cuota base + capacidad de los discos en uso del usuario
+    // (suya o self-host). Así el "Almacenamiento" refleja el espacio real total.
+    const quota = Number(u.storage_quota_bytes) + Number(u.disk_bytes);
     return reply.send({
       id: u.id,
       username: u.username,
       isAdmin: u.is_admin,
-      storageQuotaBytes: Number(u.storage_quota_bytes),
+      storageQuotaBytes: quota,
       storageUsedBytes: Number(u.storage_used_bytes),
       identityPublicKey: toB64(u.identity_public_key),
       exchangePublicKey: toB64(u.exchange_public_key),

@@ -1191,10 +1191,17 @@ function AgentDiskCard({ disk, agentId, onChanged }: {
     try {
       await apiFetch('/api/v1/storage/disks/use', {
         method: 'POST',
-        body: JSON.stringify({ agentId, path: disk.path, label: disk.label || disk.device || disk.path }),
+        body: JSON.stringify({
+          agentId,
+          path: disk.path,
+          label: disk.label || disk.device || disk.path,
+          totalBytes: disk.totalBytes,
+        }),
       });
       toast.success(`Disco "${disk.label || disk.device}" listo para almacenar`);
       onChanged();
+      // Refresca el "Almacenamiento": ahora suma la capacidad del disco.
+      void useVault.getState().refreshStorage();
     } catch (err: any) {
       toast.error(err.message ?? 'No se pudo preparar el disco');
     } finally {
@@ -1211,6 +1218,7 @@ function AgentDiskCard({ disk, agentId, onChanged }: {
       });
       toast.success('Disco dado de baja (tus datos siguen intactos)');
       onChanged();
+      void useVault.getState().refreshStorage();
     } catch (err: any) {
       toast.error(err.message ?? 'No se pudo dar de baja el disco');
     } finally {
@@ -1274,28 +1282,28 @@ function AgentDiskCard({ disk, agentId, onChanged }: {
         </div>
       </div>
       <div className="shrink-0 flex items-center gap-1.5">
+        {/* Formatear está disponible esté el disco en uso o no (nunca para C:).
+            El backend impide formatear si el disco ya guarda archivos. */}
+        {!isSystemDrive && (
+          <Button
+            variant="ghost"
+            size="sm"
+            disabled={busy}
+            onClick={() => setFormatOpen(true)}
+            className="text-red-400 hover:text-red-300"
+            title="Formatear el disco (borra todo su contenido)"
+          >
+            <Eraser className="size-3.5 mr-1" /> Formatear
+          </Button>
+        )}
         {disk.active ? (
           <Button variant="ghost" size="sm" loading={busy} onClick={handleUnuse}>
             <Power className="size-3.5 mr-1" /> Dejar de usar
           </Button>
         ) : (
-          <>
-            {!isSystemDrive && (
-              <Button
-                variant="ghost"
-                size="sm"
-                disabled={busy}
-                onClick={() => setFormatOpen(true)}
-                className="text-red-400 hover:text-red-300"
-                title="Formatear el disco (borra todo su contenido)"
-              >
-                <Eraser className="size-3.5 mr-1" /> Formatear
-              </Button>
-            )}
-            <Button variant="secondary" size="sm" loading={busy} onClick={handleUse}>
-              <FolderPlus className="size-3.5 mr-1" /> Usar este disco
-            </Button>
-          </>
+          <Button variant="secondary" size="sm" loading={busy} onClick={handleUse}>
+            <FolderPlus className="size-3.5 mr-1" /> Usar este disco
+          </Button>
         )}
       </div>
 

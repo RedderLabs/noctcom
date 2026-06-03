@@ -353,3 +353,8 @@ CREATE UNIQUE INDEX IF NOT EXISTS storage_volumes_agent_path_idx
 CREATE UNIQUE INDEX IF NOT EXISTS storage_volumes_local_path_idx
     ON storage_volumes(path) WHERE agent_id IS NULL;
 CREATE INDEX IF NOT EXISTS storage_volumes_user_idx ON storage_volumes(user_id);
+
+-- Capacidad del disco registrado (bytes). Sirve para que el "Almacenamiento" del
+-- usuario refleje cuota base + capacidad de sus discos en uso. La aporta el
+-- cliente desde el listado del agente (display-only; no es un límite de seguridad).
+ALTER TABLE storage_volumes ADD COLUMN IF NOT EXISTS total_bytes BIGINT NOT NULL DEFAULT 0;
