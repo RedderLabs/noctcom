@@ -9,6 +9,7 @@ mod disk;
 mod format;
 mod identity;
 mod protocol;
+mod update;
 mod util;
 mod volume;
 
@@ -51,6 +52,11 @@ enum Cmd {
     },
     /// Muestra si el agente está emparejado.
     Status,
+    /// Descarga e instala la última versión del agente si hay una más nueva.
+    Update {
+        #[arg(long)]
+        server: Option<String>,
+    },
 }
 
 fn main() -> Result<()> {
@@ -59,7 +65,17 @@ fn main() -> Result<()> {
         Cmd::Pair { code, server } => pair(&code, &server),
         Cmd::Status => status(),
         Cmd::Run { server } => tokio::runtime::Runtime::new()?.block_on(run(server)),
+        Cmd::Update { server } => update_cmd(server),
     }
+}
+
+/// Resuelve el servidor (override > estado > por defecto) y lanza la actualización.
+fn update_cmd(server_override: Option<String>) -> Result<()> {
+    let state = State::load()?;
+    let server = server_override
+        .or(state.server)
+        .unwrap_or_else(|| DEFAULT_SERVER.to_string());
+    update::run_update(&server)
 }
 
 /// Empareja: registra la clave pública del agente en el backend con el código.
@@ -101,6 +117,7 @@ fn pair(code: &str, server: &str) -> Result<()> {
 
 fn status() -> Result<()> {
     let state = State::load()?;
+    println!("Noctcom Connector v{}", update::current_version());
     match state.agent_id {
         Some(id) => println!(
             "Emparejado.\n  agentId: {id}\n  servidor: {}",
@@ -126,6 +143,16 @@ async fn run(server_override: Option<String>) -> Result<()> {
     let server = server_override
         .or(state.server)
         .unwrap_or_else(|| DEFAULT_SERVER.to_string());
+
+    // Limpieza de una actualización previa + aviso si hay versión nueva. En una
+    // tarea aparte para no retrasar la conexión ni bloquear el runtime.
+    {
+        let server = server.clone();
+        tokio::task::spawn_blocking(move || {
+            update::cleanup_old();
+            update::check_and_notify(&server);
+        });
+    }
 
     let ws_url = to_ws_url(&server, &agent_id);
     println!("Conectando a {ws_url}…");

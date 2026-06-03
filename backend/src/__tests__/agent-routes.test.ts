@@ -22,6 +22,7 @@ vi.mock('../config.js', () => ({
     S3_ACCESS_KEY: 'test-access',
     S3_SECRET_KEY: 'test-secret',
     S3_BUCKET: 'test-bucket',
+    AGENT_LATEST_VERSION: '9.9.9',
   },
 }));
 vi.mock('../db/pool.js', async () => ({ db: (await import('./fake-db.js')).db }));
@@ -144,6 +145,29 @@ describe('rutas del agente (pairing)', () => {
     const otro = randomUUID();
     const del = await app.inject({ method: 'DELETE', url: `/${agentId}`, headers: { 'x-test-sub': otro } });
     expect(del.statusCode).toBe(404);
+  });
+});
+
+describe('GET /version (auto-update)', () => {
+  let app: FastifyInstance;
+  beforeAll(async () => { app = await buildApp(); });
+
+  it('devuelve la última versión y un downloadUrl para una plataforma con binario', async () => {
+    const res = await app.inject({ method: 'GET', url: '/version?platform=windows' });
+    expect(res.statusCode).toBe(200);
+    const body = res.json();
+    expect(body.version).toBe('9.9.9');
+    expect(body.available).toBe(true);
+    expect(body.downloadUrl).toBe('/api/v1/agent/download?platform=windows');
+  });
+
+  it('marca no disponible (sin binario) para una plataforma aún no publicada', async () => {
+    const res = await app.inject({ method: 'GET', url: '/version?platform=linux' });
+    expect(res.statusCode).toBe(200);
+    const body = res.json();
+    expect(body.version).toBe('9.9.9');
+    expect(body.available).toBe(false);
+    expect(body.downloadUrl).toBeNull();
   });
 });
 

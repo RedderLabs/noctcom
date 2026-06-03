@@ -26,6 +26,11 @@ const envSchema = z.object({
 
   MAX_UPLOAD_BYTES: z.coerce.number().default(5 * 1024 * 1024 * 1024),
   USER_QUOTA_BYTES: z.coerce.number().default(1 * 1024 * 1024 * 1024),
+
+  // Última versión publicada del agente "Noctcom Connector". Se incrementa al
+  // subir un binario nuevo a B2 (scripts/upload-agent-release.ts) para que los
+  // agentes ya instalados detecten que hay actualización.
+  AGENT_LATEST_VERSION: z.string().default('0.1.0'),
 });
 
 export const env = envSchema.parse(process.env);

@@ -20,6 +20,7 @@ import { db } from '../db/pool.js';
 import { publishChange } from '../db/redis.js';
 import { presignDownload } from '../storage/s3.js';
 import * as registry from '../agents/registry.js';
+import { env } from '../config.js';
 
 // Binarios del agente disponibles para descarga (subidos a B2 con
 // scripts/upload-agent-release.ts). Solo se ofrecen los que existen de verdad.
@@ -108,6 +109,20 @@ const agentRoutes: FastifyPluginAsync = async (app) => {
       return reply.code(201).send({ agentId: a.rows[0].id });
     },
   );
+
+  // ─── GET /version ─ última versión publicada del agente ───
+  // Público: el agente instalado la consulta al arrancar y en `update` para
+  // saber si hay una versión nueva. No expone nada sensible (solo un semver).
+  app.get<{ Querystring: { platform?: string } }>('/version', async (req, reply) => {
+    const platform = (req.query.platform ?? '').toLowerCase();
+    const available = Object.prototype.hasOwnProperty.call(DOWNLOADS, platform);
+    return reply.send({
+      version: env.AGENT_LATEST_VERSION,
+      platform: platform || null,
+      available,
+      downloadUrl: available ? `/api/v1/agent/download?platform=${platform}` : null,
+    });
+  });
 
   // ─── GET /download ─ descarga del binario del agente ──────
   // Público (es un instalador): redirige a una URL firmada de B2.
