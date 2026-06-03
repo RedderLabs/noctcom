@@ -164,7 +164,10 @@ export default function SettingsPage() {
     } catch { /* ignore */ }
   }, []);
 
-  useEffect(() => { fetchDisks(); fetchVolumes(); }, [fetchDisks, fetchVolumes]);
+  // Solo en self-host tiene sentido detectar/gestionar los discos del servidor.
+  useEffect(() => {
+    if (process.env.NEXT_PUBLIC_SELF_HOST === 'true') { fetchDisks(); fetchVolumes(); }
+  }, [fetchDisks, fetchVolumes]);
 
   // Discos servidos por los agentes online (cloud): listado real de la máquina
   // del usuario vía el Noctcom Connector.
@@ -228,6 +231,10 @@ export default function SettingsPage() {
   ];
 
   const onlineAgents = agents.filter((a) => a.online);
+  // Self-host: el backend corre en la máquina del usuario, así que sus discos SÍ
+  // son los suyos. En la nube (noctcom.com) los discos del servidor son ajenos y
+  // NO deben mostrarse: ahí todo viene del agente. Por defecto false (cloud).
+  const isSelfHost = process.env.NEXT_PUBLIC_SELF_HOST === 'true';
 
   return (
     <div className="px-8 py-6 max-w-3xl mx-auto">
@@ -393,7 +400,10 @@ export default function SettingsPage() {
       {/* Noctcom Connector (agente local) */}
       <ConnectorAgentsSection />
 
-      {/* Physical disks */}
+      {/* Discos de almacenamiento. En cloud solo se muestran los discos del
+          agente ONLINE; sin agente conectado (o vinculación vieja) no se muestra
+          nada. Los discos del servidor solo se gestionan en self-host. */}
+      {(isSelfHost || onlineAgents.length > 0) && (
       <section className="mb-8">
         <div className="flex items-center gap-2 mb-4">
           <Usb className="size-4 text-blue-300" />
@@ -427,8 +437,8 @@ export default function SettingsPage() {
           </p>
         )}
 
-        {/* Configured volumes */}
-        {volumes.length > 0 && (
+        {/* Configured volumes (solo self-host) */}
+        {isSelfHost && volumes.length > 0 && (
           <div className="space-y-1 mb-3">
             {volumes.map((vol) => (
               <div
@@ -523,9 +533,9 @@ export default function SettingsPage() {
           </div>
         )}
 
-        {/* Discos detectados en el SERVIDOR (solo self-host). En cloud, los reales
-            vienen del agente arriba; ocultamos los del servidor para no confundir. */}
-        {!onlineAgents.length && disks.filter((d) => !d.active).length > 0 && (
+        {/* Discos detectados en el SERVIDOR — SOLO self-host. En cloud los reales
+            vienen del agente; los del servidor de la web son ajenos y no se muestran. */}
+        {isSelfHost && disks.filter((d) => !d.active).length > 0 && (
           <>
             <p className="text-xs text-[var(--color-text-muted)] mb-2 px-1">Discos detectados:</p>
             <div className="space-y-1">
@@ -631,18 +641,17 @@ export default function SettingsPage() {
           </>
         )}
 
-        {!onlineAgents.length && disks.length === 0 && volumes.length === 0 && (
+        {isSelfHost && disks.length === 0 && volumes.length === 0 && (
           <div className="p-3 rounded-lg bg-[var(--color-bg-surface)] border border-[var(--color-border-faint)] flex items-start gap-2">
             <AlertTriangle className="size-4 text-amber-300 mt-0.5 shrink-0" />
             <p className="text-xs text-[var(--color-text-tertiary)] leading-relaxed">
-              Usar discos físicos (USB/SATA) solo es posible cuando <strong className="text-[var(--color-text-secondary)]">alojas Noctcom tú mismo</strong>:
-              la detección ocurre en el servidor donde corre la API. En la versión en la nube
-              (noctcom.com) el servidor no puede ver los discos de tu ordenador. Conéctalos en tu
-              propia instancia self-hosted y aparecerán aquí.
+              No se detectaron discos en el servidor. Conecta un disco (USB/SATA) a la máquina
+              donde corre Noctcom y aparecerá aquí para añadirlo como volumen.
             </p>
           </div>
         )}
       </section>
+      )}
 
       <FormatDiskModal
         open={formatOpen}

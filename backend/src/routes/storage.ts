@@ -663,9 +663,14 @@ const storageRoutes: FastifyPluginAsync = async (app) => {
 
   // ─── Volume management ─────────────────────────────────────
 
-  app.get('/volumes', { onRequest: [app.authenticate] }, async (_req, reply) => {
+  app.get('/volumes', { onRequest: [app.authenticate] }, async (req, reply) => {
+    // Acotado al usuario: sus volúmenes de agente (user_id propio) + los locales
+    // del backend en self-host (user_id NULL). Nunca los de otras cuentas.
     const r = await db.query(
-      `SELECT id, path, label, active, created_at FROM storage_volumes ORDER BY created_at ASC`,
+      `SELECT id, path, label, active, created_at FROM storage_volumes
+        WHERE user_id = $1 OR user_id IS NULL
+        ORDER BY created_at ASC`,
+      [req.user.sub],
     );
 
     const volumes = await Promise.all(r.rows.map(async (v: any) => {
