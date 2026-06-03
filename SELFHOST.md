@@ -110,7 +110,7 @@ Default quotas in `.env`:
 | Setting | Default | Description |
 |---------|---------|-------------|
 | `MAX_UPLOAD_BYTES` | 5 GB | Maximum single file size |
-| `USER_QUOTA_BYTES` | 10 GB | Storage per user |
+| `USER_QUOTA_BYTES` | 1 GB | Storage per user |
 
 ## Updates
 

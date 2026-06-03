@@ -123,7 +123,7 @@ services:
       JWT_SECRET: ${JWT_SECRET:?jwt secret required}
       PUBLIC_URL: ${PUBLIC_URL:-http://localhost:3000}
       MAX_UPLOAD_BYTES: ${MAX_UPLOAD_BYTES:-5368709120}
-      USER_QUOTA_BYTES: ${USER_QUOTA_BYTES:-2147483648}
+      USER_QUOTA_BYTES: ${USER_QUOTA_BYTES:-1073741824}
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3001}
       SMTP_HOST: ${SMTP_HOST:-localhost}
       SMTP_PORT: ${SMTP_PORT:-465}

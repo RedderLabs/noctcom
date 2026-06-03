@@ -140,7 +140,7 @@ En **Configuración > Dispositivos** ves desde dónde tienes la sesión abierta.
 
 ## Tu espacio
 
-Cada cuenta empieza con 2 GB gratis, cifrados. En el menú lateral ves cuánto llevas usado, y en **Configuración > Almacenamiento** tienes el desglose por tipo de archivo. Si necesitas más sitio, podrás ampliarlo.
+Cada cuenta empieza con 1 GB gratis, cifrado. En el menú lateral ves cuánto llevas usado, y en **Configuración > Almacenamiento** tienes el desglose por tipo de archivo. Si necesitas más sitio, podrás ampliarlo.
 
 ---
 
