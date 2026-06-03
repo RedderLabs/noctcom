@@ -175,6 +175,17 @@ body {
   color: var(--color-text-primary);
   margin: 1.5rem 0 0.5rem;
 }
+/* Salto cómodo desde el índice: deja aire arriba al anclar a un título. */
+.prose-noctcom h1,
+.prose-noctcom h2,
+.prose-noctcom h3 {
+  scroll-margin-top: 1.5rem;
+}
+/* Enlaces del índice: subrayado sutil al pasar el ratón. */
+.prose-noctcom .toc-link:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
 .prose-noctcom p {
   margin: 0.75rem 0;
 }

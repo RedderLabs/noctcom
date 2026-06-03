@@ -1,291 +1,273 @@
-# Manual de usuario — Noctcom v0.1.0
+# Manual de Noctcom
 
-> Tu bóveda privada. Cifrada en tu dispositivo.
+> Tu espacio privado. Lo que guardas aquí es tuyo y solo tuyo: se cifra en tu propio dispositivo antes de salir. Ni nosotros podemos verlo.
+
+¡Bienvenido/a! Esta guía está pensada para acompañarte, no para abrumarte. Ve directo a lo que necesites desde el índice de aquí abajo.
 
 ---
 
-## Primeros pasos
+## Índice
+
+- [Lo esencial en 30 segundos](#lo-esencial-en-30-segundos)
+- [Crear tu cuenta y entrar](#crear-tu-cuenta-y-entrar)
+- [Tus archivos, a tu manera](#tus-archivos-a-tu-manera)
+- [Tu seguridad, sin complicaciones](#tu-seguridad-sin-complicaciones)
+- [Tu espacio](#tu-espacio)
+- [Usa los discos de tu propio equipo](#usa-los-discos-de-tu-propio-equipo)
+- [Móntalo en tu servidor (avanzado)](#montalo-en-tu-servidor-avanzado)
+- [Que se vea cómodo para ti](#que-se-vea-comodo-para-ti)
+- [Atajos rápidos](#atajos-rapidos)
+- [¿Te atascas? Estamos aquí](#te-atascas-estamos-aqui)
+
+---
+
+## Lo esencial en 30 segundos
+
+- **Tú tienes la llave.** Tus archivos se cifran en tu navegador con tu contraseña maestra. Viajan ya cerrados con candado; el servidor solo guarda cosas que no puede abrir.
+- **Por eso, cuídala bien.** Si pierdes a la vez tu contraseña **y** tu frase de recuperación, nadie podrá recuperar tus archivos. No es que no queramos: es que técnicamente no podemos. Esa es justo la idea.
+- **Guarda tu frase de recuperación.** Son 12 palabras. Apúntalas en papel o en tu gestor de contraseñas. Es tu salvavidas si algún día olvidas la contraseña.
+
+---
+
+## Crear tu cuenta y entrar
 
 ### Crear tu cuenta
 
-1. Ve a **Crear cuenta** desde la página principal
-2. Elige un nombre de usuario y correo electrónico
-3. Crea una **contraseña maestra** fuerte (mínimo 12 caracteres, con números y símbolos)
-4. Se generará una **frase de recuperación** de 12 palabras — guárdala en papel o en un gestor de contraseñas
-5. Confirma 3 palabras al azar para verificar que la guardaste
-6. Tu bóveda se crea automáticamente
+1. Pulsa **Crear cuenta** en la página de inicio.
+2. Elige un nombre de usuario y pon tu correo.
+3. Crea una **contraseña maestra** fuerte. Cuanto más larga, mejor: al menos 12 caracteres, mezclando números y símbolos. Es la llave de todo, así que merece la pena pensarla bien.
+4. Te daremos una **frase de recuperación** de 12 palabras. Guárdala en un sitio seguro (papel o gestor de contraseñas). Piénsalo como la copia de la llave de tu casa.
+5. Te pediremos 3 de esas palabras al azar, solo para asegurarnos de que de verdad la has guardado.
+6. ¡Listo! Tu espacio se crea solo.
 
-**Importante:** si pierdes tu contraseña y tu frase de recuperación, tus datos son irrecuperables. Noctcom no puede restaurarlos.
+> Un recordatorio importante, con cariño: si pierdes la contraseña y la frase de recuperación, tus datos se pierden para siempre. No hay botón mágico ni soporte que pueda rescatarlos. Guárdalas bien y dormirás tranquilo/a.
 
-### Iniciar sesión
+### Entrar
 
-1. Introduce tu correo y contraseña maestra
-2. La contraseña se procesa localmente con Argon2id — nunca se envía al servidor
-3. Si tienes 2FA activado, introduce el código de 6 dígitos de tu app autenticadora
-4. También puedes usar una Passkey (huella digital o Face ID)
+1. Escribe tu correo y tu contraseña maestra.
+2. Tu contraseña se comprueba **en tu propio dispositivo** y nunca se manda a nuestros servidores.
+3. Si has activado la verificación en dos pasos, te pediremos también un código rápido.
+4. ¿Prefieres tu huella o tu cara? También puedes entrar con una Passkey.
 
 ---
 
-## Tu bóveda
+## Tus archivos, a tu manera
 
-### Mis archivos
+### Tus archivos
 
-La sección principal donde gestionas todos tus archivos y carpetas.
+Aquí vive todo. Es tu carpeta principal.
 
-- **Crear carpeta:** botón "Nueva carpeta" o el botón "Nuevo" en el sidebar. Elige icono y color para identificarla rápidamente
-- **Subir archivos:** botón "Subir archivos" o arrastra archivos desde tu escritorio directamente a la ventana
-- **Mover archivos:** arrastra un archivo o carpeta sobre otra carpeta para moverlo
-- **Vista:** alterna entre vista de cuadrícula y lista con los botones de la barra superior
+- **Crear una carpeta:** pulsa "Nueva carpeta" (o "Nuevo" en el menú lateral). Puedes darle un icono y un color para reconocerla de un vistazo.
+- **Subir cosas:** pulsa "Subir archivos" o, más cómodo aún, arrastra los archivos desde tu escritorio y suéltalos en la ventana.
+- **Ordenar:** arrastra un archivo o una carpeta encima de otra para moverlo. Como en tu ordenador de siempre.
+- **Verlo a tu gusto:** cambia entre cuadrícula y lista con los botones de arriba.
 
-### Previsualizar archivos
+### Abrir y previsualizar
 
-Haz clic en cualquier archivo para abrirlo en el visor integrado. Noctcom descifra el contenido en tu navegador y lo muestra directamente, sin enviarlo a ningún servidor.
+Haz clic en cualquier archivo para verlo sin salir de Noctcom. Lo abrimos descifrándolo **en tu navegador**, en el momento, sin mandarlo a ningún sitio.
 
-| Tipo | Formatos soportados | Funcionalidad |
+| Tipo | Qué puedes abrir | Cómo se ve |
 |------|---------------------|---------------|
 | **Imágenes** | PNG, JPG, GIF, SVG, WebP, BMP, ICO | Visor con zoom (rueda del ratón o botones +/-) |
-| **Video** | MP4, WebM, OGG, MOV | Reproductor con controles nativos |
-| **Audio** | MP3, WAV, OGG, FLAC, AAC, WebM | Reproductor con controles nativos |
-| **PDF** | PDF | Visualizador integrado en el navegador |
-| **Texto y codigo** | TXT, MD, JSON, JS, TS, TSX, JSX, CSS, HTML, XML, YAML, TOML, PY, GO, RS, Java, C, C++, SQL, SH, CSV, LOG, SVG, INI, Dockerfile, Makefile | Vista con numeros de linea |
-| **Office** | DOCX, XLSX, PPTX, DOC, XLS, PPT | Solo descarga (no previsualizable en el navegador) |
+| **Vídeo** | MP4, WebM, OGG, MOV | Reproductor normal, con sus controles |
+| **Audio** | MP3, WAV, OGG, FLAC, AAC, WebM | Reproductor normal, con sus controles |
+| **PDF** | PDF | Se abre dentro de la página |
+| **Texto y código** | TXT, MD, JSON, JS, TS, CSS, HTML, PY, y muchos más | Con números de línea, fácil de leer |
+| **Office** | DOCX, XLSX, PPTX y similares | Se descargan (el navegador no los muestra) |
 
-- Los archivos `.txt` y `.md` se muestran en un editor de texto
-- Los archivos de codigo se muestran con numeros de linea en fuente monoespaciada
-- Para archivos mayores de 50 MB se muestra una advertencia antes de descifrar (consume RAM)
-- Archivos de texto mayores de 5 MB se muestran truncados
+Un par de detalles prácticos:
 
-### Buscar
+- Los archivos muy grandes (más de 50 MB) te avisan antes de abrirse, porque descifrarlos gasta memoria de tu equipo.
+- Los textos enormes (más de 5 MB) se muestran recortados para que no se atasque el navegador.
 
-Usa la barra de búsqueda (atajo `Ctrl+K` o `⌘K`) para encontrar archivos por nombre. La búsqueda se realiza sobre un índice cifrado local — el servidor nunca ve tus consultas.
+### Encontrar algo rápido
 
-### Recientes
+Pulsa `Ctrl+K` (o `⌘K` en Mac) y busca por nombre. La búsqueda ocurre en tu dispositivo: nunca vemos qué buscas.
 
-Archivos que abriste o modificaste recientemente, ordenados por fecha de acceso.
+### Recientes, Destacados y demás
 
-### Destacados
-
-Marca archivos o carpetas con la estrella para acceder a ellos rápidamente desde esta sección.
-
-### Compartidos
-
-Archivos que compartiste con otros usuarios o que te compartieron a ti. Los archivos compartidos se cifran con una clave derivada única — el receptor necesita el enlace completo para descifrar.
-
-### Actividad
-
-Registro cronológico de todas las acciones en tu bóveda: subidas, descargas, creación de carpetas, sesiones, cambios de seguridad, etc.
-
-### Papelera
-
-Archivos eliminados se mantienen 30 días antes de borrarse permanentemente. Puedes restaurarlos o eliminarlos definitivamente. Los archivos en la papelera siguen cifrados.
+- **Recientes:** lo último que abriste o tocaste, por si quieres volver.
+- **Destacados:** marca con la estrella lo que uses mucho y lo tendrás siempre a mano.
+- **Compartidos:** lo que compartes con otras personas o lo que comparten contigo. Quien recibe el enlace es quien puede abrirlo.
+- **Actividad:** un diario de lo que ha pasado en tu cuenta (subidas, descargas, inicios de sesión…). Útil para tener todo bajo control.
+- **Papelera:** lo que borras se queda aquí 30 días por si te arrepientes. Puedes restaurarlo o vaciarlo del todo. Aunque esté en la papelera, sigue cifrado.
 
 ---
 
-## Seguridad
+## Tu seguridad, sin complicaciones
 
-### Cifrado
+Noctcom está construido para protegerte por defecto. Estas opciones te dan un plus de tranquilidad.
 
-Todos tus archivos se cifran en tu navegador antes de subirse al servidor:
+### El candado de tus archivos
 
-- **Algoritmo:** XChaCha20-Poly1305 (nonces de 24 bytes)
-- **Derivación de claves:** Argon2id con 256 MiB de memoria
-- **Chunks:** cada archivo se divide en bloques de 4 MiB, cifrados independientemente
-- **Metadatos:** nombres de archivos, carpetas y tags también se cifran
+Todo se cierra con candado en tu navegador **antes** de subirse. El servidor solo ve cajas cerradas: ni nosotros, ni nadie que mirara el servidor, puede leer lo que hay dentro. Para quien le interese el detalle técnico: usamos cifrado XChaCha20-Poly1305 y derivamos tu llave con Argon2id; los nombres de archivos y carpetas también van cifrados.
 
-El servidor solo ve datos cifrados. Ni siquiera el operador de Noctcom puede leer tus archivos.
+### Verificación en dos pasos
 
-### Autenticación de dos factores (2FA)
+Un segundo candado para tu cuenta. Aunque alguien supiera tu contraseña, no entraría sin este paso. Lo activas en **Configuración > Seguridad**:
 
-Activa 2FA desde **Configuración > Seguridad**:
+1. Activa la verificación en dos pasos.
+2. Escanea el código QR con tu app del móvil (Google Authenticator, Authy, la que uses).
+3. Escribe el código de 6 dígitos para confirmar y ¡listo!
 
-1. Haz clic en el toggle de "Autenticación de dos factores (TOTP)"
-2. Escanea el código QR con tu app autenticadora (Google Authenticator, Authy, etc.)
-3. Introduce el código de 6 dígitos para confirmar
-4. A partir de ahora necesitarás el código en cada inicio de sesión
+### Entrar con tu huella o tu cara (Passkeys)
 
-### Passkeys
+Si quieres entrar sin teclear, configura una Passkey:
 
-Configura una Passkey para autenticarte con tu huella digital o Face ID:
+1. Ve a **Configuración > Seguridad > Passkeys**.
+2. Pulsa "Configurar".
+3. Sigue lo que te diga tu navegador o tu móvil. A partir de ahí, entras con huella o Face ID.
 
-1. Ve a **Configuración > Seguridad > Passkeys**
-2. Haz clic en "Configurar"
-3. Sigue las instrucciones de tu navegador para registrar la credencial
+### Cambiar tu contraseña maestra
 
-### Contraseña maestra
+En **Configuración > Seguridad > Cambiar contraseña maestra**. No te preocupes: tus archivos se vuelven a cerrar con la nueva llave automáticamente, y tus sesiones abiertas siguen funcionando.
 
-Para cambiar tu contraseña:
+### Recuperar tu cuenta con la frase de 12 palabras
 
-1. Ve a **Configuración > Seguridad > Cambiar contraseña maestra**
-2. Todas tus claves se re-cifrarán con la nueva contraseña
-3. Las sesiones activas seguirán funcionando
+¿Olvidaste la contraseña? Para eso guardaste tus 12 palabras:
 
-### Frase de recuperación
+1. En la pantalla de entrada, pulsa **¿Olvidaste tu contraseña?**
+2. Pon tu correo.
+3. Escribe las 12 palabras en orden (puedes pegarlas todas de golpe).
+4. Elige una contraseña maestra nueva.
+5. Por seguridad, cerramos las sesiones antiguas y volvemos a cifrar tus llaves.
 
-Si olvidas tu contraseña, puedes restaurar tu cuenta con la frase de 12 palabras:
+### Tus dispositivos
 
-1. Ve a **¿Olvidaste tu contraseña?** en la pantalla de login
-2. Introduce tu correo electrónico
-3. Escribe las 12 palabras en orden (puedes pegar la frase completa de golpe)
-4. Crea una nueva contraseña maestra
-5. Todas tus sesiones anteriores se revocan y tus claves se re-cifran
-
-### Dispositivos
-
-En **Configuración > Dispositivos** puedes ver tu sesión actual y revocar sesiones de otros dispositivos.
+En **Configuración > Dispositivos** ves desde dónde tienes la sesión abierta. Si ves algo raro o usaste un ordenador prestado, puedes cerrar esa sesión a distancia.
 
 ---
 
-## Almacenamiento
+## Tu espacio
 
-### Plan gratuito
-
-Cada cuenta incluye 2 GB de almacenamiento cifrado. Puedes ampliar tu cuota desde los planes de pago.
-
-### Uso
-
-En el sidebar puedes ver cuánto espacio has usado. En **Configuración > Almacenamiento** hay un desglose por tipo de archivo.
+Cada cuenta empieza con 2 GB gratis, cifrados. En el menú lateral ves cuánto llevas usado, y en **Configuración > Almacenamiento** tienes el desglose por tipo de archivo. Si necesitas más sitio, podrás ampliarlo.
 
 ---
 
-## Conectar discos de tu equipo (Noctcom Connector)
+## Usa los discos de tu propio equipo
 
-En la versión web (en la nube), Noctcom **no puede ver ni gestionar los discos de tu propio ordenador**: el navegador lo impide por seguridad. Para usar un disco de tu equipo (por ejemplo un HDD o SSD por USB) como almacenamiento, instalas un pequeño programa llamado **Noctcom Connector** que hace de puente entre tu máquina y la web.
+¿Tienes un disco duro o un SSD en casa con sitio de sobra? Puedes usarlo como almacenamiento para Noctcom.
 
-- Abre una conexión **saliente** y cifrada hacia Noctcom: **no abre ningún puerto** en tu equipo.
-- Solo maneja **datos ya cifrados**: tus claves nunca salen de tu máquina (zero-knowledge).
-- Está atado a tu cuenta: ningún otro usuario puede ver ni tocar tus discos.
+Aquí va una verdad técnica que conviene saber: una página web **no puede tocar los discos de tu ordenador** por sí sola (tu navegador lo impide, y menos mal, por seguridad). Por eso existe un pequeño programa, el **Noctcom Connector**, que hace de puente de confianza entre tu equipo y la web.
 
-> Disponible hoy para **Windows**. Las versiones de macOS y Linux llegan próximamente.
+Lo importante para ti:
 
-### 1. Descargar el agente
+- **No abre puertas en tu equipo.** Es él quien llama hacia fuera, no al revés. Nada queda expuesto.
+- **Solo maneja cajas cerradas.** Tus llaves nunca salen de tu máquina; el programa solo mueve datos ya cifrados.
+- **Es solo tuyo.** Está atado a tu cuenta. Nadie más puede ver ni tocar tus discos.
 
-Ve a **Configuración > Noctcom Connector** y pulsa **Descargar para Windows**. Se descarga un único archivo, `noctcom-connector.exe`, que no necesita instalación.
+> Por ahora está disponible para **Windows**. Las versiones de Mac y Linux llegan pronto.
 
-> La primera vez, Windows SmartScreen puede avisar de "editor desconocido" (el binario aún no está firmado). Pulsa **Más información** y luego **Ejecutar de todas formas**. Es seguro: se compila desde el código abierto del proyecto.
+### 1. Descárgalo
 
-### 2. Vincularlo con tu cuenta
+Ve a **Configuración > Noctcom Connector** y pulsa **Descargar para Windows**. Es un único archivo (`noctcom-connector.exe`) y no hace falta instalar nada.
 
-1. En **Configuración > Noctcom Connector**, pulsa **Vincular agente** y ponle un nombre. Obtendrás un **código** válido durante 10 minutos.
-2. Abre una terminal **en la carpeta donde se descargó** el archivo (normalmente Descargas). Truco: en el Explorador, dentro de esa carpeta, escribe `cmd` en la barra de direcciones y pulsa Enter.
-3. Ejecuta este comando pegando tu código:
+> La primera vez, Windows puede mostrar un aviso de "editor desconocido". Es normal (el programa aún no tiene una firma oficial). Pulsa **Más información** y luego **Ejecutar de todas formas**. Es seguro: se crea a partir del código abierto del proyecto.
+
+### 2. Conéctalo con tu cuenta
+
+1. En **Configuración > Noctcom Connector**, pulsa **Vincular agente** y ponle un nombre (por ejemplo, "PC del salón"). Te daremos un **código** que dura 10 minutos.
+2. Abre una terminal **en la carpeta donde se descargó** el archivo (normalmente Descargas). Truco rápido: dentro de esa carpeta, escribe `cmd` en la barra de direcciones del Explorador y pulsa Enter.
+3. Escribe esto, pegando tu código:
 
 ```text
 .\noctcom-connector.exe pair --code TU_CODIGO
 ```
 
-### 3. Conectarlo
-
-Déjalo conectado con:
+### 3. Déjalo en marcha
 
 ```text
 .\noctcom-connector.exe run
 ```
 
-Mantén esa ventana abierta mientras quieras gestionar tus discos desde la web. En una próxima versión el agente se instalará como servicio y arrancará solo en segundo plano, sin necesidad de la terminal.
+Mantén esa ventana abierta mientras quieras gestionar tus discos desde la web. (En una próxima versión funcionará solo, en segundo plano, sin terminal.)
 
-### 4. Ver tus discos
+### 4. Mira tus discos y elige uno
 
-Vuelve a **Configuración > Noctcom Connector** y refresca la página. El agente aparecerá como **en línea**. Pulsa **Ver discos** y verás las unidades de tu equipo (C:, D:, USB…) con su espacio libre y su sistema de archivos.
+Vuelve a **Configuración > Noctcom Connector** y recarga la página: tu equipo aparecerá **en línea** con sus discos (C:, D:, el USB que conectaste…), su espacio libre y demás.
 
-### Comandos útiles
+En cada disco verás el botón **Usar este disco**. Al pulsarlo, Noctcom crea una carpeta (`noctcom-blobs`) dentro de ese disco para guardar ahí tus archivos cifrados. **No formatea ni borra nada**: lo que ya tenías sigue intacto. Si cambias de idea, **Dejar de usar** lo da de baja sin tocar tus datos.
 
-| Comando | Para qué sirve |
+### Comandos por si los necesitas
+
+| Escribe esto | Y hace… |
 | --- | --- |
-| `.\noctcom-connector.exe status` | Ver si el agente está emparejado |
-| `.\noctcom-connector.exe pair --code CODIGO` | Vincularlo a tu cuenta (solo una vez) |
-| `.\noctcom-connector.exe run` | Conectarlo (deja la ventana abierta) |
-| `.\noctcom-connector.exe --help` | Ver todos los comandos |
+| `.\noctcom-connector.exe status` | Te dice si está vinculado a tu cuenta |
+| `.\noctcom-connector.exe pair --code CODIGO` | Lo vincula a tu cuenta (solo la primera vez) |
+| `.\noctcom-connector.exe run` | Lo pone en marcha (deja la ventana abierta) |
+| `.\noctcom-connector.exe --help` | Te lista todo lo que puede hacer |
 
-> Próximamente: montar y formatear discos desde la web, y guardar tus archivos directamente en el disco de tu equipo a través del agente.
+> Lo que viene pronto: guardar de verdad tus archivos en ese disco a través del programa, y poder formatear discos vacíos desde la web.
 
 ---
 
-## Self-hosting
+## Móntalo en tu servidor (avanzado)
 
-Noctcom es 100% open source (AGPL-3.0). Puedes desplegarlo en tu propio servidor:
+Noctcom es 100% código abierto (licencia AGPL-3.0). Si te manejas con la tecnología, puedes tenerlo en tu propio servidor:
 
 ```bash
 git clone https://github.com/RedderLabs/noctcom.git
 cd noctcom
 cp .env.example .env
-# Edita .env con tus contraseñas y dominio
+# Edita .env con tus contraseñas y tu dominio
 docker compose up -d
 ```
 
-### Requisitos mínimos
+### Qué necesitas
 
-- Docker y Docker Compose
-- 2 GB de RAM (256 MiB son para Argon2id)
-- Dominio con DNS apuntando a tu servidor (para TLS automático via Caddy)
+- Docker y Docker Compose.
+- Al menos 2 GB de RAM (una parte la usa el cifrado).
+- Un dominio apuntando a tu servidor (para que el candado de seguridad HTTPS se configure solo).
 
-### Almacenamiento externo
+### Añadir más discos en tu servidor
 
-Noctcom detecta automáticamente los discos montados en tu servidor. Desde **Configuración > Almacenamiento** puedes ver los discos disponibles, activarlos como almacenamiento adicional o formatearlos si no tienen un formato compatible.
+Noctcom encuentra solo los discos que montes en el servidor. Desde **Configuración > Almacenamiento** los ves, los activas con un clic y, si hace falta, los preparas.
 
-#### Detección automática
+1. Conecta un disco o monta una partición en tu servidor.
+2. Noctcom lo detecta automáticamente.
+3. Aparece en la sección de almacenamiento.
+4. Lo activas con un clic y ya cuenta como espacio extra.
 
-1. Conecta un disco externo o monta una partición en tu servidor
-2. Noctcom lo detecta automáticamente al escanear `/mnt`, `/media` y `/volumes`
-3. Aparecerá en la sección de almacenamiento de Configuración
-4. Actívalo con un clic para que se use como espacio adicional
+¿Qué formato de disco usar? Una guía rápida:
 
-#### Formatos de disco recomendados
-
-| Formato | Recomendado para | Limitaciones |
+| Formato | Bueno para | A tener en cuenta |
 |---------|-----------------|-------------|
-| **ext4** | Linux (la mayoría de self-host) | No legible en Windows sin drivers |
-| **XFS** | Linux con archivos muy grandes | Similar a ext4, mejor para volúmenes grandes |
-| **NTFS** | Windows | Soporte lectura/escritura en Linux pero menor rendimiento |
-| **FAT32** | Ninguno | Límite de 4 GB por archivo, inaceptable para una bóveda |
-| **exFAT** | USB compartido entre SO | Sin journaling, riesgo de corrupción |
+| **ext4** | Linux (lo más común) | No se lee en Windows sin extras |
+| **XFS** | Linux con archivos muy grandes | Parecido a ext4, va fino con volúmenes enormes |
+| **NTFS** | Windows | Funciona en Linux, pero más lento |
+| **FAT32** | Mejor evítalo | No admite archivos de más de 4 GB |
+| **exFAT** | USB entre distintos sistemas | Más propenso a corromperse |
 
-**Recomendación:** ext4 como formato por defecto para self-host en Linux (99% de los casos). Si el disco viene en FAT32, NTFS o exFAT, Noctcom ofrecerá formatearlo a ext4 con advertencia de pérdida de datos.
-
-#### Montaje manual (avanzado)
-
-Si prefieres configurar los volúmenes manualmente, edita `docker-compose.override.yml`:
-
-```yaml
-services:
-  minio:
-    volumes:
-      - /mnt/disco-externo:/data2
-```
-
-MinIO distribuye los datos entre los volúmenes disponibles automáticamente.
+**En resumen:** si es Linux, ext4 y a correr. Si tu disco viene en otro formato, Noctcom te ofrecerá prepararlo (avisándote antes de borrar nada).
 
 ---
 
-## Accesibilidad
+## Que se vea cómodo para ti
 
-### Tamaño de fuente
+### Texto más grande o más pequeño
 
-Usa el control de escala de fuente (botones A, A+, A++) disponible en:
-- El sidebar (dentro de la bóveda)
-- La barra superior (en login, signup y recovery)
+Usa los botones de tamaño de texto (A, A+, A++). Están en el menú lateral cuando estás dentro, y en la barra de arriba en las pantallas de entrada. Se guarda tu preferencia automáticamente.
 
-El ajuste se guarda automáticamente.
+### Menú lateral plegable
 
-### Sidebar colapsable
-
-Haz clic en el botón de colapsar (⫷) en la parte superior del sidebar para reducirlo a solo iconos. Útil en pantallas pequeñas o con fuentes grandes.
+Pulsa el botón de plegar en la parte de arriba del menú para dejarlo en modo "solo iconos". Va genial en pantallas pequeñas o si usas texto grande.
 
 ---
 
-## Atajos de teclado
+## Atajos rápidos
 
-| Atajo | Acción |
+| Atajo | Para qué |
 |-------|--------|
-| `Ctrl+K` / `⌘K` | Buscar en la bóveda |
+| `Ctrl+K` / `⌘K` | Buscar en tu cuenta |
 
 ---
 
-## Soporte
+## ¿Te atascas? Estamos aquí
 
-- **Código fuente:** [github.com/RedderLabs/noctcom](https://github.com/RedderLabs/noctcom)
-- **Reportar un bug:** [GitHub Issues](https://github.com/RedderLabs/noctcom/issues)
-- **Vulnerabilidad de seguridad:** ver [SECURITY.md](https://github.com/RedderLabs/noctcom/blob/main/SECURITY.md)
+- **El código de Noctcom:** [github.com/RedderLabs/noctcom](https://github.com/RedderLabs/noctcom)
+- **¿Algo no va bien?** Cuéntanoslo en [GitHub Issues](https://github.com/RedderLabs/noctcom/issues)
+- **¿Has visto un fallo de seguridad?** Mira cómo avisarnos en [SECURITY.md](https://github.com/RedderLabs/noctcom/blob/main/SECURITY.md)
 
 ---
 
-*Última actualización: v0.1.0 · Mayo 2026*
+*Última actualización: v0.1.0 · Junio 2026*

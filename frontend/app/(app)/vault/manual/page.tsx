@@ -50,12 +50,23 @@ export default function ManualPage() {
   );
 }
 
+// Genera un id estable a partir del texto de un título (para el índice y los
+// enlaces internos #ancla): minúsculas, sin acentos, no-alfanuméricos → guion.
+function slugify(text: string): string {
+  return text
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '') // quita los acentos ya separados por NFD
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '');
+}
+
 function renderMarkdown(md: string): string {
   let html = md;
 
-  html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
-  html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
-  html = html.replace(/^# (.+)$/gm, '<h1>$1</h1>');
+  html = html.replace(/^### (.+)$/gm, (_, t) => `<h3 id="${slugify(t)}">${t}</h3>`);
+  html = html.replace(/^## (.+)$/gm, (_, t) => `<h2 id="${slugify(t)}">${t}</h2>`);
+  html = html.replace(/^# (.+)$/gm, (_, t) => `<h1 id="${slugify(t)}">${t}</h1>`);
 
   html = html.replace(/^> (.+)$/gm, '<blockquote>$1</blockquote>');
 
@@ -69,7 +80,11 @@ function renderMarkdown(md: string): string {
   html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
   html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
 
-  html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+  html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_, text, href) =>
+    href.startsWith('#')
+      ? `<a href="${href}" class="toc-link">${text}</a>` // enlace interno del índice
+      : `<a href="${href}" target="_blank" rel="noopener noreferrer">${text}</a>`,
+  );
 
   html = html.replace(/^\| (.+) \|$/gm, (line) => {
     const cells = line.split('|').filter(Boolean).map((c) => c.trim());
