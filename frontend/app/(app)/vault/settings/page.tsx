@@ -4,9 +4,10 @@ import { useState, useEffect, useCallback } from 'react';
 import {
   Shield, KeyRound, Monitor, Lock, HardDrive,
   AlertTriangle, Fingerprint, Smartphone, Usb, Plus, Power, Trash2, Disc,
-  Download, Upload, Loader2, Mail, Server, Copy, Check, FolderPlus,
+  Download, Upload, Loader2, Mail, Server, Copy, Check, FolderPlus, Eraser,
 } from 'lucide-react';
 import { FormatDiskModal } from '@/components/vault/FormatDiskModal';
+import { AgentFormatModal } from '@/components/vault/AgentFormatModal';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/Button';
 import { useAuth } from '@/lib/auth-store';
@@ -1181,6 +1182,9 @@ function AgentDiskCard({ disk, agentId, onChanged }: {
 }) {
   const usedPct = disk.totalBytes > 0 ? Math.min(100, (disk.usedBytes / disk.totalBytes) * 100) : 0;
   const [busy, setBusy] = useState(false);
+  const [formatOpen, setFormatOpen] = useState(false);
+  // Nunca ofrecemos formatear el disco de sistema (C:); el backend también lo rechaza.
+  const isSystemDrive = /^c[:\\]?/i.test(disk.device || disk.path || '');
 
   async function handleUse() {
     setBusy(true);
@@ -1269,17 +1273,39 @@ function AgentDiskCard({ disk, agentId, onChanged }: {
           </div>
         </div>
       </div>
-      <div className="shrink-0">
+      <div className="shrink-0 flex items-center gap-1.5">
         {disk.active ? (
           <Button variant="ghost" size="sm" loading={busy} onClick={handleUnuse}>
             <Power className="size-3.5 mr-1" /> Dejar de usar
           </Button>
         ) : (
-          <Button variant="secondary" size="sm" loading={busy} onClick={handleUse}>
-            <FolderPlus className="size-3.5 mr-1" /> Usar este disco
-          </Button>
+          <>
+            {!isSystemDrive && (
+              <Button
+                variant="ghost"
+                size="sm"
+                disabled={busy}
+                onClick={() => setFormatOpen(true)}
+                className="text-red-400 hover:text-red-300"
+                title="Formatear el disco (borra todo su contenido)"
+              >
+                <Eraser className="size-3.5 mr-1" /> Formatear
+              </Button>
+            )}
+            <Button variant="secondary" size="sm" loading={busy} onClick={handleUse}>
+              <FolderPlus className="size-3.5 mr-1" /> Usar este disco
+            </Button>
+          </>
         )}
       </div>
+
+      <AgentFormatModal
+        open={formatOpen}
+        onClose={() => setFormatOpen(false)}
+        agentId={agentId}
+        disk={disk}
+        onFormatted={onChanged}
+      />
     </div>
   );
 }

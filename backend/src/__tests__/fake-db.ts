@@ -51,6 +51,7 @@ class Store {
   credentials: CredentialRow[] = [];
   agents: any[] = [];
   pairingTokens: any[] = [];
+  volumes: any[] = [];
   private seq = 0;
 
   reset(): void {
@@ -59,6 +60,7 @@ class Store {
     this.credentials = [];
     this.agents = [];
     this.pairingTokens = [];
+    this.volumes = [];
     this.seq = 0;
   }
 
@@ -309,6 +311,27 @@ async function query(text: string, params: any[] = []): Promise<QueryResult> {
     const a = store.agents.find((x) => x.id === params[0]);
     if (a) a.last_seen_at = new Date();
     return { rows: [], rowCount: a ? 1 : 0 };
+  }
+
+  // ─── storage_volumes ──────────────────────────────────────
+  // Busca un volumen por (agent_id, path) — idempotencia de use/format.
+  if (sql.startsWith('SELECT id FROM storage_volumes') && sql.includes('agent_id = $1') && sql.includes('path = $2')) {
+    const v = store.volumes.find((x) => x.agent_id === params[0] && x.path === params[1]);
+    return v ? { rows: [{ id: v.id }], rowCount: 1 } : { rows: [], rowCount: 0 };
+  }
+
+  if (sql.startsWith('UPDATE storage_volumes SET active = true, label')) {
+    const v = store.volumes.find((x) => x.id === params[0]);
+    if (v) { v.active = true; v.label = params[1]; }
+    return { rows: [], rowCount: v ? 1 : 0 };
+  }
+
+  if (sql.startsWith('INSERT INTO storage_volumes')) {
+    const id = randomUUID();
+    store.volumes.push({
+      id, path: params[0], label: params[1], agent_id: params[2], user_id: params[3], active: true,
+    });
+    return { rows: [{ id }], rowCount: 1 };
   }
 
   throw new Error(`fake-db: consulta no contemplada → ${sql}`);

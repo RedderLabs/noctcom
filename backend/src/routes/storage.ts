@@ -371,6 +371,68 @@ const storageRoutes: FastifyPluginAsync = async (app) => {
     return reply.send({ ok: true });
   });
 
+  // ─── Formatear un disco del agente (M2b, DESTRUCTIVO) ────────────
+  // Formatea un disco de la máquina del usuario a través de su agente y lo deja
+  // listo como volumen activo. Acotado: nunca el disco de sistema, solo discos
+  // vacíos (lo verifica el propio agente), step-up 2FA + confirmación de
+  // etiqueta. Los datos que se guarden después van cifrados (zero-knowledge).
+  const agentFormatSchema = z.object({
+    agentId: z.string().uuid(),
+    driveLetter: z.string().regex(/^[A-Za-z]$/, 'letra de unidad inválida'),
+    label: z.string().min(1).max(12).regex(/^[a-zA-Z0-9_-]+$/, 'solo alfanumérico, guion y guion bajo'),
+    confirmLabel: z.string(),
+  });
+
+  app.post('/disks/agent-format', { onRequest: [app.authenticate] }, async (req, reply) => {
+    const body = agentFormatSchema.parse(req.body);
+    if (body.confirmLabel !== body.label) {
+      return reply.badRequest('la etiqueta de confirmación no coincide');
+    }
+    const letter = body.driveLetter.toUpperCase();
+    if (letter === 'C') {
+      return reply.badRequest('no se puede formatear el disco del sistema (C:)');
+    }
+    if (!(await ownedOnlineAgent(req, reply, body.agentId))) return;
+    // Operación irreversible → re-autenticación reciente obligatoria.
+    if (!(await requireStepUp(req, reply))) return;
+
+    let result: { path?: string; blobPath?: string };
+    try {
+      result = (await registry.sendCommand(
+        body.agentId,
+        'format-volume',
+        { driveLetter: letter, label: body.label },
+        180_000,
+      )) as { path?: string; blobPath?: string };
+    } catch (err: any) {
+      req.log.warn({ err: err?.message }, 'format-volume vía agente falló');
+      return reply.code(502).send({
+        error: 'agent-error',
+        message: err?.message ?? 'el agente no pudo formatear el disco',
+      });
+    }
+
+    const volPath = result?.path ?? `${letter}:\\`;
+    // Idempotente: si ese volumen ya estaba registrado en el agente, reactívalo.
+    const existing = await db.query(
+      `SELECT id FROM storage_volumes WHERE agent_id = $1 AND path = $2`,
+      [body.agentId, volPath],
+    );
+    if (existing.rowCount && existing.rowCount > 0) {
+      await db.query(
+        `UPDATE storage_volumes SET active = true, label = $2 WHERE id = $1`,
+        [existing.rows[0].id, body.label],
+      );
+      return reply.send({ id: existing.rows[0].id, path: volPath, alreadyRegistered: true });
+    }
+    const r = await db.query(
+      `INSERT INTO storage_volumes (path, label, agent_id, user_id, active)
+       VALUES ($1, $2, $3, $4, true) RETURNING id`,
+      [volPath, body.label, body.agentId, req.user.sub],
+    );
+    return reply.code(201).send({ id: r.rows[0].id, path: volPath });
+  });
+
   // ─── Format disk ─────────────────────────────────────────
 
   app.post('/disks/format', { onRequest: [app.authenticate] }, async (req, reply) => {
