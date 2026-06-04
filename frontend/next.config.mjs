@@ -75,12 +75,17 @@ const nextConfig = {
   },
 };
 
+// i18n: el plugin de next-intl conecta el config de request (./i18n/request.ts)
+// con el build. Debe envolver el nextConfig antes que Sentry.
+import createNextIntlPlugin from 'next-intl/plugin';
+const withNextIntl = createNextIntlPlugin();
+
 // Envuelve el config con Sentry/GlitchTip. No subimos sourcemaps (no requiere
 // auth token de GlitchTip): solo queremos capturar errores, no des-minificar
 // stack traces. silent evita ruido en el build.
 import { withSentryConfig } from '@sentry/nextjs';
 
-export default withSentryConfig(nextConfig, {
+export default withSentryConfig(withNextIntl(nextConfig), {
   silent: true,
   sourcemaps: { disable: true },
 });

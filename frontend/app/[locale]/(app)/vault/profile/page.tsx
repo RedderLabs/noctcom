@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import Link from 'next/link';
+import { Link } from '@/i18n/navigation';
 import {
   User, Shield, ShieldCheck, Monitor, Smartphone, HardDrive,
   Clock, Calendar, Settings, KeyRound, Fingerprint, Mail, MailCheck,

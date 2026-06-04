@@ -1,12 +1,11 @@
-import './globals.css';
+import '../globals.css';
+import { NextIntlClientProvider, hasLocale } from 'next-intl';
+import { getMessages, setRequestLocale } from 'next-intl/server';
+import { notFound } from 'next/navigation';
+import { routing } from '@/i18n/routing';
 import { CookieBanner } from '@/components/ui/CookieBanner';
 import { ThemedToaster } from '@/components/ui/ThemedToaster';
 import type { Metadata } from 'next';
-
-// Anti-FOUC: fija la clase de tema en <html> ANTES del primer pintado, leyendo
-// la preferencia guardada o, si no hay, la del sistema. Así no hay parpadeo
-// claro→oscuro al cargar. Se mantiene minificado y a prueba de fallos (try/catch).
-const themeScript = `(function(){try{var t=localStorage.getItem('noctcom.theme');if(t!=='light'&&t!=='dark'){t=window.matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';}var e=document.documentElement;e.classList.add(t);e.style.colorScheme=t;}catch(e){}})();`;
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://noctcom.com'),
@@ -63,17 +62,42 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+// Pre-renderiza ambos idiomas en build.
+export function generateStaticParams() {
+  return routing.locales.map((locale) => ({ locale }));
+}
+
+// Anti-FOUC: fija la clase de tema en <html> ANTES del primer pintado, leyendo
+// la preferencia guardada o, si no hay, la del sistema. Así no hay parpadeo
+// claro→oscuro al cargar. Se mantiene minificado y a prueba de fallos (try/catch).
+const themeScript = `(function(){try{var t=localStorage.getItem('noctcom.theme');if(t!=='light'&&t!=='dark'){t=window.matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';}var e=document.documentElement;e.classList.add(t);e.style.colorScheme=t;}catch(e){}})();`;
+
+export default async function LocaleLayout({
+  children,
+  params,
+}: {
+  children: React.ReactNode;
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale } = await params;
+  if (!hasLocale(routing.locales, locale)) notFound();
+
+  // Habilita el render estático para este locale y carga sus mensajes.
+  setRequestLocale(locale);
+  const messages = await getMessages();
+
   return (
-    <html lang="es" suppressHydrationWarning>
+    <html lang={locale} suppressHydrationWarning>
       <head>
         <meta name="google-site-verification" content="zI45FHf6c5bM5siv6QHQEEPvYqjwfZ4tan65XOzaq4E" />
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body className="grain">
-        {children}
-        <CookieBanner />
-        <ThemedToaster />
+        <NextIntlClientProvider messages={messages}>
+          {children}
+          <CookieBanner />
+          <ThemedToaster />
+        </NextIntlClientProvider>
       </body>
     </html>
   );

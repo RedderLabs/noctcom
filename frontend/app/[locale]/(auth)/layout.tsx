@@ -1,10 +1,10 @@
 'use client';
 
-import Link from 'next/link';
+import { Link } from '@/i18n/navigation';
 import Image from 'next/image';
 import type { ReactNode } from 'react';
 import { useEffect, useState } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
+import { useRouter, usePathname } from '@/i18n/navigation';
 import { loadTokens } from '@/lib/api';
 import { useAuth } from '@/lib/auth-store';
 

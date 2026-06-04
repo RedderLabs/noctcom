@@ -1,0 +1,14 @@
+{
+  "common": {
+    "language": "Language",
+    "spanish": "Spanish",
+    "english": "English",
+    "switchToSpanish": "Switch to Spanish",
+    "switchToEnglish": "Switch to English"
+  },
+  "nav": {
+    "login": "Sign in",
+    "signup": "Create account",
+    "back": "Back"
+  }
+}

@@ -1,6 +1,6 @@
 'use client';
 
-import Link from 'next/link';
+import { Link } from '@/i18n/navigation';
 import { Navbar } from '@/components/ui/Navbar';
 
 // Marco común de las páginas legales (términos, privacidad, cookies). Mantiene

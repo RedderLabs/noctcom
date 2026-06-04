@@ -28,6 +28,7 @@
     "libsodium-wrappers-sumo": "^0.7.13",
     "lucide-react": "^0.453.0",
     "next": "^15.5.18",
+    "next-intl": "^4.13.0",
     "qrcode": "^1.5.4",
     "qrcode.react": "^4.2.0",
     "react": "19.0.0-rc-69d4b800-20241021",

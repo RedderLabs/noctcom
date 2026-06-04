@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
+import { Link } from '@/i18n/navigation';
 import { Shield, Lock, ExternalLink, FileText, AlertTriangle, Github } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Navbar } from '@/components/ui/Navbar';

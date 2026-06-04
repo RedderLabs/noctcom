@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect, type ReactNode } from 'react';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
+import { useRouter } from '@/i18n/navigation';
+import { Link } from '@/i18n/navigation';
 import Image from 'next/image';
 import {
   FolderTree, Star, Share2, Trash2, Clock, Settings, LogOut,

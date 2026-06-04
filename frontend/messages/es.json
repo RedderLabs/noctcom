@@ -1,0 +1,14 @@
+{
+  "common": {
+    "language": "Idioma",
+    "spanish": "Español",
+    "english": "Inglés",
+    "switchToSpanish": "Cambiar a español",
+    "switchToEnglish": "Cambiar a inglés"
+  },
+  "nav": {
+    "login": "Iniciar sesión",
+    "signup": "Crear cuenta",
+    "back": "Volver"
+  }
+}

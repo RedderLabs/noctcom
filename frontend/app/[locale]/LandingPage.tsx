@@ -1,6 +1,6 @@
 'use client';
 
-import Link from 'next/link';
+import { Link } from '@/i18n/navigation';
 import { Lock, Shield, EyeOff, AtSign, Share2, ArrowRight, Server, Download, Github, Newspaper, Megaphone, Scale, FileSignature } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Navbar } from '@/components/ui/Navbar';

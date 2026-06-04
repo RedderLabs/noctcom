@@ -25,7 +25,7 @@ import { getPushStatus, isPushChosen, enablePush, disablePush, type PushStatus }
 import { changeMasterPassword } from '@/lib/change-password';
 import { fetchBillingStatus, openBillingPortal, fetchPlans, startCheckout, formatBytes, type BillingStatus, type PublicPlan } from '@/lib/billing';
 import { cn } from '@/lib/utils';
-import { useRouter } from 'next/navigation';
+import { useRouter } from '@/i18n/navigation';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 
 function parseDeviceName(raw: string): { browser: string; os: string } {
