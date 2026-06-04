@@ -5,7 +5,7 @@
 ## TL;DR
 
 - 📬 Canal preferido: **[GitHub Private Vulnerability Report](https://github.com/RedderLabs/noctcom/security/advisories/new)** (solo lo ve el equipo)
-- ✉️ Alternativa: **security@noctcom.com** (PGP en preparación — ver abajo)
+- ✉️ Alternativa: **security@noctcom.com** (cifra con la PGP de abajo)
 - ⏱️ Respuesta inicial: **menos de 72 horas**
 - 🤝 Disclosure coordinado: **90 días o cuando publiquemos el parche**
 - 🛑 No: pentesting agresivo contra usuarios reales sin permiso explícito
@@ -58,12 +58,70 @@ Incluye:
 - Impacto estimado
 - Tu identidad o pseudónimo (para crédito) y método de contacto preferido
 
-### Opción B — Email
+### Opción B — Email (cifrado con PGP)
 
-`security@noctcom.com`. **Honestidad:** todavía no publicamos clave PGP, así que
-este canal viaja sin cifrar de extremo a extremo — para detalles sensibles usa
-la Opción A. Cuando publiquemos la clave (y su fingerprint) aparecerá aquí y en
-el repositorio, firmando además el canary de abajo.
+Escribe a `security@noctcom.com`, **cifrado** con la clave PGP de Julián
+Rodríguez / Redder Labs (mantenedor de Noctcom):
+
+```
+Fingerprint: A808 2F51 DA6B C86E A9DC  4248 6FD2 E7D2 8876 F025
+```
+
+```
+-----BEGIN PGP PUBLIC KEY BLOCK-----
+
+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
+=rLr1
+-----END PGP PUBLIC KEY BLOCK-----
+```
 
 ## Nuestro compromiso (Safe Harbor)
 
@@ -120,12 +178,12 @@ A día 4 de junio de 2026, Noctcom afirma:
 - Mantenemos control total sobre nuestra infraestructura
 ```
 
-**Honestidad sobre este canary:** hoy se actualiza a mano con cada revisión de
-este documento y **aún no va firmado** (la clave PGP del proyecto está en
-preparación). Un canary sin firma vale menos: trátalo como una declaración de
-intenciones, no como prueba criptográfica. Cuando publiquemos la clave, pasará
-a firmarse mensualmente; si entonces lleva más de 60 días sin actualizar,
-asume que algo pasó.
+**Cómo verificar este canary:** debe ir firmado con la clave PGP de arriba
+(fingerprint `A808 2F51 DA6B C86E A9DC 4248 6FD2 E7D2 8876 F025`). Verifica la
+firma antes de confiar en él. Se actualiza al menos una vez al mes; si lleva
+**más de 60 días sin actualizar o con una firma que no valida**, asume que algo
+pasó. (La firma se publica junto a este documento en cada actualización del
+canary.)
 
 ## Contacto general (no de seguridad)
 
