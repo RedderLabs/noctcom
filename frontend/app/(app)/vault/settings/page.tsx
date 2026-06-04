@@ -5,7 +5,7 @@ import {
   Shield, KeyRound, Monitor, Lock, HardDrive,
   AlertTriangle, Fingerprint, Smartphone, Usb, Plus, Power, Trash2, Disc,
   Download, Upload, Loader2, Mail, Server, Copy, Check, FolderPlus, Eraser,
-  FileKey2, RefreshCw,
+  FileKey2, RefreshCw, Bell, BellOff,
 } from 'lucide-react';
 import { FormatDiskModal } from '@/components/vault/FormatDiskModal';
 import { AgentFormatModal } from '@/components/vault/AgentFormatModal';
@@ -20,6 +20,7 @@ import {
   generateRecoveryMnemonic, deriveRecoverySeed,
   deriveRecoverySignKeypair, deriveRecoveryBoxKeypair, sealToRecovery,
 } from '@/lib/recovery';
+import { getPushStatus, isPushChosen, enablePush, disablePush, type PushStatus } from '@/lib/firebase';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
@@ -285,6 +286,9 @@ export default function SettingsPage() {
 
       {/* Kit de recuperación (Recovery v2) */}
       <RecoveryKitSection />
+
+      {/* Notificaciones push (FCM) */}
+      <PushNotificationsSection />
 
       {/* Devices */}
       <section className="mb-8">
@@ -1297,6 +1301,87 @@ function RecoveryKitSection() {
               </Button>
             </div>
           </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
+// ─── Notificaciones push (FCM) ───────────────────────────────────
+// El permiso del navegador SOLO se pide aquí, con gesto explícito del
+// usuario — nunca al cargar la app. El aviso que llega es genérico («te han
+// compartido un archivo»): el nombre va cifrado y el servidor no lo conoce.
+
+function PushNotificationsSection() {
+  const [status, setStatus] = useState<PushStatus>('unsupported');
+  const [chosen, setChosen] = useState(false);
+  const [working, setWorking] = useState(false);
+
+  useEffect(() => {
+    setStatus(getPushStatus());
+    setChosen(isPushChosen());
+  }, []);
+
+  const active = chosen && status === 'granted';
+
+  async function toggle() {
+    setWorking(true);
+    try {
+      if (active) {
+        await disablePush();
+        setChosen(false);
+        toast.success('Notificaciones desactivadas en este navegador');
+      } else {
+        const result = await enablePush();
+        setStatus(result);
+        if (result === 'granted') {
+          setChosen(true);
+          toast.success('Notificaciones activadas');
+        } else if (result === 'denied') {
+          toast.error('El navegador tiene las notificaciones bloqueadas para este sitio');
+        }
+      }
+    } catch (err: any) {
+      toast.error(err.message ?? 'No se pudo cambiar las notificaciones');
+    } finally {
+      setWorking(false);
+    }
+  }
+
+  return (
+    <section className="mb-8">
+      <div className="flex items-center gap-2 mb-4">
+        <Bell className="size-4 text-violet-300" />
+        <h2 className="text-sm font-semibold uppercase tracking-wider text-text-secondary">
+          Notificaciones
+        </h2>
+      </div>
+
+      <div className="flex items-center gap-4 p-4 rounded-xl border border-border-faint bg-bg-surface">
+        <div className="size-10 rounded-lg bg-violet-500/10 border border-violet-500/20 grid place-items-center shrink-0">
+          {active ? <Bell className="size-4 text-violet-300" /> : <BellOff className="size-4 text-text-tertiary" />}
+        </div>
+        <div className="flex-1 min-w-0">
+          <h3 className="text-sm font-medium">Avisos cuando te comparten archivos</h3>
+          <p className="text-xs text-text-tertiary mt-0.5">
+            {status === 'unsupported'
+              ? 'Este navegador no soporta notificaciones push.'
+              : status === 'denied'
+                ? 'Bloqueadas en el navegador — actívalas desde el icono del candado de la barra de direcciones.'
+                : active
+                  ? 'Recibirás un aviso aunque la pestaña esté cerrada. El contenido del aviso es genérico: los nombres de tus archivos siguen cifrados.'
+                  : 'Activa los avisos en este navegador. Solo se notifica el evento — nunca el contenido, que va cifrado.'}
+          </p>
+        </div>
+        {status !== 'unsupported' && status !== 'denied' && (
+          <Button
+            size="sm"
+            variant={active ? 'outline' : 'primary'}
+            loading={working}
+            onClick={toggle}
+          >
+            {active ? 'Desactivar' : 'Activar'}
+          </Button>
         )}
       </div>
     </section>

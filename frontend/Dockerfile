@@ -12,6 +12,16 @@ COPY . .
 ARG NEXT_PUBLIC_API_URL=https://api.noctcom.com
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_GTM_ID=GTM-K4QTVDPZ
+# Config web de Firebase (FCM): pública por diseño — identifica el proyecto, no
+# autentica nada (la seguridad está en el service account del backend). Los
+# mismos valores ya viven en public/firebase-messaging-sw.js.
+ENV NEXT_PUBLIC_FIREBASE_API_KEY=AIzaSyDbc7sCk1Z3cHrcVUsYjDM2EGwBL-KSUBM
+ENV NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=noctcom-6116b.firebaseapp.com
+ENV NEXT_PUBLIC_FIREBASE_PROJECT_ID=noctcom-6116b
+ENV NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=noctcom-6116b.firebasestorage.app
+ENV NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=2207334954
+ENV NEXT_PUBLIC_FIREBASE_APP_ID=1:2207334954:web:594da6aa8bb2636ab6b953
+ENV NEXT_PUBLIC_FIREBASE_VAPID_KEY=BM9vrhjjcOxpfPsXpfNhRI6ngQt35f3xvUPG2t2c_Kf2M9GNL4SJdksw2v4yKWJyC8B8uhSLY3MCjyqHOndRZVE
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 

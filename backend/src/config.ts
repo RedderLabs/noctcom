@@ -31,6 +31,11 @@ const envSchema = z.object({
   // subir un binario nuevo a B2 (scripts/upload-agent-release.ts) para que los
   // agentes ya instalados detecten que hay actualización.
   AGENT_LATEST_VERSION: z.string().default('0.1.0'),
+
+  // Push (FCM): el service account de Firebase como JSON en base64 — la vía
+  // para prod (Render no tiene el archivo). En dev se usa el archivo
+  // backend/firebase-service-account.json (gitignored) y esto queda vacío.
+  FIREBASE_SERVICE_ACCOUNT_B64: z.string().min(1).optional().or(z.literal('')),
 });
 
 export const env = envSchema.parse(process.env);

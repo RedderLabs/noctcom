@@ -17,7 +17,7 @@ import { cn } from '@/lib/utils';
 import { FontScaleControl } from '@/components/ui/FontScaleControl';
 import { useFontScale } from '@/lib/font-scale';
 import { useSync } from '@/lib/sync';
-import { registerPushToken, onForegroundMessage } from '@/lib/firebase';
+import { syncPushToken, onForegroundMessage } from '@/lib/firebase';
 
 function formatStorageSize(bytes: number): string {
   if (bytes === 0) return '0 B';
@@ -64,7 +64,9 @@ export default function AppLayout({ children }: { children: ReactNode }) {
       return;
     }
     initVault();
-    registerPushToken();
+    // Pasivo: solo refresca el token si el usuario YA activó las notificaciones
+    // en Ajustes. El diálogo de permiso del navegador nunca sale de un useEffect.
+    syncPushToken();
     const unsub = onForegroundMessage((payload) => {
       if (payload.notification?.title) {
         toast.info(payload.notification.title, { description: payload.notification.body });

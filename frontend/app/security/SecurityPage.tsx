@@ -141,6 +141,29 @@ export default function SecurityPage() {
                 <p className="text-text-tertiary">  │     └── Unwrap → vault_key → file_key → chunks</p>
                 <p className="text-text-tertiary">  ├── BLAKE2b(&quot;login.sign&quot;) → seed → Ed25519 keypair</p>
                 <p className="text-text-tertiary">  └── Unwrap → sk_exchange (X25519)</p>
+                <p className="text-text-muted mt-3">{'// Rama paralela: la frase de recuperación (12 palabras BIP39)'}</p>
+                <p className="text-amber-300">mnemónica</p>
+                <p className="text-text-tertiary">  │ BLAKE2b(key=&quot;recovery.v1&quot;)</p>
+                <p className="text-amber-300">  ▼</p>
+                <p className="text-emerald-300">recovery seed</p>
+                <p className="text-text-tertiary">  ├── Ed25519 → firma el challenge de recuperación</p>
+                <p className="text-text-tertiary">  └── BLAKE2b(&quot;recovery.box.v1&quot;) → X25519 → abre los seals del kit</p>
+              </div>
+            </Section>
+
+            <Section title="Recuperación de cuenta (kit v2)">
+              <p className="text-sm text-text-secondary mb-3 leading-relaxed">
+                Tu frase de 12 palabras (BIP39, 128 bits de entropía) no solo recupera el acceso:
+                recupera también <strong className="text-text-primary font-medium">tus archivos</strong>.
+                De ella se deriva un par X25519 cuya clave pública queda registrada en el servidor;
+                con esa pública, tu navegador <em>sella</em> (crypto_box_seal) la clave de cada bóveda
+                y tu clave de intercambio. Sellar solo necesita la pública — abrir los seals, solo la
+                privada, que únicamente existe si tienes la frase.
+              </p>
+              <div className="space-y-3">
+                <InfoCard icon="key" color="amber" title="Olvidaste la contraseña → nada se pierde" text="La frase firma un reto, el servidor entrega los seals, tu navegador los abre y re-cifra las claves de bóveda con tu nueva contraseña. Los archivos y lo que te han compartido siguen contigo." />
+                <InfoCard icon="lock" color="violet" title="El servidor solo guarda sobres cerrados" text="Los seals son ciphertext: ni Noctcom ni un atacante con la base de datos pueden abrirlos. La privada que los abre se deriva de tu frase y nunca viaja." />
+                <InfoCard icon="shield" color="emerald" title="Pierdes frase Y contraseña → irrecuperable" text="No hay puerta trasera, ni 'contacta con soporte'. Es el precio del zero-knowledge real, y lo decimos sin letra pequeña." />
               </div>
             </Section>
 
