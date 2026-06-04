@@ -1,11 +1,13 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import { Code2, Shield, Mail, Github, ExternalLink, Activity, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Navbar } from '@/components/ui/Navbar';
 
 export default function AboutPage() {
+  const t = useTranslations('about');
   return (
     <main className="min-h-screen flex flex-col">
       <Navbar variant="back" />
@@ -15,54 +17,41 @@ export default function AboutPage() {
         <div className="mb-10">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-violet-500/20 bg-violet-500/5 mb-4">
             <span className="size-1.5 rounded-full bg-violet-400 animate-pulse" />
-            <span className="text-xs text-violet-300 font-medium">Redder Labs · Independiente · Privacidad por diseño</span>
+            <span className="text-xs text-violet-300 font-medium">{t('badge')}</span>
           </div>
           <h1 className="font-display text-4xl md:text-5xl font-light tracking-tight mb-4">
-            Detrás de Noctcom hay <span className="text-gradient-violet font-normal">una persona</span>, no una corporación.
+            {t.rich('title', { hl: (c) => <span className="text-gradient-violet font-normal">{c}</span> })}
           </h1>
           <p className="text-lg text-text-secondary leading-relaxed">
-            Noctcom lo construye <strong className="text-text-primary font-medium">Julián Rodríguez</strong>,
-            desarrollador autodidacta, bajo la marca <strong className="text-text-primary font-medium">Redder Labs</strong>.
-            Sin inversores, sin equipo de marketing, sin reuniones. Solo código y una idea fija:
-            que tus datos no sean el producto.
+            {t.rich('intro', { strong: (c) => <strong className="text-text-primary font-medium">{c}</strong> })}
           </p>
         </div>
 
         {/* ─── Bio ────────────────────────────────────────────── */}
-        <Section icon={Code2} title="Cómo llegué aquí">
+        <Section icon={Code2} title={t('bio.title')}>
           <p className="text-text-secondary leading-relaxed mb-4">
-            Empecé a programar con 7 años, montando ordenadores por mi cuenta. A los 16 hice mis
-            primeras webs. Todo lo demás vino igual: leyendo el código de otros y rompiendo cosas
-            hasta entender por qué se rompían.
+            {t('bio.p1')}
           </p>
           <blockquote className="border-l-2 border-violet-500/40 pl-4 py-1 text-text-secondary italic">
-            «Todo lo que sé lo aprendí leyendo código de otros, rompiendo cosas hasta entender
-            por qué se rompían.»
+            {t('bio.quote')}
           </blockquote>
           <p className="text-text-tertiary text-sm leading-relaxed mt-4">
-            Trabajo en solitario, en mis horas, y me autofinancio. Eso marca el producto: nada
-            depende de vender tu atención ni tus datos, porque no hay nadie a quien rendir esas
-            cuentas más que a quien lo usa.
+            {t('bio.p2')}
           </p>
         </Section>
 
         {/* ─── Filosofía ──────────────────────────────────────── */}
-        <Section icon={Shield} title="Por qué Noctcom funciona así">
+        <Section icon={Shield} title={t('philosophy.title')}>
           <p className="text-text-secondary leading-relaxed mb-4">
-            Todas las herramientas que hago comparten un principio: el procesamiento ocurre en tu
-            dispositivo, no en un servidor que te observa. En Xero Trace eso significa que tu
-            ubicación es privada, no un producto. En Noctcom significa que tus archivos se cifran
-            antes de salir de tu equipo y al servidor solo le llega algo que no sabe abrir.
+            {t('philosophy.p1')}
           </p>
           <p className="text-text-secondary leading-relaxed">
-            No es una opción que activas: es la única forma en que está construido. Y como todo lo
-            que hago, el código es abierto (AGPL-3.0) para que no tengas que creerme: puedes
-            comprobarlo línea a línea.
+            {t('philosophy.p2')}
           </p>
         </Section>
 
         {/* ─── Redder Labs / otros proyectos ──────────────────── */}
-        <Section icon={Activity} title="Otros proyectos de Redder Labs">
+        <Section icon={Activity} title={t('projects.title')}>
           <a
             href="https://xero-trace.com"
             target="_blank"
@@ -78,15 +67,14 @@ export default function AboutPage() {
                 <ExternalLink className="size-3.5 text-text-muted group-hover:text-text-secondary" />
               </div>
               <p className="text-sm text-text-tertiary leading-relaxed mt-1">
-                App de seguridad personal que detecta caídas y accidentes analizando el acelerómetro,
-                procesando todo en el dispositivo. «Cuando importan los segundos, no las grabaciones».
+                {t('projects.xeroTrace')}
               </p>
             </div>
           </a>
         </Section>
 
         {/* ─── Contacto ───────────────────────────────────────── */}
-        <Section icon={Mail} title="Hablemos">
+        <Section icon={Mail} title={t('contact.title')}>
           <div className="grid sm:grid-cols-3 gap-3">
             <a
               href="https://github.com/RedderLabs"
@@ -120,33 +108,36 @@ export default function AboutPage() {
             >
               <Mail className="size-4 text-text-secondary" />
               <div className="flex-1 min-w-0">
-                <span className="text-sm font-medium block">Email</span>
+                <span className="text-sm font-medium block">{t('contact.email')}</span>
                 <span className="text-[10px] text-text-tertiary font-mono">hello@noctcom.com</span>
               </div>
             </a>
           </div>
           <p className="text-xs text-text-tertiary leading-relaxed mt-4">
-            ¿Has encontrado un fallo de seguridad? Repórtalo de forma responsable siguiendo{' '}
-            <a
-              href="https://github.com/RedderLabs/noctcom/blob/main/SECURITY.md"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-violet-300 hover:text-violet-200"
-            >
-              SECURITY.md
-            </a>.
+            {t.rich('contact.security', {
+              link: (c) => (
+                <a
+                  href="https://github.com/RedderLabs/noctcom/blob/main/SECURITY.md"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-violet-300 hover:text-violet-200"
+                >
+                  {c}
+                </a>
+              ),
+            })}
           </p>
         </Section>
 
         {/* ─── CTA ────────────────────────────────────────────── */}
         <div className="mt-12 p-6 rounded-xl border border-border-subtle bg-bg-surface text-center">
-          <h3 className="font-display text-lg font-medium mb-2">Prueba la idea, no la promesa</h3>
+          <h3 className="font-display text-lg font-medium mb-2">{t('cta.title')}</h3>
           <p className="text-sm text-text-tertiary mb-4 max-w-lg mx-auto">
-            1 GB gratis con cifrado zero-knowledge. Sin tarjeta, sin trucos.
+            {t('cta.subtitle')}
           </p>
           <Link href="/signup">
             <Button variant="primary" size="md" rightIcon={<ArrowRight className="size-4" />}>
-              Empezar gratis
+              {t('cta.button')}
             </Button>
           </Link>
         </div>

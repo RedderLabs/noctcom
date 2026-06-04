@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import { Shield, Lock, ExternalLink, FileText, AlertTriangle, Github } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
@@ -10,6 +11,7 @@ import { cn } from '@/lib/utils';
 type Tab = 'crypto' | 'threats';
 
 export default function SecurityPage() {
+  const t = useTranslations('security');
   const [tab, setTab] = useState<Tab>('crypto');
 
   return (
@@ -23,13 +25,11 @@ export default function SecurityPage() {
             <Shield className="size-3.5 text-emerald-300" />
             <span className="text-xs text-emerald-300 font-medium">Auditable · Open Source · AGPL-3.0</span>
           </div>
-          <h1 className="font-display text-4xl font-light tracking-tight mb-3">Seguridad y criptografía</h1>
+          <h1 className="font-display text-4xl font-light tracking-tight mb-3">{t('header.title')}</h1>
           <p className="text-text-secondary leading-relaxed max-w-2xl">
-            No te pedimos que confíes en nuestra palabra. Noctcom está hecho para que, aunque
-            quisiéramos, {' '}<strong className="text-text-primary font-medium">no podamos</strong>{' '}
-            leer tus archivos: tus claves nacen y se quedan en tu dispositivo, y al servidor solo le llega
-            cifrado que no sabe abrir. Aquí te contamos exactamente cómo, sin rodeos. Y si algo de esta
-            página no cuadra con el código, abre un issue — al final manda el código, no las promesas.
+            {t.rich('header.intro', {
+              strong: (c) => <strong className="text-text-primary font-medium">{c}</strong>,
+            })}
           </p>
         </div>
 
@@ -43,7 +43,7 @@ export default function SecurityPage() {
           >
             <Lock className="size-4 text-violet-300" />
             <div className="flex-1 min-w-0">
-              <span className="text-sm font-medium block">Spec criptográfica</span>
+              <span className="text-sm font-medium block">{t('quickLinks.spec')}</span>
               <span className="text-[10px] text-text-tertiary font-mono uppercase tracking-wider">CRYPTO_SPEC.md</span>
             </div>
             <ExternalLink className="size-3.5 text-text-muted group-hover:text-text-secondary" />
@@ -56,7 +56,7 @@ export default function SecurityPage() {
           >
             <AlertTriangle className="size-4 text-amber-300" />
             <div className="flex-1 min-w-0">
-              <span className="text-sm font-medium block">Modelo de amenazas</span>
+              <span className="text-sm font-medium block">{t('quickLinks.threatModel')}</span>
               <span className="text-[10px] text-text-tertiary font-mono uppercase tracking-wider">THREAT_MODEL.md</span>
             </div>
             <ExternalLink className="size-3.5 text-text-muted group-hover:text-text-secondary" />
@@ -69,7 +69,7 @@ export default function SecurityPage() {
           >
             <FileText className="size-4 text-emerald-300" />
             <div className="flex-1 min-w-0">
-              <span className="text-sm font-medium block">Reportar vulnerabilidad</span>
+              <span className="text-sm font-medium block">{t('quickLinks.report')}</span>
               <span className="text-[10px] text-text-tertiary font-mono uppercase tracking-wider">SECURITY.md</span>
             </div>
             <ExternalLink className="size-3.5 text-text-muted group-hover:text-text-secondary" />
@@ -85,7 +85,7 @@ export default function SecurityPage() {
               tab === 'crypto' ? 'bg-violet-500/20 text-violet-200' : 'text-text-tertiary hover:text-text-secondary',
             )}
           >
-            <span className="flex items-center gap-2"><Lock className="size-3.5" /> Especificación criptográfica</span>
+            <span className="flex items-center gap-2"><Lock className="size-3.5" /> {t('tabs.crypto')}</span>
           </button>
           <button
             onClick={() => setTab('threats')}
@@ -94,33 +94,33 @@ export default function SecurityPage() {
               tab === 'threats' ? 'bg-amber-500/20 text-amber-200' : 'text-text-tertiary hover:text-text-secondary',
             )}
           >
-            <span className="flex items-center gap-2"><AlertTriangle className="size-3.5" /> Modelo de amenazas</span>
+            <span className="flex items-center gap-2"><AlertTriangle className="size-3.5" /> {t('tabs.threats')}</span>
           </button>
         </div>
 
         {/* Crypto Spec */}
         {tab === 'crypto' && (
           <article className="animate-fade-in space-y-8">
-            <Section title="Primitivas criptográficas">
+            <Section title={t('crypto.primitives.title')}>
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-border-faint">
-                    <th className="text-left py-2 text-[10px] font-mono uppercase tracking-wider text-text-tertiary">Función</th>
-                    <th className="text-left py-2 text-[10px] font-mono uppercase tracking-wider text-text-tertiary">Algoritmo</th>
-                    <th className="text-left py-2 text-[10px] font-mono uppercase tracking-wider text-text-tertiary">Parámetros</th>
+                    <th className="text-left py-2 text-[10px] font-mono uppercase tracking-wider text-text-tertiary">{t('crypto.primitives.colFunction')}</th>
+                    <th className="text-left py-2 text-[10px] font-mono uppercase tracking-wider text-text-tertiary">{t('crypto.primitives.colAlgorithm')}</th>
+                    <th className="text-left py-2 text-[10px] font-mono uppercase tracking-wider text-text-tertiary">{t('crypto.primitives.colParams')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border-faint">
-                  {[
-                    ['KDF', 'Argon2id', 'OPSLIMIT_MODERATE, 256 MiB'],
-                    ['AEAD', 'XChaCha20-Poly1305', 'nonce 24B, tag 16B'],
-                    ['HKDF', 'BLAKE2b-keyed', 'output 32B'],
-                    ['Firmas', 'Ed25519', 'RFC 8032'],
-                    ['Key Exchange', 'X25519', 'RFC 7748'],
-                    ['Sealed Boxes', 'X25519 + XSalsa20-Poly1305', 'nonce derivado'],
-                    ['Hash', 'BLAKE2b-256', 'output 32B'],
-                  ].map(([fn, algo, params]) => (
-                    <tr key={fn} className="text-text-secondary">
+                  {([
+                    ['kdf', 'KDF', 'Argon2id', 'OPSLIMIT_MODERATE, 256 MiB'],
+                    ['aead', 'AEAD', 'XChaCha20-Poly1305', 'nonce 24B, tag 16B'],
+                    ['hkdf', 'HKDF', 'BLAKE2b-keyed', 'output 32B'],
+                    ['signatures', t('crypto.primitives.rows.signatures'), 'Ed25519', 'RFC 8032'],
+                    ['keyExchange', 'Key Exchange', 'X25519', 'RFC 7748'],
+                    ['sealedBoxes', 'Sealed Boxes', 'X25519 + XSalsa20-Poly1305', t('crypto.primitives.rows.sealedBoxesParams')],
+                    ['hash', 'Hash', 'BLAKE2b-256', 'output 32B'],
+                  ] as const).map(([key, fn, algo, params]) => (
+                    <tr key={key} className="text-text-secondary">
                       <td className="py-2.5 font-mono text-violet-300">{fn}</td>
                       <td className="py-2.5">{algo}</td>
                       <td className="py-2.5 text-xs text-text-tertiary">{params}</td>
@@ -130,9 +130,9 @@ export default function SecurityPage() {
               </table>
             </Section>
 
-            <Section title="Jerarquía de claves">
+            <Section title={t('crypto.keyHierarchy.title')}>
               <div className="p-4 rounded-lg bg-bg-deep border border-border-faint font-mono text-xs leading-loose">
-                <p className="text-text-muted">{'// Derivación completa desde la contraseña'}</p>
+                <p className="text-text-muted">{`// ${t('crypto.keyHierarchy.commentDerivation')}`}</p>
                 <p className="text-violet-300 mt-1">password</p>
                 <p className="text-text-tertiary">  │ Argon2id(salt, opsLimit, memLimit)</p>
                 <p className="text-violet-300">  ▼</p>
@@ -141,43 +141,41 @@ export default function SecurityPage() {
                 <p className="text-text-tertiary">  │     └── Unwrap → vault_key → file_key → chunks</p>
                 <p className="text-text-tertiary">  ├── BLAKE2b(&quot;login.sign&quot;) → seed → Ed25519 keypair</p>
                 <p className="text-text-tertiary">  └── Unwrap → sk_exchange (X25519)</p>
-                <p className="text-text-muted mt-3">{'// Rama paralela: la frase de recuperación (12 palabras BIP39)'}</p>
-                <p className="text-amber-300">mnemónica</p>
+                <p className="text-text-muted mt-3">{`// ${t('crypto.keyHierarchy.commentRecovery')}`}</p>
+                <p className="text-amber-300">{t('crypto.keyHierarchy.mnemonic')}</p>
                 <p className="text-text-tertiary">  │ BLAKE2b(key=&quot;recovery.v1&quot;)</p>
                 <p className="text-amber-300">  ▼</p>
                 <p className="text-emerald-300">recovery seed</p>
-                <p className="text-text-tertiary">  ├── Ed25519 → firma el challenge de recuperación</p>
-                <p className="text-text-tertiary">  └── BLAKE2b(&quot;recovery.box.v1&quot;) → X25519 → abre los seals del kit</p>
+                <p className="text-text-tertiary">  ├── Ed25519 → {t('crypto.keyHierarchy.signsChallenge')}</p>
+                <p className="text-text-tertiary">  └── BLAKE2b(&quot;recovery.box.v1&quot;) → X25519 → {t('crypto.keyHierarchy.opensSeals')}</p>
               </div>
             </Section>
 
-            <Section title="Recuperación de cuenta (kit v2)">
+            <Section title={t('crypto.recovery.title')}>
               <p className="text-sm text-text-secondary mb-3 leading-relaxed">
-                Tu frase de 12 palabras (BIP39, 128 bits de entropía) no solo recupera el acceso:
-                recupera también <strong className="text-text-primary font-medium">tus archivos</strong>.
-                De ella se deriva un par X25519 cuya clave pública queda registrada en el servidor;
-                con esa pública, tu navegador <em>sella</em> (crypto_box_seal) la clave de cada bóveda
-                y tu clave de intercambio. Sellar solo necesita la pública — abrir los seals, solo la
-                privada, que únicamente existe si tienes la frase.
+                {t.rich('crypto.recovery.intro', {
+                  strong: (c) => <strong className="text-text-primary font-medium">{c}</strong>,
+                  em: (c) => <em>{c}</em>,
+                })}
               </p>
               <div className="space-y-3">
-                <InfoCard icon="key" color="amber" title="Olvidaste la contraseña → nada se pierde" text="La frase firma un reto, el servidor entrega los seals, tu navegador los abre y re-cifra las claves de bóveda con tu nueva contraseña. Los archivos y lo que te han compartido siguen contigo." />
-                <InfoCard icon="lock" color="violet" title="El servidor solo guarda sobres cerrados" text="Los seals son ciphertext: ni Noctcom ni un atacante con la base de datos pueden abrirlos. La privada que los abre se deriva de tu frase y nunca viaja." />
-                <InfoCard icon="shield" color="emerald" title="Pierdes frase Y contraseña → irrecuperable" text="No hay puerta trasera, ni 'contacta con soporte'. Es el precio del zero-knowledge real, y lo decimos sin letra pequeña." />
+                <InfoCard icon="key" color="amber" title={t('crypto.recovery.cards.forgotPassword.title')} text={t('crypto.recovery.cards.forgotPassword.text')} />
+                <InfoCard icon="lock" color="violet" title={t('crypto.recovery.cards.sealedEnvelopes.title')} text={t('crypto.recovery.cards.sealedEnvelopes.text')} />
+                <InfoCard icon="shield" color="emerald" title={t('crypto.recovery.cards.lostBoth.title')} text={t('crypto.recovery.cards.lostBoth.text')} />
               </div>
             </Section>
 
-            <Section title="Cifrado de archivos">
+            <Section title={t('crypto.fileEncryption.title')}>
               <div className="space-y-3">
-                <InfoCard icon="lock" color="violet" title="Chunks de 4 MiB" text="Cada archivo se divide en chunks de 4 MiB, cifrados independientemente con XChaCha20-Poly1305. Cada chunk usa un nonce aleatorio de 24 bytes." />
-                <InfoCard icon="shield" color="emerald" title="AAD anti-reorder" text="Cada chunk incluye su índice como Additional Authenticated Data (AAD = 'chunk:N'). Impide que un atacante reordene chunks." />
-                <InfoCard icon="key" color="amber" title="Content hash" text="BLAKE2b-256 sobre todos los chunks cifrados. Verifica integridad en cada descarga." />
+                <InfoCard icon="lock" color="violet" title={t('crypto.fileEncryption.cards.chunks.title')} text={t('crypto.fileEncryption.cards.chunks.text')} />
+                <InfoCard icon="shield" color="emerald" title={t('crypto.fileEncryption.cards.aad.title')} text={t('crypto.fileEncryption.cards.aad.text')} />
+                <InfoCard icon="key" color="amber" title={t('crypto.fileEncryption.cards.contentHash.title')} text={t('crypto.fileEncryption.cards.contentHash.text')} />
               </div>
             </Section>
 
-            <Section title="Zero-knowledge email">
+            <Section title={t('crypto.zkEmail.title')}>
               <div className="p-4 rounded-lg bg-bg-deep border border-border-faint font-mono text-xs leading-loose">
-                <p className="text-text-muted">{'// El servidor nunca ve tu email'}</p>
+                <p className="text-text-muted">{`// ${t('crypto.zkEmail.comment')}`}</p>
                 <p className="text-text-secondary">email_hash = BLAKE2b(</p>
                 <p className="text-text-secondary">{'  message = normalize(email),'}</p>
                 <p className="text-text-secondary">{'  key = "noctcom.email.v1",'}</p>
@@ -186,17 +184,19 @@ export default function SecurityPage() {
               </div>
             </Section>
 
-            <Section title="Auditorías externas">
+            <Section title={t('crypto.audits.title')}>
               <div className="p-4 rounded-xl border border-border-faint bg-bg-surface">
                 <p className="text-sm text-text-secondary">
-                  Aún no se han realizado auditorías externas. Cuando se completen, los reportes completos
-                  se publicarán aquí y en el repositorio.
+                  {t('crypto.audits.body')}
                 </p>
                 <p className="text-xs text-text-tertiary mt-2">
-                  Mientras tanto, el código es 100% auditable en{' '}
-                  <a href="https://github.com/RedderLabs/noctcom" target="_blank" rel="noopener noreferrer" className="text-violet-300 hover:text-violet-200">
-                    GitHub
-                  </a>.
+                  {t.rich('crypto.audits.note', {
+                    link: (c) => (
+                      <a href="https://github.com/RedderLabs/noctcom" target="_blank" rel="noopener noreferrer" className="text-violet-300 hover:text-violet-200">
+                        {c}
+                      </a>
+                    ),
+                  })}
                 </p>
               </div>
             </Section>
@@ -206,32 +206,32 @@ export default function SecurityPage() {
         {/* Threat Model */}
         {tab === 'threats' && (
           <article className="animate-fade-in space-y-8">
-            <Section title="Adversarios considerados">
+            <Section title={t('threats.adversaries.title')}>
               <div className="space-y-2">
                 {[
-                  { id: 'A1', name: 'Operador malicioso', desc: 'Empleado de Noctcom con acceso a infraestructura', color: 'text-red-400 bg-red-500/10' },
-                  { id: 'A2', name: 'Dump de base de datos', desc: 'Breach, orden judicial, o error operativo', color: 'text-orange-400 bg-orange-500/10' },
-                  { id: 'A3', name: 'MITM activo', desc: 'ISP malicioso, WiFi comprometido, BGP hijacking', color: 'text-amber-400 bg-amber-500/10' },
-                  { id: 'A4', name: 'Coerción legal', desc: 'NSL, gag order, orden judicial', color: 'text-violet-400 bg-violet-500/10' },
-                  { id: 'A5', name: 'Cliente comprometido', desc: 'Malware, keylogger, RAT en tu dispositivo', color: 'text-slate-400 bg-slate-500/10' },
+                  { id: 'A1', key: 'A1', color: 'text-red-400 bg-red-500/10' },
+                  { id: 'A2', key: 'A2', color: 'text-orange-400 bg-orange-500/10' },
+                  { id: 'A3', key: 'A3', color: 'text-amber-400 bg-amber-500/10' },
+                  { id: 'A4', key: 'A4', color: 'text-violet-400 bg-violet-500/10' },
+                  { id: 'A5', key: 'A5', color: 'text-slate-400 bg-slate-500/10' },
                 ].map((a) => (
                   <div key={a.id} className="flex items-center gap-4 p-4 rounded-xl border border-border-faint bg-bg-surface">
                     <span className={cn('text-xs font-mono font-bold px-2 py-1 rounded', a.color)}>{a.id}</span>
                     <div>
-                      <span className="text-sm font-medium">{a.name}</span>
-                      <p className="text-xs text-text-tertiary">{a.desc}</p>
+                      <span className="text-sm font-medium">{t(`threats.adversaries.items.${a.key}.name`)}</span>
+                      <p className="text-xs text-text-tertiary">{t(`threats.adversaries.items.${a.key}.desc`)}</p>
                     </div>
                   </div>
                 ))}
               </div>
             </Section>
 
-            <Section title="Matriz de protección">
+            <Section title={t('threats.matrix.title')}>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-border-faint">
-                      <th className="text-left py-2 text-[10px] font-mono uppercase tracking-wider text-text-tertiary">Amenaza</th>
+                      <th className="text-left py-2 text-[10px] font-mono uppercase tracking-wider text-text-tertiary">{t('threats.matrix.colThreat')}</th>
                       <th className="text-center py-2 text-[10px] font-mono uppercase tracking-wider text-text-tertiary">A1</th>
                       <th className="text-center py-2 text-[10px] font-mono uppercase tracking-wider text-text-tertiary">A2</th>
                       <th className="text-center py-2 text-[10px] font-mono uppercase tracking-wider text-text-tertiary">A3</th>
@@ -240,18 +240,18 @@ export default function SecurityPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border-faint">
-                    {[
-                      ['Leer contenido de archivos', '✅', '✅', '✅', '✅', '❌'],
-                      ['Leer nombres de archivos', '✅', '✅', '✅', '✅', '❌'],
-                      ['Obtener master key', '✅', '✅', '✅', '✅', '❌'],
-                      ['Fuerza bruta offline', '—', '⚠️', '—', '—', '❌'],
-                      ['Suplantar identidad', '✅', '⚠️', '✅', '⚠️', '❌'],
-                      ['Bloquear acceso', '❌', '—', '✅', '❌', '—'],
-                      ['Modificar archivos', '✅', '⚠️', '✅', '✅', '❌'],
-                      ['Inferir patrones de uso', '❌', '❌', '❌', '❌', '❌'],
-                    ].map(([threat, ...cols]) => (
-                      <tr key={threat} className="text-text-secondary">
-                        <td className="py-2.5 text-xs">{threat}</td>
+                    {([
+                      ['readContent', '✅', '✅', '✅', '✅', '❌'],
+                      ['readNames', '✅', '✅', '✅', '✅', '❌'],
+                      ['obtainMasterKey', '✅', '✅', '✅', '✅', '❌'],
+                      ['offlineBruteForce', '—', '⚠️', '—', '—', '❌'],
+                      ['impersonate', '✅', '⚠️', '✅', '⚠️', '❌'],
+                      ['blockAccess', '❌', '—', '✅', '❌', '—'],
+                      ['modifyFiles', '✅', '⚠️', '✅', '✅', '❌'],
+                      ['inferUsage', '❌', '❌', '❌', '❌', '❌'],
+                    ] as const).map(([key, ...cols]) => (
+                      <tr key={key} className="text-text-secondary">
+                        <td className="py-2.5 text-xs">{t(`threats.matrix.rows.${key}`)}</td>
                         {cols.map((v, i) => (
                           <td key={i} className="py-2.5 text-center">{v}</td>
                         ))}
@@ -261,46 +261,45 @@ export default function SecurityPage() {
                 </table>
               </div>
               <div className="flex gap-4 mt-3 text-[10px] text-text-muted font-mono">
-                <span>✅ Protegido</span>
-                <span>⚠️ Parcial</span>
-                <span>❌ No protegido</span>
+                <span>✅ {t('threats.matrix.legend.protected')}</span>
+                <span>⚠️ {t('threats.matrix.legend.partial')}</span>
+                <span>❌ {t('threats.matrix.legend.unprotected')}</span>
               </div>
             </Section>
 
-            <Section title="Qué NO protegemos">
+            <Section title={t('threats.notProtected.title')}>
               <div className="space-y-2">
                 {[
-                  'Malware o keylogger en tu dispositivo',
-                  'Acceso físico a tu dispositivo desbloqueado',
-                  'Coerción física (rubber-hose cryptanalysis)',
-                  'Negación plausible (no hay volúmenes ocultos)',
-                  'Anonimato de red (usa Tor si lo necesitas)',
-                  'Mensajería en tiempo real (usa Signal)',
-                ].map((item) => (
-                  <div key={item} className="flex items-center gap-3 px-4 py-3 rounded-lg bg-red-500/5 border border-red-500/10">
+                  'malware',
+                  'physicalAccess',
+                  'coercion',
+                  'plausibleDeniability',
+                  'networkAnonymity',
+                  'realtimeMessaging',
+                ].map((key) => (
+                  <div key={key} className="flex items-center gap-3 px-4 py-3 rounded-lg bg-red-500/5 border border-red-500/10">
                     <span className="text-red-400 text-sm">✕</span>
-                    <span className="text-sm text-text-secondary">{item}</span>
+                    <span className="text-sm text-text-secondary">{t(`threats.notProtected.items.${key}`)}</span>
                   </div>
                 ))}
               </div>
             </Section>
 
-            <Section title="Supuestos criptográficos">
+            <Section title={t('threats.assumptions.title')}>
               <p className="text-sm text-text-secondary mb-3">
-                Si alguna de estas primitivas se rompe (ej. quantum computing real), migraremos a
-                primitivas post-quantum (Kyber, Dilithium) mediante re-encryption + rotación de claves.
+                {t('threats.assumptions.intro')}
               </p>
               <div className="space-y-1">
                 {[
-                  { prim: 'Argon2id', assumption: 'Resistente a GPU/ASIC en 256 MiB' },
-                  { prim: 'XChaCha20-Poly1305', assumption: 'IND-CCA2 con nonces 24B' },
-                  { prim: 'Ed25519', assumption: 'EUF-CMA en curva edwards25519' },
-                  { prim: 'X25519', assumption: 'DDH en curva25519' },
-                  { prim: 'BLAKE2b', assumption: 'Resistencia a colisiones de 256 bits' },
+                  { prim: 'Argon2id', key: 'argon2id' },
+                  { prim: 'XChaCha20-Poly1305', key: 'xchacha20' },
+                  { prim: 'Ed25519', key: 'ed25519' },
+                  { prim: 'X25519', key: 'x25519' },
+                  { prim: 'BLAKE2b', key: 'blake2b' },
                 ].map((s) => (
                   <div key={s.prim} className="flex items-center gap-4 px-4 py-2.5 rounded-lg hover:bg-bg-surface transition-colors">
                     <span className="text-sm font-mono text-violet-300 w-48 shrink-0">{s.prim}</span>
-                    <span className="text-xs text-text-tertiary">{s.assumption}</span>
+                    <span className="text-xs text-text-tertiary">{t(`threats.assumptions.items.${s.key}`)}</span>
                   </div>
                 ))}
               </div>
@@ -310,15 +309,16 @@ export default function SecurityPage() {
 
         {/* Footer CTA */}
         <div className="mt-12 p-6 rounded-xl border border-border-subtle bg-bg-surface text-center">
-          <h3 className="font-display text-lg font-medium mb-2">Audita el código tú mismo</h3>
+          <h3 className="font-display text-lg font-medium mb-2">{t('footerCta.title')}</h3>
           <p className="text-sm text-text-tertiary mb-4 max-w-lg mx-auto">
-            Todo el código es público bajo AGPL-3.0. Las implementaciones de referencia están en{' '}
-            <code className="text-xs bg-bg-surface-2 px-1.5 py-0.5 rounded">backend/src/crypto/</code> y{' '}
-            <code className="text-xs bg-bg-surface-2 px-1.5 py-0.5 rounded">frontend/lib/crypto.ts</code>
+            {t.rich('footerCta.body', {
+              code1: () => <code className="text-xs bg-bg-surface-2 px-1.5 py-0.5 rounded">backend/src/crypto/</code>,
+              code2: () => <code className="text-xs bg-bg-surface-2 px-1.5 py-0.5 rounded">frontend/lib/crypto.ts</code>,
+            })}
           </p>
           <a href="https://github.com/RedderLabs/noctcom" target="_blank" rel="noopener noreferrer">
             <Button variant="outline" size="md" leftIcon={<Github className="size-4" />}>
-              Ver repositorio
+              {t('footerCta.cta')}
             </Button>
           </a>
         </div>

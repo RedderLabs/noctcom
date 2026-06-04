@@ -32,10 +32,22 @@
       "ctaHaveAccount": "Ya tengo cuenta"
     },
     "features": {
-      "zk": { "title": "Zero-Knowledge por defecto", "body": "No es una opción que activas: es la única forma en que funciona. Argon2id + XChaCha20-Poly1305." },
-      "metadata": { "title": "Ni los metadatos", "body": "Nombres, tamaños y etiquetas también van cifrados. No solo el contenido." },
-      "email": { "title": "Sin tu email en claro", "body": "Ni siquiera almacenamos tu correo: solo un hash. Un volcado de la BD no revela quién eres." },
-      "share": { "title": "Compartir anónimo", "body": "Sealed boxes X25519: solo el destinatario abre el archivo. Ni nosotros, ni nadie con acceso al servidor." }
+      "zk": {
+        "title": "Zero-Knowledge por defecto",
+        "body": "No es una opción que activas: es la única forma en que funciona. Argon2id + XChaCha20-Poly1305."
+      },
+      "metadata": {
+        "title": "Ni los metadatos",
+        "body": "Nombres, tamaños y etiquetas también van cifrados. No solo el contenido."
+      },
+      "email": {
+        "title": "Sin tu email en claro",
+        "body": "Ni siquiera almacenamos tu correo: solo un hash. Un volcado de la BD no revela quién eres."
+      },
+      "share": {
+        "title": "Compartir anónimo",
+        "body": "Sealed boxes X25519: solo el destinatario abre el archivo. Ni nosotros, ni nadie con acceso al servidor."
+      }
     },
     "demo": {
       "title": "No nos creas: <hl>míralo</hl>.",
@@ -50,10 +62,22 @@
       "title": "Para quien la privacidad <hl>no es opcional</hl>.",
       "subtitle": "Si manejas material que no puede filtrarse —una investigación, una fuente, un expediente— necesitas algo más que la promesa de un proveedor de «no mirar». Necesitas que <strong>no pueda</strong>.",
       "cards": {
-        "journalism": { "title": "Periodismo de investigación", "body": "Guarda material sensible cifrado en tu dispositivo antes de que salga de él. Ni nosotros podemos abrirlo." },
-        "sources": { "title": "Fuentes y denuncia", "body": "Comparte con tu redacción por sealed boxes X25519: solo el destinatario lo abre, ni con acceso al servidor." },
-        "professional": { "title": "Secreto profesional", "body": "Abogados, médicos, periodistas: datos de clientes, pacientes o fuentes con cifrado que el proveedor no puede romper." },
-        "jurisdiction": { "title": "Control y jurisdicción", "body": "Self-host AGPL: tus datos en tu propio hardware, fuera de jurisdicciones y proveedores ajenos." }
+        "journalism": {
+          "title": "Periodismo de investigación",
+          "body": "Guarda material sensible cifrado en tu dispositivo antes de que salga de él. Ni nosotros podemos abrirlo."
+        },
+        "sources": {
+          "title": "Fuentes y denuncia",
+          "body": "Comparte con tu redacción por sealed boxes X25519: solo el destinatario lo abre, ni con acceso al servidor."
+        },
+        "professional": {
+          "title": "Secreto profesional",
+          "body": "Abogados, médicos, periodistas: datos de clientes, pacientes o fuentes con cifrado que el proveedor no puede romper."
+        },
+        "jurisdiction": {
+          "title": "Control y jurisdicción",
+          "body": "Self-host AGPL: tus datos en tu propio hardware, fuera de jurisdicciones y proveedores ajenos."
+        }
       },
       "roadmapNote": "<hl>En hoja de ruta — cadena de custodia verificable:</hl> firma de autoría y sellado de tiempo para demostrar a un editor o un juez que un archivo es íntegro y de qué fecha es, <em>sin que nadie más lo lea</em>. Todo sobre hashes y firmas; el contenido nunca sale de tu control.",
       "honestyNote": "Honestidad ante todo: el cifrado zero-knowledge protege tus archivos en reposo, no te da anonimato de red. Para ocultar <em>con quién</em> hablas, combínalo con herramientas como Tor según tu modelo de amenaza. Y como todo en Noctcom, el código es abierto y auditable."
@@ -70,10 +94,315 @@
     "whySelfhost": {
       "title": "¿Por qué self-host?",
       "cards": {
-        "control": { "title": "Control total", "body": "Tus datos en tu infraestructura. Sin intermediarios, sin jurisdicciones externas." },
-        "auditable": { "title": "Auditable", "body": "Código abierto AGPL-3.0. Verifica cada línea que protege tus archivos." },
-        "sameCrypto": { "title": "Mismo cifrado", "body": "Idénticas garantías criptográficas que la versión cloud. Zero-knowledge real." }
+        "control": {
+          "title": "Control total",
+          "body": "Tus datos en tu infraestructura. Sin intermediarios, sin jurisdicciones externas."
+        },
+        "auditable": {
+          "title": "Auditable",
+          "body": "Código abierto AGPL-3.0. Verifica cada línea que protege tus archivos."
+        },
+        "sameCrypto": {
+          "title": "Mismo cifrado",
+          "body": "Idénticas garantías criptográficas que la versión cloud. Zero-knowledge real."
+        }
       }
+    }
+  },
+  "about": {
+    "badge": "Redder Labs · Independiente · Privacidad por diseño",
+    "title": "Detrás de Noctcom hay <hl>una persona</hl>, no una corporación.",
+    "intro": "Noctcom lo construye <strong>Julián Rodríguez</strong>, desarrollador autodidacta, bajo la marca <strong>Redder Labs</strong>. Sin inversores, sin equipo de marketing, sin reuniones. Solo código y una idea fija: que tus datos no sean el producto.",
+    "bio": {
+      "title": "Cómo llegué aquí",
+      "p1": "Empecé a programar con 7 años, montando ordenadores por mi cuenta. A los 16 hice mis primeras webs. Todo lo demás vino igual: leyendo el código de otros y rompiendo cosas hasta entender por qué se rompían.",
+      "quote": "«Todo lo que sé lo aprendí leyendo código de otros, rompiendo cosas hasta entender por qué se rompían.»",
+      "p2": "Trabajo en solitario, en mis horas, y me autofinancio. Eso marca el producto: nada depende de vender tu atención ni tus datos, porque no hay nadie a quien rendir esas cuentas más que a quien lo usa."
+    },
+    "philosophy": {
+      "title": "Por qué Noctcom funciona así",
+      "p1": "Todas las herramientas que hago comparten un principio: el procesamiento ocurre en tu dispositivo, no en un servidor que te observa. En Xero Trace eso significa que tu ubicación es privada, no un producto. En Noctcom significa que tus archivos se cifran antes de salir de tu equipo y al servidor solo le llega algo que no sabe abrir.",
+      "p2": "No es una opción que activas: es la única forma en que está construido. Y como todo lo que hago, el código es abierto (AGPL-3.0) para que no tengas que creerme: puedes comprobarlo línea a línea."
+    },
+    "projects": {
+      "title": "Otros proyectos de Redder Labs",
+      "xeroTrace": "App de seguridad personal que detecta caídas y accidentes analizando el acelerómetro, procesando todo en el dispositivo. «Cuando importan los segundos, no las grabaciones»."
+    },
+    "contact": {
+      "title": "Hablemos",
+      "email": "Email",
+      "security": "¿Has encontrado un fallo de seguridad? Repórtalo de forma responsable siguiendo <link>SECURITY.md</link>."
+    },
+    "cta": {
+      "title": "Prueba la idea, no la promesa",
+      "subtitle": "1 GB gratis con cifrado zero-knowledge. Sin tarjeta, sin trucos.",
+      "button": "Empezar gratis"
+    }
+  },
+  "security": {
+    "header": {
+      "title": "Seguridad y criptografía",
+      "intro": "No te pedimos que confíes en nuestra palabra. Noctcom está hecho para que, aunque quisiéramos, <strong>no podamos</strong> leer tus archivos: tus claves nacen y se quedan en tu dispositivo, y al servidor solo le llega cifrado que no sabe abrir. Aquí te contamos exactamente cómo, sin rodeos. Y si algo de esta página no cuadra con el código, abre un issue — al final manda el código, no las promesas."
+    },
+    "quickLinks": {
+      "spec": "Spec criptográfica",
+      "threatModel": "Modelo de amenazas",
+      "report": "Reportar vulnerabilidad"
+    },
+    "tabs": {
+      "crypto": "Especificación criptográfica",
+      "threats": "Modelo de amenazas"
+    },
+    "crypto": {
+      "primitives": {
+        "title": "Primitivas criptográficas",
+        "colFunction": "Función",
+        "colAlgorithm": "Algoritmo",
+        "colParams": "Parámetros",
+        "rows": {
+          "signatures": "Firmas",
+          "sealedBoxesParams": "nonce derivado"
+        }
+      },
+      "keyHierarchy": {
+        "title": "Jerarquía de claves",
+        "commentDerivation": "Derivación completa desde la contraseña",
+        "commentRecovery": "Rama paralela: la frase de recuperación (12 palabras BIP39)",
+        "mnemonic": "mnemónica",
+        "signsChallenge": "firma el challenge de recuperación",
+        "opensSeals": "abre los seals del kit"
+      },
+      "recovery": {
+        "title": "Recuperación de cuenta (kit v2)",
+        "intro": "Tu frase de 12 palabras (BIP39, 128 bits de entropía) no solo recupera el acceso: recupera también <strong>tus archivos</strong>. De ella se deriva un par X25519 cuya clave pública queda registrada en el servidor; con esa pública, tu navegador <em>sella</em> (crypto_box_seal) la clave de cada bóveda y tu clave de intercambio. Sellar solo necesita la pública — abrir los seals, solo la privada, que únicamente existe si tienes la frase.",
+        "cards": {
+          "forgotPassword": {
+            "title": "Olvidaste la contraseña → nada se pierde",
+            "text": "La frase firma un reto, el servidor entrega los seals, tu navegador los abre y re-cifra las claves de bóveda con tu nueva contraseña. Los archivos y lo que te han compartido siguen contigo."
+          },
+          "sealedEnvelopes": {
+            "title": "El servidor solo guarda sobres cerrados",
+            "text": "Los seals son ciphertext: ni Noctcom ni un atacante con la base de datos pueden abrirlos. La privada que los abre se deriva de tu frase y nunca viaja."
+          },
+          "lostBoth": {
+            "title": "Pierdes frase Y contraseña → irrecuperable",
+            "text": "No hay puerta trasera, ni 'contacta con soporte'. Es el precio del zero-knowledge real, y lo decimos sin letra pequeña."
+          }
+        }
+      },
+      "fileEncryption": {
+        "title": "Cifrado de archivos",
+        "cards": {
+          "chunks": {
+            "title": "Chunks de 4 MiB",
+            "text": "Cada archivo se divide en chunks de 4 MiB, cifrados independientemente con XChaCha20-Poly1305. Cada chunk usa un nonce aleatorio de 24 bytes."
+          },
+          "aad": {
+            "title": "AAD anti-reorder",
+            "text": "Cada chunk incluye su índice como Additional Authenticated Data (AAD = 'chunk:N'). Impide que un atacante reordene chunks."
+          },
+          "contentHash": {
+            "title": "Content hash",
+            "text": "BLAKE2b-256 sobre todos los chunks cifrados. Verifica integridad en cada descarga."
+          }
+        }
+      },
+      "zkEmail": {
+        "title": "Zero-knowledge email",
+        "comment": "El servidor nunca ve tu email"
+      },
+      "audits": {
+        "title": "Auditorías externas",
+        "body": "Aún no se han realizado auditorías externas. Cuando se completen, los reportes completos se publicarán aquí y en el repositorio.",
+        "note": "Mientras tanto, el código es 100% auditable en <link>GitHub</link>."
+      }
+    },
+    "threats": {
+      "adversaries": {
+        "title": "Adversarios considerados",
+        "items": {
+          "A1": {
+            "name": "Operador malicioso",
+            "desc": "Empleado de Noctcom con acceso a infraestructura"
+          },
+          "A2": {
+            "name": "Dump de base de datos",
+            "desc": "Breach, orden judicial, o error operativo"
+          },
+          "A3": {
+            "name": "MITM activo",
+            "desc": "ISP malicioso, WiFi comprometido, BGP hijacking"
+          },
+          "A4": {
+            "name": "Coerción legal",
+            "desc": "NSL, gag order, orden judicial"
+          },
+          "A5": {
+            "name": "Cliente comprometido",
+            "desc": "Malware, keylogger, RAT en tu dispositivo"
+          }
+        }
+      },
+      "matrix": {
+        "title": "Matriz de protección",
+        "colThreat": "Amenaza",
+        "rows": {
+          "readContent": "Leer contenido de archivos",
+          "readNames": "Leer nombres de archivos",
+          "obtainMasterKey": "Obtener master key",
+          "offlineBruteForce": "Fuerza bruta offline",
+          "impersonate": "Suplantar identidad",
+          "blockAccess": "Bloquear acceso",
+          "modifyFiles": "Modificar archivos",
+          "inferUsage": "Inferir patrones de uso"
+        },
+        "legend": {
+          "protected": "Protegido",
+          "partial": "Parcial",
+          "unprotected": "No protegido"
+        }
+      },
+      "notProtected": {
+        "title": "Qué NO protegemos",
+        "items": {
+          "malware": "Malware o keylogger en tu dispositivo",
+          "physicalAccess": "Acceso físico a tu dispositivo desbloqueado",
+          "coercion": "Coerción física (rubber-hose cryptanalysis)",
+          "plausibleDeniability": "Negación plausible (no hay volúmenes ocultos)",
+          "networkAnonymity": "Anonimato de red (usa Tor si lo necesitas)",
+          "realtimeMessaging": "Mensajería en tiempo real (usa Signal)"
+        }
+      },
+      "assumptions": {
+        "title": "Supuestos criptográficos",
+        "intro": "Si alguna de estas primitivas se rompe (ej. quantum computing real), migraremos a primitivas post-quantum (Kyber, Dilithium) mediante re-encryption + rotación de claves.",
+        "items": {
+          "argon2id": "Resistente a GPU/ASIC en 256 MiB",
+          "xchacha20": "IND-CCA2 con nonces 24B",
+          "ed25519": "EUF-CMA en curva edwards25519",
+          "x25519": "DDH en curva25519",
+          "blake2b": "Resistencia a colisiones de 256 bits"
+        }
+      }
+    },
+    "footerCta": {
+      "title": "Audita el código tú mismo",
+      "body": "Todo el código es público bajo AGPL-3.0. Las implementaciones de referencia están en <code1></code1> y <code2></code2>",
+      "cta": "Ver repositorio"
+    }
+  },
+  "roadmap": {
+    "badge": "Hoja de ruta · a la vista de todos",
+    "heading": "A dónde va Noctcom",
+    "intro": "Lo que ya funciona, lo que estamos rematando y lo que viene después. Sin fechas prometidas que luego no se cumplen: el núcleo —cifrado, cuentas, archivos, compartir— ya está en pie y sólido, y lo demás se va sumando encima. Todo el avance vive en abierto, así que la versión más fiable de esta lista siempre es el propio código.",
+    "status": {
+      "done": "Ya funciona",
+      "progress": "En marcha",
+      "next": "Más adelante"
+    },
+    "items": {
+      "crypto-core": {
+        "title": "Núcleo criptográfico",
+        "desc": "Argon2id, XChaCha20-Poly1305, Ed25519, X25519 y BLAKE2b, con la misma implementación en el navegador y en el servidor."
+      },
+      "accounts-access": {
+        "title": "Cuentas y acceso",
+        "desc": "Registro con frase mnemónica (BIP39), inicio de sesión por reto-respuesta con Ed25519 y verificación en dos pasos: passkeys (huella o cara) y código por email."
+      },
+      "encrypted-files": {
+        "title": "Tus archivos, cifrados",
+        "desc": "Subida y descarga en trozos de 4 MiB, una clave por archivo, papelera y versiones. El servidor solo ve cifrado."
+      },
+      "file-preview": {
+        "title": "Vista previa de archivos",
+        "desc": "Ver imágenes, vídeo, audio, texto y PDF descifrados en memoria, sin tener que descargarlos."
+      },
+      "e2e-sharing": {
+        "title": "Compartir de extremo a extremo",
+        "desc": "Compartes con otra persona usando sealed boxes (X25519): ni nosotros podemos abrir lo que circula."
+      },
+      "multi-device": {
+        "title": "Varios dispositivos",
+        "desc": "Registras y revocas dispositivos, y tus claves se sincronizan desde tu contraseña sin pasar por el servidor en claro."
+      },
+      "realtime-sync": {
+        "title": "Cambios al instante",
+        "desc": "Lo que tocas en un sitio aparece en el resto al momento, entre dispositivos y entre pestañas."
+      },
+      "account-recovery": {
+        "title": "Recuperación de cuenta",
+        "desc": "Con tu frase de 12 palabras recuperas el acceso y también tus archivos, re-cifrados con tu nueva contraseña."
+      },
+      "notifications": {
+        "title": "Notificaciones",
+        "desc": "Avisos cuando alguien comparte algo contigo, aunque tengas la app cerrada. El aviso nunca revela el contenido."
+      },
+      "own-disks": {
+        "title": "Tus propios discos",
+        "desc": "Además de la nube, puedes usar discos físicos (USB/SATA) como almacenamiento y elegir dónde vive cada cosa."
+      },
+      "ops-reliability": {
+        "title": "Operación y fiabilidad",
+        "desc": "TLS automático, límites de peticiones, monitorización de errores, copias de seguridad verificadas, chequeos de salud y guía para alojarlo tú mismo."
+      },
+      "legal-privacy": {
+        "title": "Aviso legal y privacidad",
+        "desc": "Términos, política de privacidad (RGPD) y de cookies, sin rastreadores de terceros."
+      },
+      "storage-plans": {
+        "title": "Planes de almacenamiento",
+        "desc": "Empieza gratis con 1 GB. Los planes mensuales para ampliar espacio están a punto; el self-host es siempre gratis."
+      },
+      "independent-audit": {
+        "title": "Auditoría independiente",
+        "desc": "Una revisión de seguridad y un pentest por gente de fuera, cuando podamos costearlo."
+      },
+      "evidence-mode": {
+        "title": "Modo evidencia y cadena de custodia",
+        "desc": "Demostrar que un archivo es íntegro y de qué fecha es, con sellado de tiempo, sin que nadie vea su contenido. Pensado para periodismo, denuncia y ámbito legal."
+      },
+      "mobile-app": {
+        "title": "App móvil instalable",
+        "desc": "Instala Noctcom en tu móvil o tablet (Android e iOS) para subir y consultar tus archivos cifrados."
+      },
+      "desktop-app": {
+        "title": "App de escritorio",
+        "desc": "Una sola aplicación que reúne tu bóveda y la gestión de tus discos, sin depender del navegador."
+      },
+      "light-dark-theme": {
+        "title": "Tema claro y oscuro",
+        "desc": "Elige el aspecto que más te guste, con mejoras de accesibilidad."
+      }
+    },
+    "cta": {
+      "title": "¿Echas algo en falta?",
+      "desc": "Las ideas y los fallos se cuentan en abierto. Si quieres proponer algo o ver el detalle fino de cada fase, pásate por el repositorio.",
+      "button": "Ver en GitHub"
+    }
+  },
+  "cookies": {
+    "title": "Política de Cookies",
+    "intro": "Versión corta: <strong>no usamos cookies de rastreo</strong>, ni propias ni de terceros, ni analítica que te perfile. Aquí está el detalle completo, por transparencia.",
+    "necessary": {
+      "title": "1. Cookies estrictamente necesarias",
+      "p1": "Las únicas cookies que se establecen son las de <strong>Cloudflare</strong>, nuestro proveedor de red, para proteger el servicio frente a ataques y tráfico malicioso:",
+      "item1": "<code>__cf_bm</code> — distingue tráfico humano de bots (gestión de bots).",
+      "item2": "<code>cf_clearance</code> — recuerda que has superado una comprobación de seguridad.",
+      "p2": "Son <strong>estrictamente necesarias</strong> para la seguridad del servicio, no recopilan datos personales con fines de marketing y, conforme a la normativa, no requieren consentimiento previo."
+    },
+    "notUsed": {
+      "title": "2. Lo que NO usamos",
+      "p1": "No usamos Google Analytics, Google Tag Manager, píxeles publicitarios ni cookies de rastreo de terceros. No construimos perfiles ni compartimos tu navegación con anunciantes. Si en el futuro incorporáramos analítica, sería <strong>respetuosa con la privacidad y sin cookies</strong>, y se reflejaría aquí."
+    },
+    "localStorage": {
+      "title": "3. Almacenamiento local en tu navegador",
+      "p1": "No son cookies, pero por transparencia: Noctcom usa el almacenamiento local de tu navegador para funcionar, y esos datos <strong>nunca salen de tu dispositivo</strong> ni se comparten:",
+      "item1": "<strong>sessionStorage</strong>: el material criptográfico de tu sesión (claves en memoria). Se borra al cerrar la pestaña.",
+      "item2": "<strong>localStorage</strong>: preferencias como el identificador de dispositivo, si aceptaste este aviso o si activaste las notificaciones."
+    },
+    "manage": {
+      "title": "4. Cómo gestionarlas",
+      "p1": "Puedes borrar o bloquear las cookies desde la configuración de tu navegador. Ten en cuenta que bloquear las cookies de seguridad de Cloudflare puede impedir el acceso al servicio."
     }
   }
 }
