@@ -124,7 +124,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         {/* Brand + toggle */}
         <div className={cn('h-16 flex items-center border-b border-border-faint', collapsed ? 'justify-center px-2' : 'px-5 justify-between')}>
           <Link href="/vault" onClick={() => setMobileOpen(false)} className="flex items-center gap-2.5 group">
-            <Image src="/logo.png" alt="" width={32} height={32} priority className="rounded-lg shrink-0" />
+            <Image src="/logo.svg" alt="" width={32} height={32} priority unoptimized className="shrink-0" />
             {!collapsed && (
               <div className="flex flex-col">
                 <span className="font-display text-sm tracking-tight leading-tight">Noctcom</span>

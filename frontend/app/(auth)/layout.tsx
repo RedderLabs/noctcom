@@ -52,7 +52,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
     <div className="min-h-screen flex flex-col">
       <div className="px-6 h-16 flex items-center">
         <Link href="/" className="flex items-center gap-2.5 group">
-          <Image src="/logo.png" alt="" width={28} height={28} priority className="rounded-md" />
+          <Image src="/logo.svg" alt="" width={28} height={28} priority unoptimized />
           <span className="font-display text-sm tracking-tight text-text-secondary group-hover:text-text-primary transition-colors">Noctcom</span>
         </Link>
       </div>

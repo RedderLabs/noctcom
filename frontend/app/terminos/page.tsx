@@ -25,9 +25,8 @@ export default function TerminosPage() {
       <LegalSection title="1. Quién presta el servicio">
         <p>
           Noctcom es un servicio de almacenamiento cifrado <strong className="text-text-primary">zero-knowledge</strong>{' '}
-          operado por <strong className="text-text-primary">Julián Rodríguez</strong>, desarrollador
-          independiente, bajo la marca <strong className="text-text-primary">Redder Labs</strong> (en
-          adelante, «nosotros»). Contacto: <a href="mailto:hello@noctcom.com" className="text-violet-300 hover:text-violet-200">hello@noctcom.com</a>.
+          operado por <strong className="text-text-primary">Redder Labs</strong>, proyecto de desarrollo
+          independiente (en adelante, «nosotros»). Contacto: <a href="mailto:hello@noctcom.com" className="text-violet-300 hover:text-violet-200">hello@noctcom.com</a>.
         </p>
         <p>
           El software de Noctcom es de código abierto bajo licencia <strong className="text-text-primary">AGPL-3.0</strong>.

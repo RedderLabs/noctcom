@@ -24,8 +24,8 @@ export default function PrivacidadPage() {
     >
       <LegalSection title="1. Responsable del tratamiento">
         <p>
-          <strong className="text-text-primary">Julián Rodríguez</strong> (marca «Redder Labs»),
-          responsable del servicio Noctcom. Para cualquier asunto de privacidad o para ejercer tus
+          <strong className="text-text-primary">Redder Labs</strong>, responsable del tratamiento de los
+          datos del servicio Noctcom. Para cualquier asunto de privacidad o para ejercer tus
           derechos: <a href="mailto:hello@noctcom.com" className="text-violet-300 hover:text-violet-200">hello@noctcom.com</a>.
         </p>
       </LegalSection>
