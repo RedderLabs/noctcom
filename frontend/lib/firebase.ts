@@ -61,10 +61,26 @@ async function fetchToken(): Promise<string> {
   const m = getFirebaseMessaging();
   if (!m) throw new Error('Firebase Messaging no está disponible en este navegador');
   const swReg = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
-  const token = await getToken(m, {
-    vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY,
-    serviceWorkerRegistration: swReg,
-  });
+  let token: string;
+  try {
+    token = await getToken(m, {
+      vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY,
+      serviceWorkerRegistration: swReg,
+    });
+  } catch (err: any) {
+    // "AbortError: Registration failed - push service error" = el push service
+    // del NAVEGADOR rechazó la suscripción (no llega ni a Firebase). Caso real
+    // verificado: Brave lo desactiva por defecto. También: forks sin servicios
+    // de Google, firewalls que bloquean mtalk.google.com, políticas de empresa.
+    if (err?.name === 'AbortError' || /push service error/i.test(String(err?.message ?? ''))) {
+      throw new Error(
+        'Tu navegador tiene bloqueado el servicio de push. En Brave: Ajustes → ' +
+        'Privacidad → activa «Usar servicios de Google para la mensajería push» ' +
+        'y reinicia el navegador. Si usas un firewall, permite mtalk.google.com.',
+      );
+    }
+    throw err;
+  }
   if (!token) throw new Error('FCM no devolvió token (¿permiso revocado a mitad?)');
   return token;
 }
