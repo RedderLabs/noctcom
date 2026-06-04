@@ -10,7 +10,10 @@ En orden de prioridad:
 2. **Nombres de archivos y rutas** (metadata estructural)
 3. **Claves criptográficas** (master key, file keys, vault keys, identity/exchange privkeys)
 4. **Contraseña maestra del usuario** (jamás transmitida)
-5. **Frase de recuperación** (12 palabras BIP39)
+5. **Frase de recuperación** (12 palabras BIP39, 128 bits). Desde Recovery v2
+   (jun 2026) la frase no solo permite recuperar el acceso: deriva también el
+   par X25519 que abre los seals de las vault keys. Quien tenga tu frase tiene
+   tu cuenta **y tus archivos** — guárdala con el mismo rigor que la contraseña.
 6. **Identidad del usuario** (email, IP, patrones de uso)
 7. **Disponibilidad del servicio** (uptime, integridad de la BD)
 

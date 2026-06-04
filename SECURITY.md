@@ -4,7 +4,8 @@
 
 ## TL;DR
 
-- 📬 Reporta a: **security@noctcom.com** (cifra con la PGP de abajo)
+- 📬 Canal preferido: **[GitHub Private Vulnerability Report](https://github.com/RedderLabs/noctcom/security/advisories/new)** (solo lo ve el equipo)
+- ✉️ Alternativa: **security@noctcom.com** (PGP en preparación — ver abajo)
 - ⏱️ Respuesta inicial: **menos de 72 horas**
 - 🤝 Disclosure coordinado: **90 días o cuando publiquemos el parche**
 - 🛑 No: pentesting agresivo contra usuarios reales sin permiso explícito
@@ -31,18 +32,10 @@
 
 ## Cómo reportar
 
-### Opción A — Email cifrado (preferido)
+### Opción A — GitHub Security Advisories (preferido)
 
-Manda un email a `security@noctcom.com` cifrado con esta clave PGP:
-
-```
------BEGIN PGP PUBLIC KEY BLOCK-----
-
-[PLACEHOLDER: generar con `gpg --full-generate-key` y pegar el armored block]
-Fingerprint: 0000 0000 0000 0000 0000  0000 0000 0000 0000 0000
-
------END PGP PUBLIC KEY BLOCK-----
-```
+Abre un [Private Vulnerability Report](https://github.com/RedderLabs/noctcom/security/advisories/new)
+en el repo. Solo nuestro equipo lo verá, y queda registro del hilo completo.
 
 Incluye:
 - Descripción de la vulnerabilidad
@@ -50,14 +43,12 @@ Incluye:
 - Impacto estimado
 - Tu identidad o pseudónimo (para crédito) y método de contacto preferido
 
-### Opción B — GitHub Security Advisories
+### Opción B — Email
 
-Si prefieres no usar PGP: abre un [Private Vulnerability Report](https://github.com/RedderLabs/noctcom/security/advisories/new) en el repo. Solo nuestro equipo lo verá.
-
-### Opción C — Signal
-
-Para casos especialmente sensibles (NSL, gag order, vulnerabilidad in-the-wild):
-- Signal handle: **+XX XXX XXX XXX** (rotamos trimestralmente; el actual está en `/canary`)
+`security@noctcom.com`. **Honestidad:** todavía no publicamos clave PGP, así que
+este canal viaja sin cifrar de extremo a extremo — para detalles sensibles usa
+la Opción A. Cuando publiquemos la clave (y su fingerprint) aparecerá aquí y en
+el repositorio, firmando además el canary de abajo.
 
 ## Nuestro compromiso (Safe Harbor)
 
@@ -105,18 +96,21 @@ Si el bug está siendo explotado activamente, aceleramos. Si necesitas más tiem
 
 ## Canary statement
 
-Esta sección se actualiza el primer día de cada mes con la fecha actual firmada con la PGP de seguridad. Si lleva más de 60 días sin actualizar, asume que algo pasó.
-
 ```
-A día 25 de mayo de 2026, Noctcom afirma:
+A día 4 de junio de 2026, Noctcom afirma:
 - No hemos recibido ninguna National Security Letter
 - No hemos recibido ninguna gag order
 - No hemos sido obligados a insertar backdoors
 - No hemos cedido claves criptográficas a ninguna autoridad
 - Mantenemos control total sobre nuestra infraestructura
-
-Firmado: [PGP signature]
 ```
+
+**Honestidad sobre este canary:** hoy se actualiza a mano con cada revisión de
+este documento y **aún no va firmado** (la clave PGP del proyecto está en
+preparación). Un canary sin firma vale menos: trátalo como una declaración de
+intenciones, no como prueba criptográfica. Cuando publiquemos la clave, pasará
+a firmarse mensualmente; si entonces lleva más de 60 días sin actualizar,
+asume que algo pasó.
 
 ## Contacto general (no de seguridad)
 
@@ -126,4 +120,4 @@ Para consultas comerciales → `hello@noctcom.com`
 
 ---
 
-*Última revisión: 25 de mayo de 2026 · Próxima revisión: 25 de noviembre de 2026*
+*Última revisión: 4 de junio de 2026 · Próxima revisión: 4 de diciembre de 2026*
