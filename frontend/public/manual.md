@@ -102,13 +102,15 @@ Noctcom está construido para protegerte por defecto. Estas opciones te dan un p
 
 Todo se cierra con candado en tu navegador **antes** de subirse. El servidor solo ve cajas cerradas: ni nosotros, ni nadie que mirara el servidor, puede leer lo que hay dentro. Para quien le interese el detalle técnico: usamos cifrado XChaCha20-Poly1305 y derivamos tu llave con Argon2id; los nombres de archivos y carpetas también van cifrados.
 
-### Verificación en dos pasos
+### Verificación en dos pasos (código por email)
 
-Un segundo candado para tu cuenta. Aunque alguien supiera tu contraseña, no entraría sin este paso. Lo activas en **Configuración > Seguridad**:
+Un segundo candado para tu cuenta. Aunque alguien supiera tu contraseña, no entraría sin este paso. Lo activas en **Configuración > Seguridad > Código por email**:
 
-1. Activa la verificación en dos pasos.
-2. Escanea el código QR con tu app del móvil (Google Authenticator, Authy, la que uses).
-3. Escribe el código de 6 dígitos para confirmar y ¡listo!
+1. Activa la opción (necesitas tener tu correo verificado).
+2. A partir de ahí, cada vez que entres te enviaremos un **código de 6 dígitos** a tu correo.
+3. Escríbelo para completar el acceso. Caduca en 10 minutos.
+
+> Para máxima comodidad y seguridad, combínalo con una **Passkey** (huella o cara): así entras rápido y con doble protección.
 
 ### Entrar con tu huella o tu cara (Passkeys)
 
@@ -132,15 +134,43 @@ En **Configuración > Seguridad > Cambiar contraseña maestra**. No te preocupes
 4. Elige una contraseña maestra nueva.
 5. Por seguridad, cerramos las sesiones antiguas y volvemos a cifrar tus llaves.
 
+Con tu frase de recuperación no solo recuperas el **acceso**: también tus **archivos** siguen contigo, re-cifrados con tu nueva contraseña. Por eso es tan importante guardarla bien.
+
+> Si creaste tu cuenta hace tiempo, asegúrate de tener el kit de recuperación al día en **Configuración > Seguridad > Kit de recuperación** (ahí puedes verificar o regenerar tu frase).
+
 ### Tus dispositivos
 
 En **Configuración > Dispositivos** ves desde dónde tienes la sesión abierta. Si ves algo raro o usaste un ordenador prestado, puedes cerrar esa sesión a distancia.
+
+### Avisos cuando te comparten algo
+
+En **Configuración > Notificaciones** puedes activar los avisos del navegador para enterarte cuando alguien comparte un archivo contigo, aunque tengas la pestaña cerrada. El aviso es genérico (nunca el nombre del archivo, que va cifrado). Lo activas tú a propósito; nunca se pide solo.
 
 ---
 
 ## Tu espacio
 
-Cada cuenta empieza con 1 GB gratis, cifrado. En el menú lateral ves cuánto llevas usado, y en **Configuración > Almacenamiento** tienes el desglose por tipo de archivo. Si necesitas más sitio, podrás ampliarlo.
+Cada cuenta empieza con **1 GB gratis**, cifrado. En el menú lateral ves cuánto llevas usado, y en **Configuración > Plan y uso** tienes tu plan actual con la barra de uso (y en **Configuración > Almacenamiento**, el desglose por tipo de archivo).
+
+### Ampliar tu espacio
+
+¿Se te queda pequeño? Amplía cuando quieras desde **Configuración > Plan y uso > Mejorar plan**. Se abre una ventana, sin salir de la app, con los planes disponibles:
+
+| Plan | Espacio | Precio |
+|------|---------|--------|
+| Gratis | 1 GB | 0 € |
+| Starter | 10 GB | 1 € / mes |
+| Plus | 50 GB | 2 € / mes |
+| Pro | 200 GB | 5 € / mes |
+| Max | 1 TB | 10 € / mes |
+
+Cosas que conviene saber, sin letra pequeña:
+
+- **Mismo cifrado en todos los planes.** Pagas por espacio, nunca por tu privacidad.
+- **El pago lo gestiona Stripe.** Noctcom nunca ve los datos de tu tarjeta.
+- **Cambiar de plan:** es instantáneo y con prorrateo (solo pagas la diferencia).
+- **Cancelar:** desde el botón **Gestionar**. Conservas tu plan hasta el final del periodo que ya pagaste; te avisamos por email de la fecha exacta en que vuelves al plan Gratis. **No borramos nada:** si al volver a 1 GB superas la cuota, tu cuenta queda en solo lectura (puedes descargar y exportar) hasta que liberes espacio o reactives un plan.
+- **El self-host es siempre gratis** (ver más abajo): mismo cifrado, capacidad ilimitada, en tu propio servidor.
 
 ---
 
@@ -270,4 +300,4 @@ Pulsa el botón de plegar en la parte de arriba del menú para dejarlo en modo "
 
 ---
 
-*Última actualización: v0.1.0 · Junio 2026*
+*Última actualización: v0.10.0 · Junio 2026*
