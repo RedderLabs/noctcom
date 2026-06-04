@@ -1417,5 +1417,75 @@
     "shareRevoked": "Compartido revocado",
     "newDevice": "Nuevo dispositivo conectado a tu cuenta",
     "deviceRevoked": "Este dispositivo ha sido revocado"
+  },
+  "legal": {
+    "lastRevised": "Última revisión"
+  },
+  "securityDemo": {
+    "brand": "<b>NOCTCOM</b> · PRUEBA DE SEGURIDAD",
+    "controls": {
+      "restart": "Reiniciar",
+      "playPause": "Play/Pausa"
+    },
+    "intro": {
+      "kicker": "Prueba de seguridad · en vivo",
+      "title": "¿Qué ve <hl>realmente</hl><br></br>el servidor?",
+      "sub": "Un test del cifrado zero-knowledge de Noctcom, paso a paso. Sin trucos: estos son los algoritmos reales del código abierto."
+    },
+    "test1": {
+      "name": "<b>Test 1</b> — la contraseña",
+      "browserTitle": "Tu navegador",
+      "passwordLabel": "contraseña:",
+      "deriveTitle": "Derivación local · Argon2id",
+      "deriveParams": "256 MiB · 3 iteraciones · ~1 s",
+      "mkComment": "// Master Key: derivada y usada SOLO en tu dispositivo",
+      "networkTitle": "Lo que sale hacia la red",
+      "sigComment": "// firma Ed25519",
+      "note": "Ni la contraseña ni la MK aparecen en la petición: se firma un reto con una clave que <b>solo existe si conoces la contraseña</b>.",
+      "verdict": "El servidor nunca recibe tu contraseña. No puede ni intentar descifrarte."
+    },
+    "test2": {
+      "name": "<b>Test 2</b> — el archivo",
+      "fileTitle": "fuentes-investigacion.pdf · 2,4 MB",
+      "confidential": "— CONFIDENCIAL —",
+      "docLine1": "Entrevista con la fuente A. (12 de mayo)",
+      "docLine2": "\"Los documentos muestran transferencias entre…",
+      "docLine3": "…la cuenta del intermediario y la sociedad pantalla",
+      "docLine4": "registrada en…\"",
+      "encryptTitle": "Cifrado en tu navegador",
+      "fileKeyExpr": "aleatoria(32)",
+      "fileKeyComment": "// única por archivo",
+      "cipherLabel": "cifrado",
+      "randomNonce": "nonce aleatorio",
+      "note": "El AAD ata cada bloque a su posición: ni siquiera quien controle el almacenamiento puede <b>reordenar o mezclar</b> bloques sin romper la verificación.",
+      "verdict": "El cifrado ocurre antes de que un solo byte salga de tu dispositivo."
+    },
+    "test3": {
+      "name": "<b>Test 3</b> — la red",
+      "captureTitle": "Captura de la petición real",
+      "nameComment": "// hasta el NOMBRE va cifrado",
+      "metaComment": "// mime, tamaño, etiquetas",
+      "keyComment": "// la clave, envuelta con TU clave",
+      "note": "No hay un solo campo legible. El servidor recibe sobres cerrados y los guarda <b>sin poder abrirlos</b>.",
+      "verdict": "Solo ciphertext cruza la red — incluso con TLS roto, no habría nada que leer."
+    },
+    "test4": {
+      "name": "<b>Test 4</b> — el propio servidor",
+      "termLabel": "psql — noctcom_prod (acceso de operador)",
+      "rowsComment": "(2 rows — bytes opacos, sin clave posible)",
+      "query2": "SELECT email, password FROM users; -- ¿y los datos personales?",
+      "errComment": "-- solo existen email_hash (BLAKE2b) y un verificador OPAQUE",
+      "note": "Esto es lo que vería el operador de Noctcom, un atacante que robase la base de datos entera… o cualquiera con una orden de entrega: <b> no existe ninguna clave en el servidor</b> con la que descifrar nada.",
+      "verdict": "Acceso del servidor a tu contenido: 0 bytes legibles."
+    },
+    "outro": {
+      "kicker": "Resultado del test",
+      "s1": "La contraseña nunca sale del dispositivo",
+      "s2": "Los archivos se cifran antes de subir",
+      "s3": "Nombres y metadatos: también cifrados",
+      "s4": "El servidor no puede leer nada — ni queriendo",
+      "closing": "Zero-knowledge no es una promesa.<br></br><hl>Es matemática.</hl>",
+      "cta": "<b>noctcom.com</b> · código abierto (AGPL-3.0) · audítalo tú mismo"
+    }
   }
 }

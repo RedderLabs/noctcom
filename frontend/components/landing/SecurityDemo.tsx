@@ -15,10 +15,12 @@
  */
 
 import { useEffect, useRef } from 'react';
+import { useTranslations } from 'next-intl';
 
 const T_TOTAL = 84000;
 
 export function SecurityDemo() {
+  const t = useTranslations('securityDemo');
   const rootRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -131,14 +133,13 @@ export function SecurityDemo() {
       <div className="zk-frame">
         <div className="zk-stage">
 
-          <div className="zk-brand"><span className="zk-dot" /><span><b>NOCTCOM</b> · PRUEBA DE SEGURIDAD</span></div>
+          <div className="zk-brand"><span className="zk-dot" /><span>{t.rich('brand', { b: (c) => <b>{c}</b> })}</span></div>
 
           {/* ═══ Escena 0 · Intro ═══ */}
           <section className="zk-scene" data-from="0" data-to="9000" style={{ paddingTop: 280 }}>
-            <span className="zk-kicker" data-at="500">Prueba de seguridad · en vivo</span>
-            <h3 className="zk-h1" data-at="1400">¿Qué ve <span className="zk-hl">realmente</span><br />el servidor?</h3>
-            <p className="zk-sub" data-at="3200">Un test del cifrado zero-knowledge de Noctcom, paso a paso.
-              Sin trucos: estos son los algoritmos reales del código abierto.</p>
+            <span className="zk-kicker" data-at="500">{t('intro.kicker')}</span>
+            <h3 className="zk-h1" data-at="1400">{t.rich('intro.title', { hl: (c) => <span className="zk-hl">{c}</span>, br: () => <br /> })}</h3>
+            <p className="zk-sub" data-at="3200">{t('intro.sub')}</p>
             <div className="zk-chips" data-at="5600">
               <span className="zk-chip">Argon2id</span>
               <span className="zk-chip">XChaCha20-Poly1305</span>
@@ -150,40 +151,39 @@ export function SecurityDemo() {
 
           {/* ═══ Escena 1 · La contraseña ═══ */}
           <section className="zk-scene" data-from="9000" data-to="24000">
-            <h4 className="zk-testname" data-at="9300"><b>Test 1</b> — la contraseña</h4>
+            <h4 className="zk-testname" data-at="9300">{t.rich('test1.name', { b: (c) => <b>{c}</b> })}</h4>
             <div className="zk-flow">
               <div className="zk-col">
                 <div className="zk-panel" data-at="9700">
-                  <div className="zk-ptitle"><span className="zk-lamp" /> Tu navegador</div>
-                  <pre className="zk-code"><span className="zk-dim">contraseña:</span> <span data-type data-at="10300" data-cps="14">S3creta·Periodista!</span></pre>
+                  <div className="zk-ptitle"><span className="zk-lamp" /> {t('test1.browserTitle')}</div>
+                  <pre className="zk-code"><span className="zk-dim">{t('test1.passwordLabel')}</span> <span data-type data-at="10300" data-cps="14">S3creta·Periodista!</span></pre>
                 </div>
                 <div className="zk-arrow" data-at="12600">▼</div>
                 <div className="zk-panel" data-at="12900">
-                  <div className="zk-ptitle"><span className="zk-lamp" /> Derivación local · Argon2id</div>
-                  <pre className="zk-code"><span className="zk-dim">256 MiB · 3 iteraciones · ~1 s</span>{'\n'}<span className="zk-key">MK</span> = <span className="zk-hex" data-type data-at="14400" data-cps="42">7f3a 91c2 e4d8 0b6f a219 c7e3 55d0 8a1c …</span>{'\n'}<span className="zk-green" data-at="16400">{'// Master Key: derivada y usada SOLO en tu dispositivo'}</span></pre>
+                  <div className="zk-ptitle"><span className="zk-lamp" /> {t('test1.deriveTitle')}</div>
+                  <pre className="zk-code"><span className="zk-dim">{t('test1.deriveParams')}</span>{'\n'}<span className="zk-key">MK</span> = <span className="zk-hex" data-type data-at="14400" data-cps="42">7f3a 91c2 e4d8 0b6f a219 c7e3 55d0 8a1c …</span>{'\n'}<span className="zk-green" data-at="16400">{t('test1.mkComment')}</span></pre>
                 </div>
               </div>
               <div className="zk-col">
                 <div className="zk-panel" data-at="17400" style={{ marginTop: 90 }}>
-                  <div className="zk-ptitle"><span className="zk-lamp" /> Lo que sale hacia la red</div>
-                  <pre className="zk-code"><span className="zk-dim">POST</span> /api/v1/auth/login/finalize{'\n'}{'{'}{'\n'}  <span className="zk-key">&quot;challenge&quot;</span>:  <span className="zk-hex">&quot;Zku7…&quot;</span>,{'\n'}  <span className="zk-key">&quot;signature&quot;</span>:  <span className="zk-hex">&quot;MEUCIQDk…&quot;</span>   <span className="zk-dim">{'// firma Ed25519'}</span>{'\n'}{'}'}</pre>
-                  <p className="zk-note" data-at="19400">Ni la contraseña ni la MK aparecen en la petición:
-                    se firma un reto con una clave que <b>solo existe si conoces la contraseña</b>.</p>
+                  <div className="zk-ptitle"><span className="zk-lamp" /> {t('test1.networkTitle')}</div>
+                  <pre className="zk-code"><span className="zk-dim">POST</span> /api/v1/auth/login/finalize{'\n'}{'{'}{'\n'}  <span className="zk-key">&quot;challenge&quot;</span>:  <span className="zk-hex">&quot;Zku7…&quot;</span>,{'\n'}  <span className="zk-key">&quot;signature&quot;</span>:  <span className="zk-hex">&quot;MEUCIQDk…&quot;</span>   <span className="zk-dim">{t('test1.sigComment')}</span>{'\n'}{'}'}</pre>
+                  <p className="zk-note" data-at="19400">{t.rich('test1.note', { b: (c) => <b>{c}</b> })}</p>
                 </div>
               </div>
             </div>
             <div className="zk-verdict" data-at="21400"><span className="zk-tick">✓</span>
-              El servidor nunca recibe tu contraseña. No puede ni intentar descifrarte.</div>
+              {t('test1.verdict')}</div>
           </section>
 
           {/* ═══ Escena 2 · El archivo ═══ */}
           <section className="zk-scene" data-from="24000" data-to="42000">
-            <h4 className="zk-testname" data-at="24300"><b>Test 2</b> — el archivo</h4>
+            <h4 className="zk-testname" data-at="24300">{t.rich('test2.name', { b: (c) => <b>{c}</b> })}</h4>
             <div className="zk-panel" data-at="24700">
-              <div className="zk-ptitle"><span className="zk-lamp" /> fuentes-investigacion.pdf · 2,4 MB</div>
+              <div className="zk-ptitle"><span className="zk-lamp" /> {t('test2.fileTitle')}</div>
               <div className="zk-layers">
                 <div className="zk-layer" data-at="25600" data-out="30400">
-                  <pre className="zk-code"><span className="zk-dim">— CONFIDENCIAL —</span>{'\n'}Entrevista con la fuente A. (12 de mayo){'\n'}&quot;Los documentos muestran transferencias entre…{'\n'}…la cuenta del intermediario y la sociedad pantalla{'\n'}registrada en…&quot;</pre>
+                  <pre className="zk-code"><span className="zk-dim">{t('test2.confidential')}</span>{'\n'}{t('test2.docLine1')}{'\n'}{t('test2.docLine2')}{'\n'}{t('test2.docLine3')}{'\n'}{t('test2.docLine4')}</pre>
                 </div>
                 <div className="zk-layer" data-at="30400">
                   <pre className="zk-code zk-hex" data-type data-at="30600" data-cps="220">9f 3a c1 77 0e b2 5d 84 fa 21 6c d9 03 4e b7 58 e1 92 7a cf 44 08 d6 31 ab 5e 90 1f 73 c8 26 ed 4b a7 39 f2 80 15 ce 6a d4 b1 07 9e 52 e8 3c 61 fd 28 95 4a 0d 76 c3 1b 8f e4 57 a2 39 d0 6e 82 fb 14 c9 47 0a 75 b8 23 ef 5c 91 36 da 68 01 ae 53 c7 1d 89 f4 2e 60 bd 49 07 96 e3 5a 2f 78 cb</pre>
@@ -193,60 +193,56 @@ export function SecurityDemo() {
             <div className="zk-flow" style={{ marginTop: 30 }}>
               <div className="zk-col">
                 <div className="zk-panel" data-at="28600">
-                  <div className="zk-ptitle"><span className="zk-lamp" /> Cifrado en tu navegador</div>
-                  <pre className="zk-code"><span className="zk-key">file_key</span> = aleatoria(32)         <span className="zk-dim">{'// única por archivo'}</span>{'\n'}<span className="zk-key">cifrado</span>  = XChaCha20-Poly1305   <span className="zk-dim">{'// AEAD, tag 16 B'}</span></pre>
+                  <div className="zk-ptitle"><span className="zk-lamp" /> {t('test2.encryptTitle')}</div>
+                  <pre className="zk-code"><span className="zk-key">file_key</span> = {t('test2.fileKeyExpr')}         <span className="zk-dim">{t('test2.fileKeyComment')}</span>{'\n'}<span className="zk-key">{t('test2.cipherLabel')}</span>  = XChaCha20-Poly1305   <span className="zk-dim">{'// AEAD, tag 16 B'}</span></pre>
                 </div>
               </div>
             </div>
             <div className="zk-chunkrow" data-at="34400">
-              <div className="zk-chunk"><b>chunk 0</b> · 4 MiB · nonce aleatorio · <span className="zk-aad">AAD &quot;chunk:0&quot;</span></div>
-              <div className="zk-chunk"><b>chunk 1</b> · 4 MiB · nonce aleatorio · <span className="zk-aad">AAD &quot;chunk:1&quot;</span></div>
+              <div className="zk-chunk"><b>chunk 0</b> · 4 MiB · {t('test2.randomNonce')} · <span className="zk-aad">AAD &quot;chunk:0&quot;</span></div>
+              <div className="zk-chunk"><b>chunk 1</b> · 4 MiB · {t('test2.randomNonce')} · <span className="zk-aad">AAD &quot;chunk:1&quot;</span></div>
               <div className="zk-chunk"><b>chunk N</b> · … · <span className="zk-aad">AAD &quot;chunk:N&quot;</span></div>
             </div>
-            <p className="zk-note" data-at="36000">El AAD ata cada bloque a su posición: ni siquiera quien controle
-              el almacenamiento puede <b>reordenar o mezclar</b> bloques sin romper la verificación.</p>
+            <p className="zk-note" data-at="36000">{t.rich('test2.note', { b: (c) => <b>{c}</b> })}</p>
             <div className="zk-verdict" data-at="38600"><span className="zk-tick">✓</span>
-              El cifrado ocurre antes de que un solo byte salga de tu dispositivo.</div>
+              {t('test2.verdict')}</div>
           </section>
 
           {/* ═══ Escena 3 · La red ═══ */}
           <section className="zk-scene" data-from="42000" data-to="54000">
-            <h4 className="zk-testname" data-at="42300"><b>Test 3</b> — la red</h4>
+            <h4 className="zk-testname" data-at="42300">{t.rich('test3.name', { b: (c) => <b>{c}</b> })}</h4>
             <div className="zk-panel" data-at="42700" style={{ maxWidth: 1500 }}>
-              <div className="zk-ptitle"><span className="zk-lamp" /> Captura de la petición real</div>
-              <pre className="zk-code"><span className="zk-dim">POST</span> /api/v1/uploads/init{'\n'}{'{'}{'\n'}  <span className="zk-key">&quot;nameEncrypted&quot;</span>:  <span className="zk-hex" data-type data-at="43600" data-cps="60">&quot;mUz4kQ9rT2…&quot;</span>,   <span className="zk-dim">{'// hasta el NOMBRE va cifrado'}</span>{'\n'}  <span className="zk-key">&quot;metadataEncrypted&quot;</span>: <span className="zk-hex" data-type data-at="44800" data-cps="60">&quot;8wXc3PfA1N…&quot;</span>, <span className="zk-dim">{'// mime, tamaño, etiquetas'}</span>{'\n'}  <span className="zk-key">&quot;fileKeyWrapped&quot;</span>: <span className="zk-hex" data-type data-at="46000" data-cps="60">&quot;9hTqVb27Lm…&quot;</span>,  <span className="zk-dim">{'// la clave, envuelta con TU clave'}</span>{'\n'}  <span className="zk-key">&quot;chunks&quot;</span>: [ {'{'} <span className="zk-key">&quot;index&quot;</span>: 0, <span className="zk-key">&quot;nonce&quot;</span>: <span className="zk-hex">&quot;Rk31…&quot;</span> {'}'}, … ]{'\n'}{'}'}</pre>
+              <div className="zk-ptitle"><span className="zk-lamp" /> {t('test3.captureTitle')}</div>
+              <pre className="zk-code"><span className="zk-dim">POST</span> /api/v1/uploads/init{'\n'}{'{'}{'\n'}  <span className="zk-key">&quot;nameEncrypted&quot;</span>:  <span className="zk-hex" data-type data-at="43600" data-cps="60">&quot;mUz4kQ9rT2…&quot;</span>,   <span className="zk-dim">{t('test3.nameComment')}</span>{'\n'}  <span className="zk-key">&quot;metadataEncrypted&quot;</span>: <span className="zk-hex" data-type data-at="44800" data-cps="60">&quot;8wXc3PfA1N…&quot;</span>, <span className="zk-dim">{t('test3.metaComment')}</span>{'\n'}  <span className="zk-key">&quot;fileKeyWrapped&quot;</span>: <span className="zk-hex" data-type data-at="46000" data-cps="60">&quot;9hTqVb27Lm…&quot;</span>,  <span className="zk-dim">{t('test3.keyComment')}</span>{'\n'}  <span className="zk-key">&quot;chunks&quot;</span>: [ {'{'} <span className="zk-key">&quot;index&quot;</span>: 0, <span className="zk-key">&quot;nonce&quot;</span>: <span className="zk-hex">&quot;Rk31…&quot;</span> {'}'}, … ]{'\n'}{'}'}</pre>
             </div>
-            <p className="zk-note" data-at="48200" style={{ maxWidth: 1400 }}>No hay un solo campo legible.
-              El servidor recibe sobres cerrados y los guarda <b>sin poder abrirlos</b>.</p>
+            <p className="zk-note" data-at="48200" style={{ maxWidth: 1400 }}>{t.rich('test3.note', { b: (c) => <b>{c}</b> })}</p>
             <div className="zk-verdict" data-at="50600"><span className="zk-tick">✓</span>
-              Solo ciphertext cruza la red — incluso con TLS roto, no habría nada que leer.</div>
+              {t('test3.verdict')}</div>
           </section>
 
           {/* ═══ Escena 4 · El servidor ═══ */}
           <section className="zk-scene" data-from="54000" data-to="72000">
-            <h4 className="zk-testname" data-at="54300"><b>Test 4</b> — el propio servidor</h4>
+            <h4 className="zk-testname" data-at="54300">{t.rich('test4.name', { b: (c) => <b>{c}</b> })}</h4>
             <div className="zk-term" data-at="54700" style={{ maxWidth: 1620 }}>
-              <div className="zk-termbar"><i /><i /><i /><span>psql — noctcom_prod (acceso de operador)</span></div>
-              <pre className="zk-code"><span className="zk-green">noctcom_prod=&gt;</span> <span data-type data-at="55400" data-cps="34">SELECT name_encrypted, file_key_wrapped FROM nodes LIMIT 2;</span>{'\n'}<span data-at="58200"><span className="zk-hex">\x6d533a4b…9f21</span>  |  <span className="zk-hex">\x39685471…b203</span>{'\n'}<span className="zk-hex">\x82f1c04d…77ae</span>  |  <span className="zk-hex">\xd4501be9…3c6f</span>{'\n'}<span className="zk-dim">(2 rows — bytes opacos, sin clave posible)</span></span>{'\n'}{'\n'}<span className="zk-green">noctcom_prod=&gt;</span> <span data-type data-at="60800" data-cps="34">SELECT email, password FROM users; -- ¿y los datos personales?</span>{'\n'}<span data-at="63400"><span className="zk-dim">ERROR:  column &quot;email&quot; does not exist</span>{'\n'}<span className="zk-dim">ERROR:  column &quot;password&quot; does not exist</span>{'\n'}<span className="zk-dim">-- solo existen email_hash (BLAKE2b) y un verificador OPAQUE</span></span></pre>
+              <div className="zk-termbar"><i /><i /><i /><span>{t('test4.termLabel')}</span></div>
+              <pre className="zk-code"><span className="zk-green">noctcom_prod=&gt;</span> <span data-type data-at="55400" data-cps="34">SELECT name_encrypted, file_key_wrapped FROM nodes LIMIT 2;</span>{'\n'}<span data-at="58200"><span className="zk-hex">\x6d533a4b…9f21</span>  |  <span className="zk-hex">\x39685471…b203</span>{'\n'}<span className="zk-hex">\x82f1c04d…77ae</span>  |  <span className="zk-hex">\xd4501be9…3c6f</span>{'\n'}<span className="zk-dim">{t('test4.rowsComment')}</span></span>{'\n'}{'\n'}<span className="zk-green">noctcom_prod=&gt;</span> <span data-type data-at="60800" data-cps="34">{t('test4.query2')}</span>{'\n'}<span data-at="63400"><span className="zk-dim">ERROR:  column &quot;email&quot; does not exist</span>{'\n'}<span className="zk-dim">ERROR:  column &quot;password&quot; does not exist</span>{'\n'}<span className="zk-dim">{t('test4.errComment')}</span></span></pre>
             </div>
-            <p className="zk-note" data-at="65600" style={{ maxWidth: 1500 }}>Esto es lo que vería el operador de Noctcom,
-              un atacante que robase la base de datos entera… o cualquiera con una orden de entrega:
-              <b> no existe ninguna clave en el servidor</b> con la que descifrar nada.</p>
+            <p className="zk-note" data-at="65600" style={{ maxWidth: 1500 }}>{t.rich('test4.note', { b: (c) => <b>{c}</b> })}</p>
             <div className="zk-verdict" data-at="68600"><span className="zk-tick">✓</span>
-              Acceso del servidor a tu contenido: 0 bytes legibles.</div>
+              {t('test4.verdict')}</div>
           </section>
 
           {/* ═══ Escena 5 · Cierre ═══ */}
           <section className="zk-scene" data-from="72000" data-to="84000" style={{ paddingTop: 200 }}>
-            <span className="zk-kicker" data-at="72300">Resultado del test</span>
+            <span className="zk-kicker" data-at="72300">{t('outro.kicker')}</span>
             <div className="zk-summary">
-              <div className="zk-sumitem" data-at="73000"><span className="zk-tick">✓</span> La contraseña nunca sale del dispositivo</div>
-              <div className="zk-sumitem" data-at="73600"><span className="zk-tick">✓</span> Los archivos se cifran antes de subir</div>
-              <div className="zk-sumitem" data-at="74200"><span className="zk-tick">✓</span> Nombres y metadatos: también cifrados</div>
-              <div className="zk-sumitem" data-at="74800"><span className="zk-tick">✓</span> El servidor no puede leer nada — ni queriendo</div>
+              <div className="zk-sumitem" data-at="73000"><span className="zk-tick">✓</span> {t('outro.s1')}</div>
+              <div className="zk-sumitem" data-at="73600"><span className="zk-tick">✓</span> {t('outro.s2')}</div>
+              <div className="zk-sumitem" data-at="74200"><span className="zk-tick">✓</span> {t('outro.s3')}</div>
+              <div className="zk-sumitem" data-at="74800"><span className="zk-tick">✓</span> {t('outro.s4')}</div>
             </div>
-            <h3 className="zk-closing" data-at="76600">Zero-knowledge no es una promesa.<br /><span className="zk-hl">Es matemática.</span></h3>
-            <p className="zk-cta" data-at="79400"><b>noctcom.com</b> · código abierto (AGPL-3.0) · audítalo tú mismo</p>
+            <h3 className="zk-closing" data-at="76600">{t.rich('outro.closing', { hl: (c) => <span className="zk-hl">{c}</span>, br: () => <br /> })}</h3>
+            <p className="zk-cta" data-at="79400">{t.rich('outro.cta', { b: (c) => <b>{c}</b> })}</p>
           </section>
 
         </div>
@@ -254,8 +250,8 @@ export function SecurityDemo() {
 
       {/* ─── Controles ─── */}
       <div className="zk-controls">
-        <button type="button" className="zk-restart" title="Reiniciar" aria-label="Reiniciar">↺</button>
-        <button type="button" className="zk-play" title="Play/Pausa" aria-label="Play/Pausa">▶</button>
+        <button type="button" className="zk-restart" title={t('controls.restart')} aria-label={t('controls.restart')}>↺</button>
+        <button type="button" className="zk-play" title={t('controls.playPause')} aria-label={t('controls.playPause')}>▶</button>
         <div className="zk-bar"><div className="zk-fill" /></div>
         <div className="zk-time">0:00 / 1:24</div>
       </div>

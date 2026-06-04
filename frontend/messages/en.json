@@ -1417,5 +1417,75 @@
     "shareRevoked": "Share revoked",
     "newDevice": "New device connected to your account",
     "deviceRevoked": "This device has been revoked"
+  },
+  "legal": {
+    "lastRevised": "Last revised"
+  },
+  "securityDemo": {
+    "brand": "<b>NOCTCOM</b> · SECURITY TEST",
+    "controls": {
+      "restart": "Restart",
+      "playPause": "Play/Pause"
+    },
+    "intro": {
+      "kicker": "Security test · live",
+      "title": "What does the server <hl>actually</hl><br></br>see?",
+      "sub": "A step-by-step test of Noctcom's zero-knowledge encryption. No tricks: these are the real algorithms from the open-source code."
+    },
+    "test1": {
+      "name": "<b>Test 1</b> — the password",
+      "browserTitle": "Your browser",
+      "passwordLabel": "password:",
+      "deriveTitle": "Local derivation · Argon2id",
+      "deriveParams": "256 MiB · 3 iterations · ~1 s",
+      "mkComment": "// Master Key: derived and used ONLY on your device",
+      "networkTitle": "What goes out over the network",
+      "sigComment": "// Ed25519 signature",
+      "note": "Neither the password nor the MK appears in the request: a challenge is signed with a key that <b>only exists if you know the password</b>.",
+      "verdict": "The server never receives your password. It can't even attempt to decrypt you."
+    },
+    "test2": {
+      "name": "<b>Test 2</b> — the file",
+      "fileTitle": "investigation-sources.pdf · 2.4 MB",
+      "confidential": "— CONFIDENTIAL —",
+      "docLine1": "Interview with source A. (May 12)",
+      "docLine2": "\"The documents show transfers between…",
+      "docLine3": "…the intermediary's account and the shell company",
+      "docLine4": "registered in…\"",
+      "encryptTitle": "Encrypted in your browser",
+      "fileKeyExpr": "random(32)",
+      "fileKeyComment": "// unique per file",
+      "cipherLabel": "cipher",
+      "randomNonce": "random nonce",
+      "note": "The AAD binds each block to its position: not even whoever controls the storage can <b>reorder or mix</b> blocks without breaking verification.",
+      "verdict": "Encryption happens before a single byte leaves your device."
+    },
+    "test3": {
+      "name": "<b>Test 3</b> — the network",
+      "captureTitle": "Capture of the actual request",
+      "nameComment": "// even the NAME is encrypted",
+      "metaComment": "// mime, size, tags",
+      "keyComment": "// the key, wrapped with YOUR key",
+      "note": "There isn't a single readable field. The server receives sealed envelopes and stores them <b>without being able to open them</b>.",
+      "verdict": "Only ciphertext crosses the network — even with broken TLS, there'd be nothing to read."
+    },
+    "test4": {
+      "name": "<b>Test 4</b> — the server itself",
+      "termLabel": "psql — noctcom_prod (operator access)",
+      "rowsComment": "(2 rows — opaque bytes, no possible key)",
+      "query2": "SELECT email, password FROM users; -- and the personal data?",
+      "errComment": "-- only email_hash (BLAKE2b) and an OPAQUE verifier exist",
+      "note": "This is what the Noctcom operator would see, an attacker who stole the entire database… or anyone with a disclosure order: <b> there is no key on the server</b> with which to decrypt anything.",
+      "verdict": "Server access to your content: 0 readable bytes."
+    },
+    "outro": {
+      "kicker": "Test result",
+      "s1": "The password never leaves the device",
+      "s2": "Files are encrypted before upload",
+      "s3": "Names and metadata: also encrypted",
+      "s4": "The server can't read anything — not even if it wanted to",
+      "closing": "Zero-knowledge isn't a promise.<br></br><hl>It's mathematics.</hl>",
+      "cta": "<b>noctcom.com</b> · open source (AGPL-3.0) · audit it yourself"
+    }
   }
 }

@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import { Navbar } from '@/components/ui/Navbar';
 
@@ -16,6 +17,8 @@ export function LegalPage({
   intro?: React.ReactNode;
   children: React.ReactNode;
 }) {
+  const t = useTranslations('legal');
+  const tf = useTranslations('footer');
   return (
     <main className="min-h-screen flex flex-col">
       <Navbar variant="back" />
@@ -24,7 +27,7 @@ export function LegalPage({
         <div className="mb-8">
           <h1 className="font-display text-4xl font-light tracking-tight mb-2">{title}</h1>
           <p className="text-xs font-mono uppercase tracking-wider text-text-tertiary">
-            Última revisión: {updated}
+            {t('lastRevised')}: {updated}
           </p>
           {intro && <div className="mt-5 text-text-secondary leading-relaxed">{intro}</div>}
         </div>
@@ -32,11 +35,11 @@ export function LegalPage({
         <article className="space-y-8">{children}</article>
 
         <nav className="mt-12 pt-6 border-t border-border-faint flex flex-wrap gap-x-5 gap-y-2 text-sm text-text-tertiary">
-          <Link href={'/terminos' as any} className="hover:text-text-secondary transition-colors">Términos</Link>
-          <Link href={'/privacidad' as any} className="hover:text-text-secondary transition-colors">Privacidad</Link>
-          <Link href={'/cookies' as any} className="hover:text-text-secondary transition-colors">Cookies</Link>
-          <Link href="/security" className="hover:text-text-secondary transition-colors">Seguridad</Link>
-          <Link href="/about" className="hover:text-text-secondary transition-colors">Nosotros</Link>
+          <Link href={'/terminos' as any} className="hover:text-text-secondary transition-colors">{tf('terms')}</Link>
+          <Link href={'/privacidad' as any} className="hover:text-text-secondary transition-colors">{tf('privacy')}</Link>
+          <Link href={'/cookies' as any} className="hover:text-text-secondary transition-colors">{tf('cookies')}</Link>
+          <Link href="/security" className="hover:text-text-secondary transition-colors">{tf('security')}</Link>
+          <Link href="/about" className="hover:text-text-secondary transition-colors">{tf('about')}</Link>
         </nav>
       </div>
     </main>
