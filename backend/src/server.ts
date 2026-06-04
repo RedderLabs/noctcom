@@ -188,17 +188,6 @@ export async function buildServer() {
     return reply.code(code).send({ status, ...checks, ts: Date.now() });
   });
 
-  // ─── Diagnóstico de error tracking (TEMPORAL) ──────────────
-  // Lanza un error de prueba para verificar que GlitchTip lo captura. Protegido
-  // por un secreto de un solo uso para que no sea abusable. QUITAR tras validar.
-  app.get('/debug/sentry-test', async (req) => {
-    const key = (req.query as { key?: string }).key;
-    if (key !== '3cb33f28ec90a373') {
-      throw app.httpErrors.notFound();
-    }
-    throw new Error('GlitchTip e2e test — verificación de error tracking (Fase 4)');
-  });
-
   // ─── Routes ────────────────────────────────────────────────
   await app.register(authRoutes,   { prefix: '/api/v1/auth', bodyLimit: 16_384 } as any);
   await app.register(vaultRoutes,  { prefix: '/api/v1/vaults' });
