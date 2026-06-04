@@ -26,7 +26,7 @@
     "firebase": "^12.13.0",
     "framer-motion": "^11.11.1",
     "libsodium-wrappers-sumo": "^0.7.13",
-    "lucide-react": "^0.453.0",
+    "lucide-react": "^1.17.0",
     "next": "^15.5.18",
     "next-intl": "^4.13.0",
     "qrcode": "^1.5.4",
