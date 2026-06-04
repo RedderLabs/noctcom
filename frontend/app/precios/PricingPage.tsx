@@ -17,6 +17,14 @@ import { cn } from '@/lib/utils';
 // Plan destacado visualmente (mejor relación espacio/precio).
 const FEATURED = 'pro';
 
+// Descriptores cortos por plan (neutros, sin claims sin datos).
+const TAGLINE: Record<string, string> = {
+  starter: 'Uso personal',
+  plus: 'El día a día',
+  pro: 'Profesional',
+  max: 'Sin pensar en el espacio',
+};
+
 // Todo lo que incluye CUALQUIER plan (el cifrado no cambia, solo el espacio).
 const INCLUDED = [
   { icon: Lock, text: 'Cifrado zero-knowledge de extremo a extremo' },
@@ -118,52 +126,68 @@ export default function PricingPage() {
           </p>
         </section>
 
-        {/* ─── Planes ───────────────────────────────────────── */}
-        <section className="max-w-6xl mx-auto px-6 pb-4">
+        {/* ─── Planes (solo de pago: el gratis es el punto de partida) ─ */}
+        <section className="max-w-5xl mx-auto px-6 pb-4">
+          <div className="flex justify-center mb-7">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/5">
+              <Check className="size-3.5 text-emerald-400" />
+              <span className="text-xs text-text-secondary">Todas las cuentas empiezan con <strong className="text-text-primary">1 GB gratis</strong>. Amplía cuando lo necesites.</span>
+            </div>
+          </div>
+
           {loading ? (
             <div className="grid place-items-center py-20">
               <div className="size-6 rounded-full border-2 border-border-subtle border-t-violet-500 animate-spin" />
             </div>
           ) : (
-            <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-3 items-stretch">
-              {plans.map((plan, i) => {
-                const free = plan.priceEurMonth === 0;
-                const soon = !free && !plan.available;
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 items-stretch">
+              {plans.filter((p) => p.priceEurMonth > 0).map((plan, i, arr) => {
+                const soon = !plan.available;
                 const featured = plan.id === FEATURED;
                 // Relleno de la barra: escalera visual por nivel (no literal).
-                const fill = Math.round(((i + 1) / plans.length) * 100);
+                const fill = Math.round(((i + 1) / arr.length) * 100);
                 return (
                   <div
                     key={plan.id}
                     className={cn(
-                      'relative flex flex-col p-5 rounded-2xl border bg-bg-surface transition-all duration-200',
+                      'group relative flex flex-col p-5 sm:p-6 rounded-2xl border transition-all duration-200',
                       featured
-                        ? 'border-violet-500/50 shadow-[0_0_0_1px_rgba(139,92,246,0.2),0_18px_50px_-12px_rgba(139,92,246,0.35)] lg:-translate-y-2 lg:scale-[1.03] z-10'
-                        : 'border-border-faint hover:border-border-subtle hover:-translate-y-0.5',
+                        ? 'border-violet-500/50 bg-gradient-to-b from-violet-500/[0.08] to-bg-surface shadow-[0_0_0_1px_rgba(139,92,246,0.2),0_20px_50px_-12px_rgba(139,92,246,0.35)] lg:-translate-y-3 lg:scale-[1.04] z-10'
+                        : 'border-border-faint bg-bg-surface hover:border-violet-500/30 hover:-translate-y-1 hover:shadow-[0_12px_30px_-12px_rgba(0,0,0,0.5)]',
                     )}
                   >
                     {featured && (
-                      <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-full bg-violet-500 text-white text-[10px] font-semibold uppercase tracking-wide whitespace-nowrap">
+                      <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full bg-violet-500 text-white text-[10px] font-semibold uppercase tracking-wide whitespace-nowrap shadow-lg shadow-violet-500/30">
                         Recomendado
                       </div>
                     )}
-                    <h3 className="text-xs font-medium text-text-tertiary uppercase tracking-wide">{plan.label}</h3>
-                    <div className="mt-2 mb-4 flex items-baseline gap-1">
+
+                    {/* Cabecera */}
+                    <div className="flex items-baseline justify-between mb-1">
+                      <h3 className="text-sm font-semibold text-text-primary">{plan.label}</h3>
+                    </div>
+                    <p className="text-[11px] text-text-tertiary mb-4">{TAGLINE[plan.id] ?? 'Almacenamiento cifrado'}</p>
+
+                    {/* Precio */}
+                    <div className="flex items-baseline gap-1 mb-5">
                       <span className={cn('font-mono text-4xl font-bold tracking-tight', featured ? 'text-violet-200' : 'text-text-primary')}>
-                        {free ? '0€' : `${plan.priceEurMonth}€`}
+                        {plan.priceEurMonth}€
                       </span>
                       <span className="text-xs text-text-tertiary">/mes</span>
                     </div>
 
                     {/* Indicador de almacenamiento */}
-                    <div className="mb-5 p-3 rounded-lg bg-bg-surface-2 border border-border-faint">
+                    <div className={cn(
+                      'mb-5 p-3 rounded-xl border',
+                      featured ? 'bg-violet-500/[0.06] border-violet-500/20' : 'bg-bg-surface-2 border-border-faint',
+                    )}>
                       <div className="flex justify-between items-center mb-2">
-                        <span className="text-[10px] font-mono uppercase tracking-wider text-text-tertiary">Almacenamiento</span>
-                        <span className={cn('text-xs font-mono font-bold', featured ? 'text-violet-200' : 'text-text-primary')}>
+                        <span className="text-[10px] font-mono uppercase tracking-wider text-text-tertiary">Espacio</span>
+                        <span className={cn('text-sm font-mono font-bold', featured ? 'text-violet-200' : 'text-text-primary')}>
                           {formatBytes(plan.quotaBytes)}
                         </span>
                       </div>
-                      <div className="h-1 rounded-full bg-bg-surface-3 overflow-hidden">
+                      <div className="h-1.5 rounded-full bg-bg-surface-3 overflow-hidden">
                         <div
                           className={cn('h-full rounded-full', featured ? 'bg-violet-400' : 'bg-violet-600/70')}
                           style={{ width: `${fill}%` }}
@@ -178,14 +202,14 @@ export default function PricingPage() {
 
                     <div className="mt-auto">
                       <Button
-                        variant={free || featured ? 'primary' : 'outline'}
+                        variant={featured ? 'primary' : 'outline'}
                         size="sm"
                         className="w-full"
                         disabled={soon}
                         loading={busy === plan.id}
                         onClick={() => choose(plan)}
                       >
-                        {free ? 'Empezar gratis' : soon ? 'Próximamente' : 'Elegir plan'}
+                        {soon ? 'Próximamente' : 'Elegir plan'}
                       </Button>
                     </div>
                   </div>
@@ -199,7 +223,7 @@ export default function PricingPage() {
               Los planes de pago se activan en breve. Mientras tanto, empieza gratis con 1 GB.
             </p>
           )}
-          <p className="text-center text-xs text-text-tertiary mt-6">
+          <p className="text-center text-xs text-text-tertiary mt-7">
             Facturación mensual · Sin permanencia · Impuestos aplicables según tu país
           </p>
         </section>

@@ -74,12 +74,15 @@ interface EmailLayoutOptions {
 }
 
 function renderEmail(opts: EmailLayoutOptions): string {
-  const logoUrl = `${env.FRONTEND_URL ?? env.PUBLIC_URL}/logo.png`;
+  const base = env.FRONTEND_URL ?? env.PUBLIC_URL;
+  const logoUrl = `${base}/logo.png`;
+  const year = new Date().getFullYear();
+
   const button = opts.button
     ? `
               <tr>
-                <td align="center" style="padding: 0 0 8px;">
-                  <a href="${opts.button.url}" style="display: inline-block; background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); color: #ffffff; font-size: 15px; font-weight: 600; text-decoration: none; padding: 14px 36px; border-radius: 10px; box-shadow: 0 4px 14px rgba(124, 58, 237, 0.35);">${opts.button.label}</a>
+                <td align="center" style="padding: 4px 0 8px;">
+                  <a href="${opts.button.url}" style="display: inline-block; background: #7c3aed; background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); color: #ffffff; font-size: 15px; font-weight: 600; text-decoration: none; padding: 14px 36px; border-radius: 10px; box-shadow: 0 4px 14px rgba(124, 58, 237, 0.35);">${opts.button.label}</a>
                 </td>
               </tr>`
     : '';
@@ -88,7 +91,7 @@ function renderEmail(opts: EmailLayoutOptions): string {
     .split('')
     .map(
       (c) =>
-        `<span style="display: inline-block; min-width: 14px; margin: 0 3px; font-size: 30px; line-height: 1; font-weight: 700; color: #f5f3ff;">${c}</span>`,
+        `<span style="display: inline-block; min-width: 16px; margin: 0 4px; font-size: 32px; line-height: 1; font-weight: 700; letter-spacing: 2px; color: #d2bbff;">${c}</span>`,
     )
     .join('');
 
@@ -106,30 +109,26 @@ function renderEmail(opts: EmailLayoutOptions): string {
     <tr>
       <td align="center">
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width: 480px; background: #0f0f17; border: 1px solid #1e1e2c; border-radius: 16px; overflow: hidden;">
-          <!-- Cabecera -->
+          <!-- Barra de acento superior -->
           <tr>
-            <td style="padding: 36px 40px 8px;">
-              <table role="presentation" cellpadding="0" cellspacing="0">
-                <tr>
-                  <td style="vertical-align: middle;">
-                    <img src="${logoUrl}" width="36" height="36" alt="Noctcom" style="display: block; border-radius: 9px;">
-                  </td>
-                  <td style="vertical-align: middle; padding-left: 12px; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; font-size: 22px; font-weight: 700; letter-spacing: 0.5px; color: #ffffff;">
-                    Noctcom
-                  </td>
-                </tr>
-              </table>
+            <td style="height: 4px; line-height: 4px; font-size: 0; background: #7c3aed; background: linear-gradient(90deg, #8b5cf6 0%, #7c3aed 100%);">&nbsp;</td>
+          </tr>
+          <!-- Cabecera (logo centrado) -->
+          <tr>
+            <td align="center" style="padding: 36px 40px 4px;">
+              <img src="${logoUrl}" width="48" height="48" alt="Noctcom" style="display: block; border-radius: 12px; margin: 0 auto 12px;">
+              <div style="font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; font-size: 20px; font-weight: 700; letter-spacing: 0.5px; color: #ffffff;">Noctcom</div>
             </td>
           </tr>
           <!-- Cuerpo -->
           <tr>
-            <td style="padding: 16px 40px 8px;">
+            <td style="padding: 20px 40px 8px;">
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;">
                 <tr>
-                  <td style="font-size: 20px; font-weight: 600; color: #ededf3; padding: 0 0 8px;">${opts.title}</td>
+                  <td align="center" style="font-size: 20px; font-weight: 600; color: #ededf3; padding: 0 0 8px;">${opts.title}</td>
                 </tr>
                 <tr>
-                  <td style="font-size: 15px; line-height: 1.6; color: #9a9ab2; padding: 0 0 24px;">${opts.intro}</td>
+                  <td align="center" style="font-size: 15px; line-height: 1.6; color: #9a9ab2; padding: 0 0 24px;">${opts.intro}</td>
                 </tr>
                 <!-- Código -->
                 <tr>
@@ -148,6 +147,18 @@ function renderEmail(opts: EmailLayoutOptions): string {
               </table>
             </td>
           </tr>
+          <!-- Badge zero-knowledge -->
+          <tr>
+            <td align="center" style="padding: 12px 40px 0;">
+              <table role="presentation" cellpadding="0" cellspacing="0" style="background: #14121f; border: 1px solid #2a2640; border-radius: 999px;">
+                <tr>
+                  <td style="padding: 7px 14px; font-family: 'SFMono-Regular', 'Consolas', monospace; font-size: 11px; color: #9a9ab2;">
+                    <span style="display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #34d399; margin-right: 7px;">&nbsp;</span>Cifrado zero-knowledge de extremo a extremo
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
           <!-- Separador -->
           <tr>
             <td style="padding: 24px 40px 0;">
@@ -156,9 +167,16 @@ function renderEmail(opts: EmailLayoutOptions): string {
           </tr>
           <!-- Pie -->
           <tr>
-            <td style="padding: 20px 40px 32px; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;">
-              <p style="margin: 0 0 12px; font-size: 12px; line-height: 1.5; color: #6b6b85;">${opts.footer}</p>
-              <p style="margin: 0; font-size: 11px; color: #4a4a5e;">Noctcom · tu nube privada cifrada</p>
+            <td style="padding: 18px 40px 32px; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;">
+              <p style="margin: 0 0 14px; font-size: 12px; line-height: 1.5; color: #6b6b85;">${opts.footer}</p>
+              <p style="margin: 0 0 12px; font-size: 12px;">
+                <a href="${base}/privacidad" style="color: #8e8ea8; text-decoration: none;">Privacidad</a>
+                <span style="color: #3a3a4a;">&nbsp;·&nbsp;</span>
+                <a href="${base}/terminos" style="color: #8e8ea8; text-decoration: none;">Términos</a>
+                <span style="color: #3a3a4a;">&nbsp;·&nbsp;</span>
+                <a href="mailto:hello@noctcom.com" style="color: #8e8ea8; text-decoration: none;">Soporte</a>
+              </p>
+              <p style="margin: 0; font-size: 11px; color: #4a4a5e;">© ${year} Noctcom · Redder Labs · tu nube privada cifrada</p>
             </td>
           </tr>
         </table>
