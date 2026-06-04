@@ -15,7 +15,10 @@ import { z } from 'zod';
 import Stripe from 'stripe';
 import { db } from '../db/pool.js';
 import { env } from '../config.js';
-import { PLANS, FREE_PLAN, planById, stripePriceId, planByStripePrice } from '../plans.js';
+import {
+  PLANS, FREE_PLAN, planById, stripePriceId, planByStripePrice,
+  isBillingTestMode, isPlanCheckoutAllowed,
+} from '../plans.js';
 import {
   sendPlanActiveEmail, sendPlanCanceledScheduledEmail,
   sendPaymentFailedEmail, sendPlanEndedEmail,
@@ -30,8 +33,11 @@ function publicPlans() {
     label: p.label,
     quotaBytes: p.quotaBytes,
     priceEurMonth: p.priceEurMonth,
-    // Un plan de pago solo es "comprable" si Stripe está activo y tiene price.
-    available: p.priceEurMonth === 0 || (!!stripe && !!stripePriceId(p)),
+    // Un plan es "comprable" si: es gratis, o Stripe está activo, tiene price y
+    // no está capado por el modo de prueba (ver isPlanCheckoutAllowed).
+    available:
+      p.priceEurMonth === 0 ||
+      (!!stripe && !!stripePriceId(p) && isPlanCheckoutAllowed(p.id)),
   }));
 }
 
@@ -55,7 +61,12 @@ const billingRoutes: FastifyPluginAsync = async (app) => {
 
   // ─── GET /plans (público) ─────────────────────────────────
   app.get('/plans', async (_req, reply) => {
-    return reply.send({ plans: publicPlans(), billingEnabled: !!stripe });
+    return reply.send({
+      plans: publicPlans(),
+      billingEnabled: !!stripe,
+      // En modo de prueba la UI puede avisar de que solo hay planes pequeños.
+      testMode: isBillingTestMode(),
+    });
   });
 
   // ─── GET /status (auth) ───────────────────────────────────
@@ -89,6 +100,12 @@ const billingRoutes: FastifyPluginAsync = async (app) => {
     if (plan.id === FREE_PLAN.id) return reply.badRequest('el plan gratuito no requiere pago');
     const priceId = stripePriceId(plan);
     if (!priceId) return reply.badRequest('plan no disponible para compra');
+    // Cap de modo de prueba: mientras Stripe esté en test, no se permite contratar
+    // planes por encima del tope (evita conseguir cuota grande gratis con tarjeta
+    // de prueba → coste real de almacenamiento). Ver isPlanCheckoutAllowed.
+    if (!isPlanCheckoutAllowed(plan.id)) {
+      return reply.badRequest('plan no disponible en modo de prueba');
+    }
 
     const u = await db.query(
       'SELECT stripe_customer_id, stripe_subscription_id, subscription_status FROM users WHERE id = $1',

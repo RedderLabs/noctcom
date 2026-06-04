@@ -43,3 +43,30 @@ export function planByStripePrice(priceId: string): Plan | null {
   }
   return null;
 }
+
+// ─── Tope de planes en modo de prueba ─────────────────────────────
+// Mientras Stripe está en modo TEST (clave sk_test), una tarjeta de prueba
+// permitiría "contratar" un plan grande sin pago real, pero generando coste real
+// de almacenamiento (Backblaze). Por eso capamos qué planes se pueden contratar
+// hasta tener el modo live. Tope por id, configurable con BILLING_TEST_MAX_PLAN
+// (default: 'starter' = 10 GB). Free nunca pasa por checkout.
+export function isBillingTestMode(): boolean {
+  return (process.env.STRIPE_SECRET_KEY ?? '').startsWith('sk_test');
+}
+
+export function planRank(id: string): number {
+  const idx = PLANS.findIndex((p) => p.id === id);
+  return idx >= 0 ? idx : 0;
+}
+
+function testMaxRank(): number {
+  return planRank(process.env.BILLING_TEST_MAX_PLAN || 'starter');
+}
+
+// ¿Se puede contratar este plan AHORA? En modo live, cualquiera con price; en
+// modo test, solo hasta el plan tope. (No incluye la comprobación de que Stripe
+// esté activo / tenga price: eso se valida aparte.)
+export function isPlanCheckoutAllowed(id: string): boolean {
+  if (!isBillingTestMode()) return true;
+  return planRank(id) <= testMaxRank();
+}
