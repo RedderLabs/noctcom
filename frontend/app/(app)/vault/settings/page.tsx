@@ -7,7 +7,6 @@ import {
   Download, Upload, Loader2, Mail, Server, Copy, Check, FolderPlus, Eraser,
   FileKey2, RefreshCw, Bell, BellOff, Gauge, CreditCard,
 } from 'lucide-react';
-import Link from 'next/link';
 import { FormatDiskModal } from '@/components/vault/FormatDiskModal';
 import { AgentFormatModal } from '@/components/vault/AgentFormatModal';
 import { toast } from 'sonner';
@@ -24,7 +23,7 @@ import {
 } from '@/lib/recovery';
 import { getPushStatus, isPushChosen, enablePush, disablePush, type PushStatus } from '@/lib/firebase';
 import { changeMasterPassword } from '@/lib/change-password';
-import { fetchBillingStatus, openBillingPortal, formatBytes, type BillingStatus } from '@/lib/billing';
+import { fetchBillingStatus, openBillingPortal, fetchPlans, startCheckout, formatBytes, type BillingStatus, type PublicPlan } from '@/lib/billing';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
@@ -1269,13 +1268,16 @@ function RecoveryKitSection() {
 // uso. El cobro va por cuota de bytes, nunca por contenido (ZK).
 
 function PlanUsageSection() {
-  const { storageUsed, storageQuota } = useVault();
+  const { storageUsed, storageQuota, refreshStorage } = useVault();
   const [status, setStatus] = useState<BillingStatus | null>(null);
   const [working, setWorking] = useState(false);
+  const [showPlans, setShowPlans] = useState(false);
 
-  useEffect(() => {
+  const reloadStatus = useCallback(() => {
     fetchBillingStatus().then(setStatus).catch(() => {});
   }, []);
+
+  useEffect(() => { reloadStatus(); }, [reloadStatus]);
 
   const pct = storageQuota > 0 ? Math.min(100, Math.round((storageUsed / storageQuota) * 100)) : 0;
   const near = pct >= 90;
@@ -1315,11 +1317,9 @@ function PlanUsageSection() {
           </div>
           <div className="flex gap-2">
             {status?.billingEnabled && (
-              <Link href={'/precios' as any}>
-                <Button size="sm" variant={isPaid ? 'ghost' : 'primary'}>
-                  {isPaid ? 'Cambiar plan' : 'Mejorar plan'}
-                </Button>
-              </Link>
+              <Button size="sm" variant={isPaid ? 'ghost' : 'primary'} onClick={() => setShowPlans(true)}>
+                {isPaid ? 'Cambiar plan' : 'Mejorar plan'}
+              </Button>
             )}
             {isPaid && status?.hasCustomer && (
               <Button size="sm" variant="outline" loading={working} leftIcon={<CreditCard className="size-3.5" />} onClick={manage}>
@@ -1344,7 +1344,116 @@ function PlanUsageSection() {
           )}
         </div>
       </div>
+
+      {showPlans && (
+        <PlanPickerModal
+          currentPlan={status?.plan ?? 'free'}
+          onClose={() => setShowPlans(false)}
+          onUpdated={() => { reloadStatus(); refreshStorage(); }}
+        />
+      )}
     </section>
+  );
+}
+
+// Modal in-app para elegir/cambiar de plan sin salir del shell de la app.
+// Primera compra → redirige a Stripe Checkout. Cambio de plan → actualiza la
+// suscripción (prorrateo) y refresca el estado sin recargar.
+function PlanPickerModal({ currentPlan, onClose, onUpdated }: {
+  currentPlan: string;
+  onClose: () => void;
+  onUpdated: () => void;
+}) {
+  const [plans, setPlans] = useState<PublicPlan[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchPlans()
+      .then((r) => setPlans(r.plans.filter((p) => p.priceEurMonth > 0)))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  async function pick(plan: PublicPlan) {
+    if (plan.id === currentPlan) return;
+    setBusy(plan.id);
+    try {
+      const res = await startCheckout(plan.id);
+      if (res.updated) {
+        toast.success(res.unchanged ? 'Ya tienes este plan' : `Plan actualizado a ${plan.label}`);
+        // La cuota se ajusta vía webhook: refrescamos un par de veces.
+        setTimeout(onUpdated, 1500);
+        setTimeout(onUpdated, 4000);
+        onClose();
+        return;
+      }
+      // Si hay url, el navegador ya está redirigiendo a Stripe Checkout.
+    } catch (err: any) {
+      toast.error(err?.message ?? 'No se pudo cambiar el plan');
+      setBusy(null);
+    }
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+      onClick={() => !busy && onClose()}
+    >
+      <div
+        className="w-full max-w-lg rounded-2xl border border-border-subtle bg-bg-surface p-6 shadow-[0_20px_60px_-12px_rgba(0,0,0,0.7)]"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-start justify-between mb-1">
+          <h3 className="font-display text-lg font-medium">Elige tu plan</h3>
+          <button onClick={() => !busy && onClose()} className="p-1 rounded-md hover:bg-bg-surface-2 text-text-tertiary" aria-label="Cerrar">✕</button>
+        </div>
+        <p className="text-xs text-text-tertiary mb-5">
+          Mismo cifrado zero-knowledge. Solo cambia el espacio. Cambia o cancela cuando quieras.
+        </p>
+
+        {loading ? (
+          <div className="grid place-items-center py-10">
+            <div className="size-5 rounded-full border-2 border-border-subtle border-t-violet-500 animate-spin" />
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {plans.map((plan) => {
+              const isCurrent = plan.id === currentPlan;
+              const soon = !plan.available;
+              return (
+                <div
+                  key={plan.id}
+                  className={cn(
+                    'flex items-center gap-4 p-3.5 rounded-xl border transition-colors',
+                    isCurrent ? 'border-violet-500/40 bg-violet-500/[0.06]' : 'border-border-faint bg-bg-surface-2',
+                  )}
+                >
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-sm font-semibold">{plan.label}</span>
+                      <span className="font-mono text-sm text-violet-200 font-bold">{plan.priceEurMonth}€<span className="text-[10px] text-text-tertiary font-sans">/mes</span></span>
+                    </div>
+                    <p className="text-[11px] text-text-tertiary mt-0.5">{formatBytes(plan.quotaBytes)} cifrados</p>
+                  </div>
+                  {isCurrent ? (
+                    <span className="text-[10px] font-mono uppercase tracking-wider text-violet-300 bg-violet-500/10 px-2 py-1 rounded">Actual</span>
+                  ) : (
+                    <Button size="sm" variant="outline" disabled={soon} loading={busy === plan.id} onClick={() => pick(plan)}>
+                      {soon ? 'Pronto' : 'Elegir'}
+                    </Button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        <p className="text-[11px] text-text-tertiary text-center mt-5">
+          Pago seguro con Stripe · Noctcom nunca ve tu tarjeta
+        </p>
+      </div>
+    </div>
   );
 }
 
