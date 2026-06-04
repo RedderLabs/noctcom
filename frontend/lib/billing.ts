@@ -17,6 +17,7 @@ export interface BillingStatus {
   quotaBytes: number;
   subscriptionStatus: string | null;
   currentPeriodEnd: string | null;
+  cancelAtPeriodEnd: boolean;
   hasCustomer: boolean;
 }
 

@@ -1314,6 +1314,17 @@ function PlanUsageSection() {
             <p className="text-xs text-text-tertiary mt-0.5">
               {formatBytes(storageUsed)} de {formatBytes(storageQuota)} usados
             </p>
+            {isPaid && status?.currentPeriodEnd && (
+              status.cancelAtPeriodEnd ? (
+                <p className="text-xs text-amber-300 mt-1">
+                  Vuelve al plan Gratis el {new Date(status.currentPeriodEnd).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}
+                </p>
+              ) : (
+                <p className="text-[11px] text-text-muted mt-1">
+                  Se renueva el {new Date(status.currentPeriodEnd).toLocaleDateString('es-ES', { day: 'numeric', month: 'long' })}
+                </p>
+              )
+            )}
           </div>
           <div className="flex gap-2">
             {status?.billingEnabled && (

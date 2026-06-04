@@ -18,7 +18,8 @@ try {
     ADD COLUMN IF NOT EXISTS stripe_customer_id TEXT,
     ADD COLUMN IF NOT EXISTS stripe_subscription_id TEXT,
     ADD COLUMN IF NOT EXISTS subscription_status TEXT,
-    ADD COLUMN IF NOT EXISTS current_period_end TIMESTAMPTZ`);
+    ADD COLUMN IF NOT EXISTS current_period_end TIMESTAMPTZ,
+    ADD COLUMN IF NOT EXISTS cancel_at_period_end BOOLEAN NOT NULL DEFAULT FALSE`);
   // Búsqueda rápida por customer en el webhook.
   await client.query(`CREATE INDEX IF NOT EXISTS users_stripe_customer_idx ON users(stripe_customer_id)`);
   // Idempotencia de eventos de Stripe (no procesar el mismo dos veces).

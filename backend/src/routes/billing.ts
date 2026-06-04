@@ -16,6 +16,10 @@ import Stripe from 'stripe';
 import { db } from '../db/pool.js';
 import { env } from '../config.js';
 import { PLANS, FREE_PLAN, planById, stripePriceId, planByStripePrice } from '../plans.js';
+import {
+  sendPlanActiveEmail, sendPlanCanceledScheduledEmail,
+  sendPaymentFailedEmail, sendPlanEndedEmail,
+} from '../mail.js';
 
 const stripe = env.STRIPE_SECRET_KEY ? new Stripe(env.STRIPE_SECRET_KEY) : null;
 
@@ -56,7 +60,7 @@ const billingRoutes: FastifyPluginAsync = async (app) => {
   // ─── GET /status (auth) ───────────────────────────────────
   app.get('/status', { onRequest: [app.authenticate] }, async (req, reply) => {
     const r = await db.query(
-      `SELECT plan, subscription_status, current_period_end, stripe_customer_id
+      `SELECT plan, subscription_status, current_period_end, cancel_at_period_end, stripe_customer_id
        FROM users WHERE id = $1`,
       [req.user.sub],
     );
@@ -70,6 +74,7 @@ const billingRoutes: FastifyPluginAsync = async (app) => {
       quotaBytes: plan.quotaBytes,
       subscriptionStatus: u.subscription_status ?? null,
       currentPeriodEnd: u.current_period_end ?? null,
+      cancelAtPeriodEnd: !!u.cancel_at_period_end,
       hasCustomer: !!u.stripe_customer_id,
     });
   });
@@ -184,9 +189,32 @@ const billingRoutes: FastifyPluginAsync = async (app) => {
     });
   });
 
+  // Email del cliente desde Stripe (no se almacena en Noctcom: zero-knowledge).
+  async function getCustomerEmail(customerId: string): Promise<string | null> {
+    try {
+      const c = await stripe!.customers.retrieve(customerId);
+      if ((c as { deleted?: boolean }).deleted) return null;
+      return (c as Stripe.Customer).email ?? null;
+    } catch { return null; }
+  }
+
+  // Envía un email sin que un fallo rompa el webhook (Stripe no debe reintentar
+  // por un email caído). Fire-and-forget con log.
+  function mailSafe(p: Promise<void>): void {
+    p.catch((err) => app.log.warn({ err }, 'email de billing falló'));
+  }
+
   // Aplica el estado de la suscripción de Stripe al usuario: plan + cuota.
   async function handleEvent(event: Stripe.Event): Promise<void> {
     if (!stripe) return;
+
+    function periodEndOf(sub: Stripe.Subscription): Date | null {
+      // En la API nueva, current_period_end vive en la línea, no en la suscripción.
+      const u = (sub as { current_period_end?: number }).current_period_end
+        ?? (sub.items.data[0] as { current_period_end?: number } | undefined)?.current_period_end
+        ?? null;
+      return u ? new Date(u * 1000) : null;
+    }
 
     // Resuelve el plan a partir de la suscripción (su price) y actualiza al user.
     async function applySubscription(sub: Stripe.Subscription): Promise<void> {
@@ -194,22 +222,12 @@ const billingRoutes: FastifyPluginAsync = async (app) => {
       const priceId = sub.items.data[0]?.price.id ?? '';
       const active = sub.status === 'active' || sub.status === 'trialing';
       const plan = active ? (planByStripePrice(priceId) ?? FREE_PLAN) : FREE_PLAN;
-      // En las versiones nuevas de la API, current_period_end vive en la línea
-      // de la suscripción, no en la suscripción. Probamos ambos.
-      const periodUnix = (sub as { current_period_end?: number }).current_period_end
-        ?? (sub.items.data[0] as { current_period_end?: number } | undefined)?.current_period_end
-        ?? null;
-      const periodEnd = periodUnix ? new Date(periodUnix * 1000) : null;
-
       await db.query(
         `UPDATE users SET
-           plan = $1,
-           storage_quota_bytes = $2,
-           stripe_subscription_id = $3,
-           subscription_status = $4,
-           current_period_end = $5
-         WHERE stripe_customer_id = $6`,
-        [plan.id, plan.quotaBytes, sub.id, sub.status, periodEnd, customerId],
+           plan = $1, storage_quota_bytes = $2, stripe_subscription_id = $3,
+           subscription_status = $4, current_period_end = $5, cancel_at_period_end = $6
+         WHERE stripe_customer_id = $7`,
+        [plan.id, plan.quotaBytes, sub.id, sub.status, periodEndOf(sub), !!sub.cancel_at_period_end, customerId],
       );
     }
 
@@ -221,12 +239,40 @@ const billingRoutes: FastifyPluginAsync = async (app) => {
             typeof session.subscription === 'string' ? session.subscription : session.subscription.id,
           );
           await applySubscription(sub);
+          // Email de bienvenida al plan (primera compra).
+          const plan = planByStripePrice(sub.items.data[0]?.price.id ?? '') ?? FREE_PLAN;
+          const email = await getCustomerEmail(typeof sub.customer === 'string' ? sub.customer : sub.customer.id);
+          if (email && plan.id !== FREE_PLAN.id) {
+            mailSafe(sendPlanActiveEmail(email, plan.label, plan.label));
+          }
         }
         break;
       }
       case 'customer.subscription.created':
       case 'customer.subscription.updated': {
-        await applySubscription(event.data.object as Stripe.Subscription);
+        const sub = event.data.object as Stripe.Subscription;
+        const customerId = typeof sub.customer === 'string' ? sub.customer : sub.customer.id;
+        // Estado previo para detectar transiciones (cancelación / cambio de plan).
+        const prev = await db.query(
+          'SELECT plan, cancel_at_period_end FROM users WHERE stripe_customer_id = $1',
+          [customerId],
+        );
+        const prevPlan = prev.rows[0]?.plan ?? 'free';
+        const prevCancel = !!prev.rows[0]?.cancel_at_period_end;
+
+        await applySubscription(sub);
+
+        const newPlan = planByStripePrice(sub.items.data[0]?.price.id ?? '') ?? FREE_PLAN;
+        const email = await getCustomerEmail(customerId);
+        if (email) {
+          if (!prevCancel && sub.cancel_at_period_end) {
+            // Cancelación recién programada → avisa de cuándo vuelve a free.
+            mailSafe(sendPlanCanceledScheduledEmail(email, newPlan.label, periodEndOf(sub)));
+          } else if (!sub.cancel_at_period_end && prevPlan !== newPlan.id && newPlan.id !== FREE_PLAN.id) {
+            // Cambio de plan (p. ej. upgrade in-app) → confirma el nuevo plan.
+            mailSafe(sendPlanActiveEmail(email, newPlan.label, newPlan.label));
+          }
+        }
         break;
       }
       case 'customer.subscription.deleted': {
@@ -237,10 +283,24 @@ const billingRoutes: FastifyPluginAsync = async (app) => {
         const customerId = typeof sub.customer === 'string' ? sub.customer : sub.customer.id;
         await db.query(
           `UPDATE users SET plan = 'free', storage_quota_bytes = $1,
-             subscription_status = 'canceled', stripe_subscription_id = NULL, current_period_end = NULL
+             subscription_status = 'canceled', stripe_subscription_id = NULL,
+             current_period_end = NULL, cancel_at_period_end = FALSE
            WHERE stripe_customer_id = $2`,
           [FREE_PLAN.quotaBytes, customerId],
         );
+        const email = await getCustomerEmail(customerId);
+        if (email) mailSafe(sendPlanEndedEmail(email));
+        break;
+      }
+      case 'invoice.payment_failed': {
+        const inv = event.data.object as Stripe.Invoice;
+        const customerId = typeof inv.customer === 'string' ? inv.customer : inv.customer?.id;
+        if (customerId) {
+          const r = await db.query('SELECT plan FROM users WHERE stripe_customer_id = $1', [customerId]);
+          const planLabel = planById(r.rows[0]?.plan).label;
+          const email = await getCustomerEmail(customerId);
+          if (email) mailSafe(sendPaymentFailedEmail(email, planLabel));
+        }
         break;
       }
       default:
