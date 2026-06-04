@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
+import { useTranslations, useFormatter } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import { Navbar } from '@/components/ui/Navbar';
 
@@ -13,12 +13,15 @@ export function LegalPage({
   children,
 }: {
   title: string;
+  /** Fecha de última revisión en ISO (p. ej. '2026-06-04'); se formatea según el idioma. */
   updated: string;
   intro?: React.ReactNode;
   children: React.ReactNode;
 }) {
   const t = useTranslations('legal');
   const tf = useTranslations('footer');
+  const format = useFormatter();
+  const updatedLabel = format.dateTime(new Date(updated), { year: 'numeric', month: 'long', day: 'numeric' });
   return (
     <main className="min-h-screen flex flex-col">
       <Navbar variant="back" />
@@ -27,7 +30,7 @@ export function LegalPage({
         <div className="mb-8">
           <h1 className="font-display text-4xl font-light tracking-tight mb-2">{title}</h1>
           <p className="text-xs font-mono uppercase tracking-wider text-text-tertiary">
-            {t('lastRevised')}: {updated}
+            {t('lastRevised')}: {updatedLabel}
           </p>
           {intro && <div className="mt-5 text-text-secondary leading-relaxed">{intro}</div>}
         </div>

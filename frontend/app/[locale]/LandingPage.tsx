@@ -203,11 +203,9 @@ export default function LandingPage() {
               <div className="w-full md:w-80 shrink-0">
                 <div className="rounded-lg bg-bg-deep border border-border-faint p-4 font-mono text-xs leading-relaxed">
                   <p className="text-text-muted">{t('selfhost.deployComment')}</p>
-                  <p className="text-violet-300 mt-1">git clone https://github.com/</p>
-                  <p className="text-violet-300">  RedderLabs/noctcom.git</p>
-                  <p className="text-text-secondary mt-2">cd noctcom</p>
-                  <p className="text-text-secondary">cp .env.example .env</p>
-                  <p className="text-violet-300 mt-2">docker compose up -d</p>
+                  <p className="text-violet-300 mt-1">curl -fsSL https://raw.</p>
+                  <p className="text-violet-300">githubusercontent.com/RedderLabs/</p>
+                  <p className="text-violet-300">noctcom/main/install.sh | bash</p>
                   <p className="text-text-muted mt-2">{t('selfhost.readyComment')}</p>
                 </div>
               </div>

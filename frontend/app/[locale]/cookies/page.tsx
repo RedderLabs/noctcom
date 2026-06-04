@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   alternates: { canonical: '/cookies' },
 };
 
-const UPDATED = '4 de junio de 2026';
+const UPDATED = '2026-06-04';
 
 export default function CookiesPage() {
   const t = useTranslations('cookies');
