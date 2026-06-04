@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import { useRouter } from '@/i18n/navigation';
 import {
@@ -17,25 +18,20 @@ import { cn } from '@/lib/utils';
 // Plan destacado visualmente (mejor relación espacio/precio).
 const FEATURED = 'pro';
 
-// Descriptores cortos por plan (neutros, sin claims sin datos).
-const TAGLINE: Record<string, string> = {
-  starter: 'Uso personal',
-  plus: 'El día a día',
-  pro: 'Profesional',
-  max: 'Sin pensar en el espacio',
-};
+// Slugs de plan con tagline traducible (las claves viven en pricing.tagline.*).
+const TAGLINE_KEYS = ['starter', 'plus', 'pro', 'max'] as const;
 
 // Todo lo que incluye CUALQUIER plan (el cifrado no cambia, solo el espacio).
 const INCLUDED = [
-  { icon: Lock, text: 'Cifrado zero-knowledge de extremo a extremo' },
-  { icon: EyeOff, text: 'Nombres y metadatos también cifrados' },
-  { icon: Share2, text: 'Compartir cifrado: solo el destinatario abre' },
-  { icon: Smartphone, text: 'Multidispositivo y sincronización en tiempo real' },
-  { icon: Download, text: 'Exporta tu bóveda completa cuando quieras' },
-  { icon: ShieldCheck, text: '2FA: passkeys y código por email' },
+  { icon: Lock, key: 'e2e' },
+  { icon: EyeOff, key: 'metadata' },
+  { icon: Share2, key: 'share' },
+  { icon: Smartphone, key: 'multidevice' },
+  { icon: Download, key: 'export' },
+  { icon: ShieldCheck, key: '2fa' },
 ];
 
-// Franja de confianza — solo afirmaciones verdaderas.
+// Franja de confianza — solo afirmaciones verdaderas. Etiquetas técnicas, no se traducen.
 const TRUST = [
   { icon: Code2, label: 'Open Source · AGPL-3.0' },
   { icon: Lock, label: 'XChaCha20-Poly1305' },
@@ -44,41 +40,22 @@ const TRUST = [
 ];
 
 // Especificaciones técnicas — IDÉNTICAS en todos los planes (ese es el punto).
-const SPECS: [string, string][] = [
-  ['Derivación de clave', 'Argon2id · 256 MiB'],
-  ['Cifrado de archivos', 'XChaCha20-Poly1305 (AEAD)'],
-  ['Firmas', 'Ed25519'],
-  ['Compartir', 'X25519 · sealed boxes'],
-  ['Hash', 'BLAKE2b-256'],
-  ['Recuperación', 'Frase BIP39 (128 bits)'],
-  ['2FA', 'Passkeys (WebAuthn) + email'],
-  ['Licencia', 'AGPL-3.0 · auditable'],
+// Solo se traduce la etiqueta (label); el valor técnico se mantiene literal.
+const SPECS: { key: string; value: string }[] = [
+  { key: 'kdf', value: 'Argon2id · 256 MiB' },
+  { key: 'fileEncryption', value: 'XChaCha20-Poly1305 (AEAD)' },
+  { key: 'signatures', value: 'Ed25519' },
+  { key: 'sharing', value: 'X25519 · sealed boxes' },
+  { key: 'hash', value: 'BLAKE2b-256' },
+  { key: 'recovery', value: 'BIP39 (128 bits)' },
+  { key: '2fa', value: 'Passkeys (WebAuthn) + email' },
+  { key: 'license', value: 'AGPL-3.0 · auditable' },
 ];
 
-const FAQ = [
-  {
-    q: '¿Puedo cambiar de plan cuando quiera?',
-    a: 'Sí, al instante. Stripe prorratea la diferencia automáticamente, sin penalizaciones.',
-  },
-  {
-    q: '¿Qué pasa si cancelo?',
-    a: 'Vuelves al plan gratuito de 1 GB. No borramos nada: conservas tus archivos y puedes descargarlos o exportarlos. Si superas la cuota gratuita, la cuenta queda en solo lectura hasta que liberes espacio.',
-  },
-  {
-    q: '¿El espacio es de mis archivos o del cifrado?',
-    a: 'Medimos el tamaño cifrado almacenado, que es prácticamente igual al original (el cifrado añade unos pocos bytes por bloque).',
-  },
-  {
-    q: '¿Es seguro pagar?',
-    a: 'El pago lo gestiona Stripe de principio a fin; Noctcom nunca ve los datos de tu tarjeta. Y como siempre, tus archivos siguen siendo ilegibles para nosotros.',
-  },
-  {
-    q: '¿Y si prefiero mi propio servidor?',
-    a: 'El self-host es gratis para siempre bajo AGPL-3.0: mismo cifrado, capacidad ilimitada, cero coste. Pagas solo si usas nuestra infraestructura gestionada.',
-  },
-];
+const FAQ_KEYS = ['plan-change', 'cancel', 'space', 'payment', 'self-host'] as const;
 
 export default function PricingPage() {
+  const t = useTranslations('pricing');
   const router = useRouter();
   const isAuthenticated = useAuth((s) => s.isAuthenticated);
   const [plans, setPlans] = useState<PublicPlan[]>([]);
@@ -101,13 +78,13 @@ export default function PricingPage() {
       const res = await startCheckout(plan.id);
       // Cambio de plan sobre una suscripción ya activa (sin redirección a Stripe).
       if (res.updated) {
-        toast.success(res.unchanged ? 'Ya tienes este plan' : `Plan actualizado a ${plan.label}`);
+        toast.success(res.unchanged ? t('toast.unchanged') : t('toast.updated', { plan: plan.label }));
         router.push('/vault/settings');
         return;
       }
       // Si había url, el navegador ya está redirigiendo a Stripe.
     } catch (err: any) {
-      toast.error(err?.message ?? 'No se pudo iniciar el pago');
+      toast.error(err?.message ?? t('toast.error'));
       setBusy(null);
     }
   }
@@ -121,15 +98,16 @@ export default function PricingPage() {
         <section className="max-w-4xl mx-auto px-6 pt-16 pb-10 text-center">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-violet-500/20 bg-violet-500/5 mb-6">
             <Sparkles className="size-3.5 text-violet-300" />
-            <span className="text-xs text-violet-300 font-medium">Mismo cifrado en todos los planes</span>
+            <span className="text-xs text-violet-300 font-medium">{t('hero.badge')}</span>
           </div>
           <h1 className="font-display text-4xl md:text-6xl font-light tracking-tight mb-5 leading-[1.05]">
-            Pagas por <span className="text-gradient-violet font-normal">espacio</span>,<br />
-            nunca por tus datos.
+            {t.rich('hero.title', {
+              emph: (chunks) => <span className="text-gradient-violet font-normal">{chunks}</span>,
+              br: () => <br />,
+            })}
           </h1>
           <p className="text-lg text-text-secondary max-w-xl mx-auto leading-relaxed">
-            El cifrado zero-knowledge es idéntico en cada plan. Solo cambia cuánto guardas.
-            Empieza gratis con 1 GB; amplía cuando lo necesites. Cancela cuando quieras.
+            {t('hero.subtitle')}
           </p>
         </section>
 
@@ -138,7 +116,11 @@ export default function PricingPage() {
           <div className="flex justify-center mb-7">
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/5">
               <Check className="size-3.5 text-emerald-400" />
-              <span className="text-xs text-text-secondary">Todas las cuentas empiezan con <strong className="text-text-primary">1 GB gratis</strong>. Amplía cuando lo necesites.</span>
+              <span className="text-xs text-text-secondary">
+                {t.rich('startFree', {
+                  strong: (chunks) => <strong className="text-text-primary">{chunks}</strong>,
+                })}
+              </span>
             </div>
           </div>
 
@@ -153,6 +135,9 @@ export default function PricingPage() {
                 const featured = plan.id === FEATURED;
                 // Relleno de la barra: escalera visual por nivel (no literal).
                 const fill = Math.round(((i + 1) / arr.length) * 100);
+                const tagline = (TAGLINE_KEYS as readonly string[]).includes(plan.id)
+                  ? t(`tagline.${plan.id}` as any)
+                  : t('tagline.default');
                 return (
                   <div
                     key={plan.id}
@@ -165,7 +150,7 @@ export default function PricingPage() {
                   >
                     {featured && (
                       <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full bg-violet-500 text-white text-[10px] font-semibold uppercase tracking-wide whitespace-nowrap shadow-lg shadow-violet-500/30">
-                        Recomendado
+                        {t('recommended')}
                       </div>
                     )}
 
@@ -173,14 +158,14 @@ export default function PricingPage() {
                     <div className="flex items-baseline justify-between mb-1">
                       <h3 className="text-sm font-semibold text-text-primary">{plan.label}</h3>
                     </div>
-                    <p className="text-[11px] text-text-tertiary mb-4">{TAGLINE[plan.id] ?? 'Almacenamiento cifrado'}</p>
+                    <p className="text-[11px] text-text-tertiary mb-4">{tagline}</p>
 
                     {/* Precio */}
                     <div className="flex items-baseline gap-1 mb-5">
                       <span className={cn('font-mono text-4xl font-bold tracking-tight', featured ? 'text-violet-200' : 'text-text-primary')}>
                         {plan.priceEurMonth}€
                       </span>
-                      <span className="text-xs text-text-tertiary">/mes</span>
+                      <span className="text-xs text-text-tertiary">{t('perMonth')}</span>
                     </div>
 
                     {/* Indicador de almacenamiento */}
@@ -189,7 +174,7 @@ export default function PricingPage() {
                       featured ? 'bg-violet-500/[0.06] border-violet-500/20' : 'bg-bg-surface-2 border-border-faint',
                     )}>
                       <div className="flex justify-between items-center mb-2">
-                        <span className="text-[10px] font-mono uppercase tracking-wider text-text-tertiary">Espacio</span>
+                        <span className="text-[10px] font-mono uppercase tracking-wider text-text-tertiary">{t('space')}</span>
                         <span className={cn('text-sm font-mono font-bold', featured ? 'text-violet-200' : 'text-text-primary')}>
                           {formatBytes(plan.quotaBytes)}
                         </span>
@@ -204,7 +189,7 @@ export default function PricingPage() {
 
                     <div className="flex items-center gap-2 text-xs text-text-tertiary mb-5">
                       <Check className="size-3.5 text-emerald-400 shrink-0" />
-                      Cifrado zero-knowledge
+                      {t('zeroKnowledge')}
                     </div>
 
                     <div className="mt-auto">
@@ -216,7 +201,7 @@ export default function PricingPage() {
                         loading={busy === plan.id}
                         onClick={() => choose(plan)}
                       >
-                        {soon ? 'Próximamente' : 'Elegir plan'}
+                        {soon ? t('soon') : t('choosePlan')}
                       </Button>
                     </div>
                   </div>
@@ -227,24 +212,24 @@ export default function PricingPage() {
 
           {!loading && !billingEnabled && (
             <p className="text-center text-xs text-text-tertiary mt-6">
-              Los planes de pago se activan en breve. Mientras tanto, empieza gratis con 1 GB.
+              {t('billingSoon')}
             </p>
           )}
           <p className="text-center text-xs text-text-tertiary mt-7">
-            Facturación mensual · Sin permanencia · Impuestos aplicables según tu país
+            {t('billingNote')}
           </p>
         </section>
 
         {/* ─── Franja de confianza ──────────────────────────── */}
         <section className="max-w-5xl mx-auto px-6 py-10">
           <p className="text-center text-sm text-text-tertiary mb-6">
-            Tus claves nunca salen de tu dispositivo. Todo el código es público y verificable.
+            {t('trust.intro')}
           </p>
           <div className="flex flex-wrap justify-center items-center gap-x-10 gap-y-4">
-            {TRUST.map((t) => (
-              <div key={t.label} className="flex items-center gap-2 text-text-secondary">
-                <t.icon className="size-4 text-violet-300" />
-                <span className="text-xs font-mono uppercase tracking-wider">{t.label}</span>
+            {TRUST.map((item) => (
+              <div key={item.label} className="flex items-center gap-2 text-text-secondary">
+                <item.icon className="size-4 text-violet-300" />
+                <span className="text-xs font-mono uppercase tracking-wider">{item.label}</span>
               </div>
             ))}
           </div>
@@ -254,18 +239,20 @@ export default function PricingPage() {
         <section className="max-w-4xl mx-auto px-6 py-8">
           <div className="rounded-2xl border border-border-faint bg-bg-surface p-7 md:p-9">
             <h2 className="font-display text-2xl font-light tracking-tight text-center mb-2">
-              Incluido en <span className="text-gradient-violet font-normal">todos</span> los planes
+              {t.rich('included.title', {
+                emph: (chunks) => <span className="text-gradient-violet font-normal">{chunks}</span>,
+              })}
             </h2>
             <p className="text-sm text-text-tertiary text-center mb-8 max-w-md mx-auto">
-              La privacidad no es un extra que se paga aparte. Es la base, igual para todos.
+              {t('included.subtitle')}
             </p>
             <div className="grid sm:grid-cols-2 gap-x-8 gap-y-4">
               {INCLUDED.map((f) => (
-                <div key={f.text} className="flex items-center gap-3">
+                <div key={f.key} className="flex items-center gap-3">
                   <div className="size-8 rounded-lg bg-violet-500/10 border border-violet-500/20 grid place-items-center shrink-0">
                     <f.icon className="size-4 text-violet-300" />
                   </div>
-                  <span className="text-sm text-text-secondary">{f.text}</span>
+                  <span className="text-sm text-text-secondary">{t(`included.items.${f.key}` as any)}</span>
                 </div>
               ))}
             </div>
@@ -275,23 +262,23 @@ export default function PricingPage() {
         {/* ─── Especificaciones técnicas (iguales para todos) ─ */}
         <section className="max-w-3xl mx-auto px-6 py-8">
           <h2 className="font-display text-2xl font-light tracking-tight text-center mb-2">
-            Especificaciones técnicas
+            {t('specs.title')}
           </h2>
           <p className="text-sm text-text-tertiary text-center mb-7">
-            La misma criptografía, pagues lo que pagues.{' '}
-            <Link href="/security" className="text-violet-300 hover:text-violet-200">Ver la spec completa</Link>.
+            {t('specs.subtitle')}{' '}
+            <Link href="/security" className="text-violet-300 hover:text-violet-200">{t('specs.viewFull')}</Link>.
           </p>
           <div className="overflow-hidden rounded-xl border border-border-faint bg-bg-surface">
-            {SPECS.map(([k, v], i) => (
+            {SPECS.map((spec, i) => (
               <div
-                key={k}
+                key={spec.key}
                 className={cn(
                   'flex items-center justify-between gap-4 px-5 py-3.5 hover:bg-bg-surface-2 transition-colors',
                   i !== SPECS.length - 1 && 'border-b border-border-faint',
                 )}
               >
-                <span className="text-sm text-text-secondary">{k}</span>
-                <span className="text-xs font-mono text-violet-200 text-right">{v}</span>
+                <span className="text-sm text-text-secondary">{t(`specs.labels.${spec.key}` as any)}</span>
+                <span className="text-xs font-mono text-violet-200 text-right">{spec.value}</span>
               </div>
             ))}
           </div>
@@ -306,14 +293,13 @@ export default function PricingPage() {
                 <Server className="size-5 text-violet-300" />
               </div>
               <div className="flex-1">
-                <h3 className="font-medium tracking-tight text-lg">¿Prefieres tu propio servidor? Es gratis.</h3>
+                <h3 className="font-medium tracking-tight text-lg">{t('selfHost.title')}</h3>
                 <p className="text-sm text-text-tertiary leading-relaxed mt-1">
-                  Noctcom es open source (AGPL-3.0). Despliégalo en tu hardware con un comando Docker:
-                  mismo cifrado, capacidad ilimitada, cero coste. Tu nube, tus reglas.
+                  {t('selfHost.body')}
                 </p>
               </div>
               <a href="https://github.com/RedderLabs/noctcom" target="_blank" rel="noopener noreferrer">
-                <Button variant="outline" size="sm" leftIcon={<Github className="size-4" />}>Ver en GitHub</Button>
+                <Button variant="outline" size="sm" leftIcon={<Github className="size-4" />}>{t('selfHost.cta')}</Button>
               </a>
             </div>
           </div>
@@ -322,19 +308,19 @@ export default function PricingPage() {
         {/* ─── FAQ ──────────────────────────────────────────── */}
         <section className="max-w-3xl mx-auto px-6 py-8">
           <h2 className="font-display text-2xl font-light tracking-tight text-center mb-8">
-            Preguntas frecuentes
+            {t('faq.title')}
           </h2>
           <div className="space-y-3">
-            {FAQ.map((item) => (
+            {FAQ_KEYS.map((key) => (
               <details
-                key={item.q}
+                key={key}
                 className="group rounded-xl border border-border-faint bg-bg-surface p-4 open:border-border-subtle transition-colors"
               >
                 <summary className="flex items-center justify-between cursor-pointer list-none text-sm font-medium">
-                  {item.q}
+                  {t(`faq.items.${key}.q` as any)}
                   <span className="text-text-tertiary group-open:rotate-45 transition-transform text-lg leading-none">+</span>
                 </summary>
-                <p className="text-sm text-text-tertiary leading-relaxed mt-3">{item.a}</p>
+                <p className="text-sm text-text-tertiary leading-relaxed mt-3">{t(`faq.items.${key}.a` as any)}</p>
               </details>
             ))}
           </div>
@@ -351,27 +337,30 @@ export default function PricingPage() {
             }} />
             <div className="relative">
               <h3 className="font-display text-3xl md:text-4xl font-light tracking-tight mb-4">
-                Empieza hoy con <span className="text-gradient-violet font-normal">1 GB gratis</span>.
+                {t.rich('cta.title', {
+                  emph: (chunks) => <span className="text-gradient-violet font-normal">{chunks}</span>,
+                })}
               </h3>
               <p className="text-text-secondary mb-8 max-w-lg mx-auto">
-                Sin tarjeta, sin trucos. Cifrado en tu dispositivo desde el primer archivo.
+                {t('cta.subtitle')}
               </p>
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
                 <Link href="/signup">
                   <Button variant="primary" size="lg" rightIcon={<ArrowRight className="size-4" />}>
-                    Crear cuenta gratis
+                    {t('cta.createAccount')}
                   </Button>
                 </Link>
                 <Link href="/security">
                   <Button variant="outline" size="lg" leftIcon={<KeyRound className="size-4" />}>
-                    Cómo funciona el cifrado
+                    {t('cta.howItWorks')}
                   </Button>
                 </Link>
               </div>
               <p className="text-xs text-text-tertiary mt-5">
-                Al crear la cuenta aceptas los{' '}
-                <Link href={'/terminos' as any} className="text-violet-300 hover:text-violet-200">Términos</Link>{' '}y la{' '}
-                <Link href={'/privacidad' as any} className="text-violet-300 hover:text-violet-200">Privacidad</Link>.
+                {t.rich('cta.legal', {
+                  terms: (chunks) => <Link href={'/terminos' as any} className="text-violet-300 hover:text-violet-200">{chunks}</Link>,
+                  privacy: (chunks) => <Link href={'/privacidad' as any} className="text-violet-300 hover:text-violet-200">{chunks}</Link>,
+                })}
               </p>
             </div>
           </div>

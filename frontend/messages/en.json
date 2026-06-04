@@ -404,5 +404,225 @@
       "title": "4. How to manage them",
       "p1": "You can delete or block cookies from your browser settings. Please note that blocking Cloudflare's security cookies may prevent access to the service."
     }
+  },
+  "pricing": {
+    "hero": {
+      "badge": "Same encryption on every plan",
+      "title": "You pay for <emph>space</emph>,<br></br>never for your data.",
+      "subtitle": "The zero-knowledge encryption is identical on every plan. Only how much you store changes. Start free with 1 GB; scale up when you need to. Cancel whenever you want."
+    },
+    "startFree": "Every account starts with <strong>1 GB free</strong>. Scale up when you need to.",
+    "recommended": "Recommended",
+    "tagline": {
+      "starter": "Personal use",
+      "plus": "Day to day",
+      "pro": "Professional",
+      "max": "Never think about space",
+      "default": "Encrypted storage"
+    },
+    "perMonth": "/mo",
+    "space": "Space",
+    "zeroKnowledge": "Zero-knowledge encryption",
+    "soon": "Coming soon",
+    "choosePlan": "Choose plan",
+    "billingSoon": "Paid plans go live shortly. In the meantime, start free with 1 GB.",
+    "billingNote": "Monthly billing · No commitment · Taxes apply depending on your country",
+    "trust": {
+      "intro": "Your keys never leave your device. All the code is public and verifiable."
+    },
+    "included": {
+      "title": "Included on <emph>every</emph> plan",
+      "subtitle": "Privacy isn't an add-on you pay for separately. It's the foundation, the same for everyone.",
+      "items": {
+        "e2e": "End-to-end zero-knowledge encryption",
+        "metadata": "Names and metadata encrypted too",
+        "share": "Encrypted sharing: only the recipient can open it",
+        "multidevice": "Multi-device and real-time sync",
+        "export": "Export your entire vault whenever you want",
+        "2fa": "2FA: passkeys and email code"
+      }
+    },
+    "specs": {
+      "title": "Technical specifications",
+      "subtitle": "The same cryptography, whatever you pay.",
+      "viewFull": "See the full spec",
+      "labels": {
+        "kdf": "Key derivation",
+        "fileEncryption": "File encryption",
+        "signatures": "Signatures",
+        "sharing": "Sharing",
+        "hash": "Hash",
+        "recovery": "Recovery",
+        "2fa": "2FA",
+        "license": "License"
+      }
+    },
+    "selfHost": {
+      "title": "Prefer your own server? It's free.",
+      "body": "Noctcom is open source (AGPL-3.0). Deploy it on your own hardware with a single Docker command: same encryption, unlimited capacity, zero cost. Your cloud, your rules.",
+      "cta": "View on GitHub"
+    },
+    "faq": {
+      "title": "Frequently asked questions",
+      "items": {
+        "plan-change": {
+          "q": "Can I change plans whenever I want?",
+          "a": "Yes, instantly. Stripe prorates the difference automatically, with no penalties."
+        },
+        "cancel": {
+          "q": "What happens if I cancel?",
+          "a": "You go back to the free 1 GB plan. We don't delete anything: you keep your files and can download or export them. If you exceed the free quota, the account becomes read-only until you free up space."
+        },
+        "space": {
+          "q": "Is the space for my files or for the encryption?",
+          "a": "We measure the encrypted size stored, which is practically the same as the original (encryption adds just a few bytes per block)."
+        },
+        "payment": {
+          "q": "Is it safe to pay?",
+          "a": "Payment is handled by Stripe from start to finish; Noctcom never sees your card details. And as always, your files remain unreadable to us."
+        },
+        "self-host": {
+          "q": "What if I prefer my own server?",
+          "a": "Self-hosting is free forever under AGPL-3.0: same encryption, unlimited capacity, zero cost. You only pay if you use our managed infrastructure."
+        }
+      }
+    },
+    "cta": {
+      "title": "Start today with <emph>1 GB free</emph>.",
+      "subtitle": "No card, no tricks. Encrypted on your device from the very first file.",
+      "createAccount": "Create free account",
+      "howItWorks": "How the encryption works",
+      "legal": "By creating an account you accept the <terms>Terms</terms> and the <privacy>Privacy Policy</privacy>."
+    },
+    "toast": {
+      "unchanged": "You already have this plan",
+      "updated": "Plan updated to {plan}",
+      "error": "Couldn't start the payment"
+    }
+  },
+  "terms": {
+    "title": "Terms of Service",
+    "intro": "These terms govern the use of Noctcom. By creating an account or using the service, you accept what is described herein. They are written to be understood: if something does not work for you, write to us at <link>hello@noctcom.com</link>.",
+    "provider": {
+      "title": "1. Who provides the service",
+      "p1": "Noctcom is a <strong>zero-knowledge</strong> encrypted storage service operated by <strong>Redder Labs</strong>, an independent development project (hereinafter, \"we\"). Contact: <link>hello@noctcom.com</link>.",
+      "p2": "Noctcom's software is open source under the <strong>AGPL-3.0</strong> license. You may audit it, modify it, and self-host it under that license. These terms govern the <em>managed service</em> we offer at noctcom.com; self-hosting is governed by the AGPL-3.0, not by this document."
+    },
+    "what": {
+      "title": "2. What Noctcom is (and is not)",
+      "p1": "Noctcom encrypts your files on your device <strong>before</strong> uploading them. Our servers store only encrypted data that we cannot decrypt. We have no access to the content, to your file names, or to your keys.",
+      "p2": "Noctcom is a storage service, not an office productivity suite or a real-time communication tool. We do not analyze, index, or monetize your content — among other reasons because, by design, <strong>we cannot</strong>."
+    },
+    "account": {
+      "title": "3. Your account, your password, and your recovery phrase",
+      "p1": "The security of your account depends on your <strong>master password</strong> and your 12-word <strong>recovery phrase</strong>. You are responsible for safeguarding them.",
+      "warning": "<strongAmber>Critical warning:</strongAmber> due to the zero-knowledge nature of the service, <strong>if you lose your password and your recovery phrase, your data is unrecoverable</strong>. There is no backdoor, no reset through support, and no copy of your keys in our possession. Be sure to keep your recovery phrase in a safe place."
+    },
+    "acceptableUse": {
+      "title": "4. Acceptable use",
+      "p1": "You agree not to use Noctcom to store or distribute unlawful content, nor for activities that infringe the law or the rights of third parties. As we cannot see your content, responsibility for what you store rests <strong>entirely with you</strong>.",
+      "p2": "We do not monitor content (we cannot), but we may act upon valid legal notices or signs of service abuse (e.g., automated use to overload the infrastructure), suspending accounts where appropriate."
+    },
+    "yourFiles": {
+      "title": "5. Your files are yours",
+      "p1": "You retain all rights over the content you upload. We acquire no ownership or license over your files beyond the technical (encrypted) storage necessary to provide you with the service. You may export your entire vault at any time."
+    },
+    "plans": {
+      "title": "6. Plans and pricing",
+      "p1": "The managed service includes an initial free quota. Paid plans, when activated, charge exclusively for <strong>storage capacity</strong> (bytes), never for your content. <strong>Self-hosting is and will always be free</strong> under AGPL-3.0. Any price changes will be communicated with reasonable advance notice."
+    },
+    "availability": {
+      "title": "7. Availability and \"as is\"",
+      "p1": "Noctcom is provided \"<strong>as is</strong>\" and \"as available\". We work to keep the service operational, but we do not guarantee uninterrupted uptime. There may be maintenance, outages, or changes. In this early stage, we recommend keeping your own copies of critical data."
+    },
+    "liability": {
+      "title": "8. Limitation of liability",
+      "p1": "To the maximum extent permitted by law, we shall not be liable for data loss arising from the loss of your keys (password/phrase), nor for indirect or consequential damages. Given the zero-knowledge design, <strong>we cannot recover encrypted data without your keys</strong>, and you accept that risk by using the service."
+    },
+    "cancellation": {
+      "title": "9. Cancellation",
+      "p1": "You may delete your account and your data at any time from the settings. We may suspend or close accounts that breach these terms or pose a risk to the service or to third parties."
+    },
+    "changes": {
+      "title": "10. Changes to the terms",
+      "p1": "We may update these terms. If the changes are substantial, we will communicate them through available means (e.g., a notice in the app or a service email). Continued use after they take effect constitutes acceptance."
+    },
+    "law": {
+      "title": "11. Governing law",
+      "p1": "These terms are governed by Spanish and European Union law. The processing of personal data is detailed in the <link>Privacy Policy</link>."
+    }
+  },
+  "privacy": {
+    "title": "Privacy Policy",
+    "intro": "Privacy is not a section in Noctcom: it is the architecture. The server is built so that it <strong>cannot</strong> read your content. This policy explains what data we process, why, for how long, and what rights you have (GDPR).",
+    "controller": {
+      "title": "1. Data controller",
+      "p1": "<strong>Redder Labs</strong>, the controller for the processing of data in the Noctcom service. For any privacy matter or to exercise your rights: <link>hello@noctcom.com</link>."
+    },
+    "zeroKnowledge": {
+      "title": "2. The zero-knowledge principle",
+      "p1": "Your files are encrypted on your device with keys derived from your password, which never leaves it. What reaches our servers is <strong>ciphertext that we cannot decrypt</strong>: neither the content, nor the file names, nor the metadata. It is not a promise of \"not looking\": it is a technical impossibility, verifiable in the open source code (AGPL-3.0)."
+    },
+    "data": {
+      "title": "3. What data we process",
+      "intro": "We process the bare minimum necessary for the service to function:",
+      "item1": "<strong>Hash of the email address</strong> (BLAKE2b). We do not store your email in plaintext. When we need to send you an email (verification, access code, recovery), your client sends us the email solely for that delivery and it is transmitted to our email provider; it is not stored in our database.",
+      "item2": "<strong>Username</strong> that you choose (it may be a pseudonym).",
+      "item3": "<strong>Encrypted content</strong>: file blobs, names and metadata, all end-to-end encrypted. To us they are opaque bytes.",
+      "item4": "<strong>Technical security data</strong>: session and access-attempt logs with the <strong>hashed</strong> IP address (not in plaintext), to prevent abuse and brute force.",
+      "item5": "<strong>Device information</strong> (e.g. the browser), stored encrypted so that you recognise your sessions.",
+      "item6": "<strong>Error reports</strong>: in the event of an application failure, the technical error is logged (stack trace, browser) so that it can be fixed; this may include the IP address of the request. It does not include your content.",
+      "outro": "We do <strong>not</strong> create advertising profiles, we do not sell data, and we do not use tracking cookies (see the <link>Cookie Policy</link>)."
+    },
+    "purpose": {
+      "title": "4. Purposes and legal bases",
+      "item1": "<strong>Providing the service</strong> (account, storage, synchronisation): performance of the contract (Art. 6(1)(b) GDPR).",
+      "item2": "<strong>Security and abuse prevention</strong> (IP hashes, rate limits, logs): legitimate interest (Art. 6(1)(f)).",
+      "item3": "<strong>Error correction</strong> (technical reports): legitimate interest (Art. 6(1)(f)), minimising data.",
+      "item4": "<strong>Service communications</strong> (verification, codes, notices): performance of the contract."
+    },
+    "processors": {
+      "title": "5. Processors and international transfers",
+      "p1": "To operate, we use providers that act as data processors. They handle only encrypted data or the minimum necessary:",
+      "item1": "<strong>Render</strong> — application hosting.",
+      "item2": "<strong>Neon</strong> — database (encrypted metadata and hashes).",
+      "item3": "<strong>Backblaze B2</strong> — storage of the encrypted blobs.",
+      "item4": "<strong>Resend</strong> — email delivery (receives your email only to deliver the message).",
+      "item5": "<strong>Google / Firebase</strong> — push notifications (if you enable them).",
+      "item6": "<strong>GlitchTip</strong> — application error logging.",
+      "item7": "<strong>Cloudflare</strong> — distribution network and protection against attacks.",
+      "outro": "Some providers may process data outside the European Economic Area (e.g. the USA). In such cases, the transfers are covered by the safeguards provided for under the GDPR (standard contractual clauses or applicable adequacy frameworks). Given the zero-knowledge design, what these providers store is, for the most part, encrypted and unreadable to them."
+    },
+    "retention": {
+      "title": "6. How long we keep the data",
+      "item1": "<strong>Account and encrypted content</strong>: for as long as your account exists. When you delete it, they are removed.",
+      "item2": "<strong>Access-attempt logs</strong>: automatically purged after 30 days.",
+      "item3": "<strong>Sessions</strong>: until they expire or are revoked.",
+      "item4": "<strong>Backups</strong>: retained for a limited window and rotated; the content remains encrypted."
+    },
+    "rights": {
+      "title": "7. Your rights (GDPR)",
+      "intro": "You may exercise at any time your rights of:",
+      "item1": "<strong>Access</strong> and <strong>rectification</strong>.",
+      "item2": "<strong>Erasure</strong>: you can delete your account and data from the settings.",
+      "item3": "<strong>Portability</strong>: export your entire vault whenever you wish.",
+      "item4": "<strong>Objection</strong> and <strong>restriction</strong> of processing.",
+      "outro": "To exercise them, write to us at <link>hello@noctcom.com</link>. You also have the right to lodge a complaint with the competent supervisory authority (in Spain, the <authority>Spanish Data Protection Agency</authority>).",
+      "note": "Note: due to zero-knowledge encryption, we cannot access the content of your account to handle a request about specific files; you retain that access with your keys."
+    },
+    "minors": {
+      "title": "8. Minors",
+      "p1": "Noctcom is not directed at children under 14 years of age. If you believe that a minor has provided us with data without the appropriate consent, contact us and we will resolve it."
+    },
+    "changes": {
+      "title": "9. Changes to this policy",
+      "p1": "We may update this policy. Substantial changes will be communicated through the available channels. The \"last revised\" date above indicates the version in force."
+    }
+  },
+  "cookieBanner": {
+    "title": "Cookies",
+    "description": "Noctcom does not use tracking cookies. The only active cookies are those set by <strong>Cloudflare</strong> for DDoS protection and network security (<cfBm></cfBm>, <cfClearance></cfClearance>): strictly necessary and they do not collect personal data. <link>Learn more</link>.",
+    "accept": "Got it",
+    "close": "Close"
   }
 }
