@@ -194,7 +194,12 @@ const billingRoutes: FastifyPluginAsync = async (app) => {
       const priceId = sub.items.data[0]?.price.id ?? '';
       const active = sub.status === 'active' || sub.status === 'trialing';
       const plan = active ? (planByStripePrice(priceId) ?? FREE_PLAN) : FREE_PLAN;
-      const periodEnd = sub.current_period_end ? new Date(sub.current_period_end * 1000) : null;
+      // En las versiones nuevas de la API, current_period_end vive en la línea
+      // de la suscripción, no en la suscripción. Probamos ambos.
+      const periodUnix = (sub as { current_period_end?: number }).current_period_end
+        ?? (sub.items.data[0] as { current_period_end?: number } | undefined)?.current_period_end
+        ?? null;
+      const periodEnd = periodUnix ? new Date(periodUnix * 1000) : null;
 
       await db.query(
         `UPDATE users SET
