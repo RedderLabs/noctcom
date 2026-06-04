@@ -10,5 +10,70 @@
     "login": "Sign in",
     "signup": "Create account",
     "back": "Back"
+  },
+  "footer": {
+    "about": "About",
+    "security": "Security",
+    "roadmap": "Roadmap",
+    "pricing": "Pricing",
+    "terms": "Terms",
+    "privacy": "Privacy",
+    "cookies": "Cookies",
+    "xLabel": "Noctcom on X",
+    "version": "v{version} · up to date since {builtAt}"
+  },
+  "landing": {
+    "hero": {
+      "badge": "Real zero-knowledge · Encrypted on your device · Open source",
+      "titleLine1": "Your private vault.",
+      "titleLine2": "Encrypted before it leaves your device.",
+      "subtitle": "Most clouds promise not to look at your files. Noctcom is built so that it <strong>can't</strong>, even if we wanted to. Your password and your keys never touch our servers. We only store encrypted data we can't open.",
+      "ctaStart": "Start free · 1 GB",
+      "ctaHaveAccount": "I already have an account"
+    },
+    "features": {
+      "zk": { "title": "Zero-knowledge by default", "body": "Not a setting you turn on: it's the only way it works. Argon2id + XChaCha20-Poly1305." },
+      "metadata": { "title": "Not even metadata", "body": "Names, sizes and tags are encrypted too. Not just the content." },
+      "email": { "title": "No email in the clear", "body": "We don't even store your email: just a hash. A database dump won't reveal who you are." },
+      "share": { "title": "Anonymous sharing", "body": "X25519 sealed boxes: only the recipient opens the file. Not us, not anyone with server access." }
+    },
+    "demo": {
+      "title": "Don't take our word for it: <hl>watch it</hl>.",
+      "subtitle": "The full security walkthrough in 84 seconds: what happens to your password, what travels over the network, and what our own server can (and can't) see."
+    },
+    "notDo": {
+      "title": "What we <hl>don't</hl> do.",
+      "body": "Noctcom is not an office suite. There's no chat, no video calls, no online document editor. It's deliberate: every feature that gives a server the ability to <em>read</em> your data is a crack in your privacy. We do <strong>one thing</strong> —store your files so that only you can read them— and we do it better than anyone.",
+      "note": "Algorithm versioning ready for post-quantum (Kyber/Dilithium on the roadmap). Your encryption today won't expire tomorrow."
+    },
+    "audience": {
+      "title": "For those to whom privacy <hl>isn't optional</hl>.",
+      "subtitle": "If you handle material that can't leak —an investigation, a source, a case file— you need more than a provider's promise to «not look». You need it to be <strong>unable</strong> to.",
+      "cards": {
+        "journalism": { "title": "Investigative journalism", "body": "Keep sensitive material encrypted on your device before it ever leaves it. Not even we can open it." },
+        "sources": { "title": "Sources and whistleblowing", "body": "Share with your newsroom via X25519 sealed boxes: only the recipient opens it, not even with server access." },
+        "professional": { "title": "Professional confidentiality", "body": "Lawyers, doctors, journalists: client, patient or source data with encryption the provider can't break." },
+        "jurisdiction": { "title": "Control and jurisdiction", "body": "AGPL self-host: your data on your own hardware, outside other people's jurisdictions and providers." }
+      },
+      "roadmapNote": "<hl>On the roadmap — verifiable chain of custody:</hl> authorship signing and timestamping to prove to an editor or a judge that a file is intact and from a given date, <em>without anyone else reading it</em>. All built on hashes and signatures; the content never leaves your control.",
+      "honestyNote": "Honesty first: zero-knowledge encryption protects your files at rest, it doesn't give you network anonymity. To hide <em>who</em> you talk to, combine it with tools like Tor according to your threat model. And like everything in Noctcom, the code is open and auditable."
+    },
+    "selfhost": {
+      "badge": "Self-Hosted",
+      "title": "Your server, your rules.",
+      "body": "Noctcom is 100% open source (AGPL-3.0). Deploy it on your own hardware with a single Docker command. Same encryption, no third parties. Your cloud, your hardware, real zero-knowledge.",
+      "download": "Download v{version}",
+      "github": "View on GitHub",
+      "deployComment": "# Quick deploy",
+      "readyComment": "# Ready at https://your-domain.com"
+    },
+    "whySelfhost": {
+      "title": "Why self-host?",
+      "cards": {
+        "control": { "title": "Total control", "body": "Your data on your infrastructure. No middlemen, no external jurisdictions." },
+        "auditable": { "title": "Auditable", "body": "Open source AGPL-3.0. Verify every line that protects your files." },
+        "sameCrypto": { "title": "Same encryption", "body": "Identical cryptographic guarantees as the cloud version. Real zero-knowledge." }
+      }
+    }
   }
 }

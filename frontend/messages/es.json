@@ -10,5 +10,70 @@
     "login": "Iniciar sesión",
     "signup": "Crear cuenta",
     "back": "Volver"
+  },
+  "footer": {
+    "about": "Nosotros",
+    "security": "Seguridad",
+    "roadmap": "Hoja de ruta",
+    "pricing": "Precios",
+    "terms": "Términos",
+    "privacy": "Privacidad",
+    "cookies": "Cookies",
+    "xLabel": "Noctcom en X",
+    "version": "v{version} · al día desde el {builtAt}"
+  },
+  "landing": {
+    "hero": {
+      "badge": "Zero-Knowledge real · Cifrado en tu dispositivo · Open Source",
+      "titleLine1": "Tu bóveda privada.",
+      "titleLine2": "Cifrada antes de salir de tu dispositivo.",
+      "subtitle": "La mayoría de las nubes prometen no mirar tus archivos. Noctcom está construido para que <strong>no pueda</strong>, aunque quisiéramos. Tu contraseña y tus claves jamás tocan nuestros servidores. Nosotros solo guardamos cifrado que no sabemos abrir.",
+      "ctaStart": "Empezar gratis · 1 GB",
+      "ctaHaveAccount": "Ya tengo cuenta"
+    },
+    "features": {
+      "zk": { "title": "Zero-Knowledge por defecto", "body": "No es una opción que activas: es la única forma en que funciona. Argon2id + XChaCha20-Poly1305." },
+      "metadata": { "title": "Ni los metadatos", "body": "Nombres, tamaños y etiquetas también van cifrados. No solo el contenido." },
+      "email": { "title": "Sin tu email en claro", "body": "Ni siquiera almacenamos tu correo: solo un hash. Un volcado de la BD no revela quién eres." },
+      "share": { "title": "Compartir anónimo", "body": "Sealed boxes X25519: solo el destinatario abre el archivo. Ni nosotros, ni nadie con acceso al servidor." }
+    },
+    "demo": {
+      "title": "No nos creas: <hl>míralo</hl>.",
+      "subtitle": "La prueba de seguridad completa en 84 segundos: qué pasa con tu contraseña, qué viaja por la red y qué ve (y qué no puede ver) nuestro propio servidor."
+    },
+    "notDo": {
+      "title": "Lo que <hl>no</hl> hacemos.",
+      "body": "Noctcom no es una suite de ofimática. No tenemos chat, ni videollamadas, ni editor de documentos online. Es deliberado: cada función que añade un servidor capaz de <em>leer</em> tus datos es una grieta en la privacidad. Hacemos <strong>una sola cosa</strong> —guardar tus archivos de forma que solo tú puedas leerlos— y la hacemos mejor que nadie.",
+      "note": "Versionado de algoritmos preparado para post-cuántico (Kyber/Dilithium en hoja de ruta). Tu cifrado de hoy no caduca mañana."
+    },
+    "audience": {
+      "title": "Para quien la privacidad <hl>no es opcional</hl>.",
+      "subtitle": "Si manejas material que no puede filtrarse —una investigación, una fuente, un expediente— necesitas algo más que la promesa de un proveedor de «no mirar». Necesitas que <strong>no pueda</strong>.",
+      "cards": {
+        "journalism": { "title": "Periodismo de investigación", "body": "Guarda material sensible cifrado en tu dispositivo antes de que salga de él. Ni nosotros podemos abrirlo." },
+        "sources": { "title": "Fuentes y denuncia", "body": "Comparte con tu redacción por sealed boxes X25519: solo el destinatario lo abre, ni con acceso al servidor." },
+        "professional": { "title": "Secreto profesional", "body": "Abogados, médicos, periodistas: datos de clientes, pacientes o fuentes con cifrado que el proveedor no puede romper." },
+        "jurisdiction": { "title": "Control y jurisdicción", "body": "Self-host AGPL: tus datos en tu propio hardware, fuera de jurisdicciones y proveedores ajenos." }
+      },
+      "roadmapNote": "<hl>En hoja de ruta — cadena de custodia verificable:</hl> firma de autoría y sellado de tiempo para demostrar a un editor o un juez que un archivo es íntegro y de qué fecha es, <em>sin que nadie más lo lea</em>. Todo sobre hashes y firmas; el contenido nunca sale de tu control.",
+      "honestyNote": "Honestidad ante todo: el cifrado zero-knowledge protege tus archivos en reposo, no te da anonimato de red. Para ocultar <em>con quién</em> hablas, combínalo con herramientas como Tor según tu modelo de amenaza. Y como todo en Noctcom, el código es abierto y auditable."
+    },
+    "selfhost": {
+      "badge": "Self-Hosted",
+      "title": "Tu servidor, tus reglas.",
+      "body": "Noctcom es 100% open source (AGPL-3.0). Despliégalo en tu propio hardware con un solo comando Docker. Mismo cifrado, sin depender de terceros. Tu nube, tu hardware, zero-knowledge de verdad.",
+      "download": "Descargar v{version}",
+      "github": "Ver en GitHub",
+      "deployComment": "# Despliegue rápido",
+      "readyComment": "# Listo en https://tu-dominio.com"
+    },
+    "whySelfhost": {
+      "title": "¿Por qué self-host?",
+      "cards": {
+        "control": { "title": "Control total", "body": "Tus datos en tu infraestructura. Sin intermediarios, sin jurisdicciones externas." },
+        "auditable": { "title": "Auditable", "body": "Código abierto AGPL-3.0. Verifica cada línea que protege tus archivos." },
+        "sameCrypto": { "title": "Mismo cifrado", "body": "Idénticas garantías criptográficas que la versión cloud. Zero-knowledge real." }
+      }
+    }
   }
 }
