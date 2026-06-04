@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { Shield, X } from 'lucide-react';
 
 const COOKIE_KEY = 'noctcom.cookies-accepted';
@@ -28,11 +29,12 @@ export function CookieBanner() {
         <div className="flex-1 min-w-0">
           <h3 className="text-sm font-medium mb-1">Cookies</h3>
           <p className="text-xs text-text-tertiary leading-relaxed">
-            Noctcom no utiliza cookies propias de rastreo. Las unicas cookies activas son las
-            que establece <strong className="text-text-secondary">Cloudflare</strong> para
-            proteccion DDoS y seguridad de red (<code className="text-[10px] bg-bg-surface-2 px-1 py-0.5 rounded">__cf_bm</code>,{' '}
-            <code className="text-[10px] bg-bg-surface-2 px-1 py-0.5 rounded">cf_clearance</code>).
-            Estas cookies son estrictamente necesarias y no recopilan datos personales.
+            Noctcom no utiliza cookies de rastreo. Las únicas cookies activas son las que establece{' '}
+            <strong className="text-text-secondary">Cloudflare</strong> para protección DDoS y seguridad
+            de red (<code className="text-[10px] bg-bg-surface-2 px-1 py-0.5 rounded">__cf_bm</code>,{' '}
+            <code className="text-[10px] bg-bg-surface-2 px-1 py-0.5 rounded">cf_clearance</code>):
+            estrictamente necesarias y no recopilan datos personales.{' '}
+            <Link href={'/cookies' as any} className="text-violet-300 hover:text-violet-200">Más información</Link>.
           </p>
         </div>
         <button

@@ -1,7 +1,6 @@
 import './globals.css';
 import { Toaster } from 'sonner';
 import { CookieBanner } from '@/components/ui/CookieBanner';
-import { GoogleTagManagerHead, GoogleTagManagerBody } from '@/components/GoogleTagManager';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -63,11 +62,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="es" suppressHydrationWarning>
       <head>
-        <GoogleTagManagerHead />
         <meta name="google-site-verification" content="zI45FHf6c5bM5siv6QHQEEPvYqjwfZ4tan65XOzaq4E" />
       </head>
       <body className="grain">
-        <GoogleTagManagerBody />
         {children}
         <CookieBanner />
         <Toaster

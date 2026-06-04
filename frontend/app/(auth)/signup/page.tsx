@@ -334,6 +334,13 @@ export default function SignupPage() {
           <Button type="submit" variant="primary" size="lg" className="w-full" rightIcon={<ArrowRight className="size-4" />}>
             Continuar
           </Button>
+
+          <p className="text-[11px] text-text-tertiary text-center leading-relaxed">
+            Al crear la cuenta aceptas los{' '}
+            <Link href={'/terminos' as any} className="text-violet-300 hover:text-violet-200">Términos</Link>{' '}
+            y la{' '}
+            <Link href={'/privacidad' as any} className="text-violet-300 hover:text-violet-200">Política de Privacidad</Link>.
+          </p>
         </form>
       )}
 

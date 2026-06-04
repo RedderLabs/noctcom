@@ -248,6 +248,15 @@ export default function LandingPage() {
             <Link href="/roadmap" className="hover:text-text-secondary transition-colors">
               Hoja de ruta
             </Link>
+            <Link href={'/terminos' as any} className="hover:text-text-secondary transition-colors">
+              Términos
+            </Link>
+            <Link href={'/privacidad' as any} className="hover:text-text-secondary transition-colors">
+              Privacidad
+            </Link>
+            <Link href={'/cookies' as any} className="hover:text-text-secondary transition-colors">
+              Cookies
+            </Link>
             <a
               href="https://x.com/noctcom"
               target="_blank"

@@ -11,7 +11,6 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 ARG NEXT_PUBLIC_API_URL=https://api.noctcom.com
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
-ENV NEXT_PUBLIC_GTM_ID=GTM-K4QTVDPZ
 # Config web de Firebase (FCM): pública por diseño — identifica el proyecto, no
 # autentica nada (la seguridad está en el service account del backend). Los
 # mismos valores ya viven en public/firebase-messaging-sw.js.
