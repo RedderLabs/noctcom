@@ -22,6 +22,10 @@ ENV NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=noctcom-6116b.firebasestorage.app
 ENV NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=2207334954
 ENV NEXT_PUBLIC_FIREBASE_APP_ID=1:2207334954:web:594da6aa8bb2636ab6b953
 ENV NEXT_PUBLIC_FIREBASE_VAPID_KEY=BM9vrhjjcOxpfPsXpfNhRI6ngQt35f3xvUPG2t2c_Kf2M9GNL4SJdksw2v4yKWJyC8B8uhSLY3MCjyqHOndRZVE
+# Error tracking (GlitchTip, proyecto noctcom-web). DSN publico (solo permite
+# enviar eventos). NEXT_PUBLIC_* se inyecta en build-time, por eso va aqui y no
+# en el entorno de Render.
+ENV NEXT_PUBLIC_SENTRY_DSN=https://3d687198b7a142b289b32839792a2e92@app.glitchtip.com/24348
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 
