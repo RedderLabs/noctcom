@@ -141,7 +141,7 @@ mod tests {
     #[test]
     fn detects_system_drive() {
         assert!(is_system_drive('C', "C:"));
-        assert!(is_system_drive('c', "C:") == false); // letter ya viene normalizada
+        assert!(!is_system_drive('c', "C:")); // letter ya viene normalizada
         assert!(!is_system_drive('D', "C:"));
     }
 

@@ -187,7 +187,7 @@ async fn run(server_override: Option<String>) -> Result<()> {
             }
             _ = hb.tick() => {
                 let msg = serde_json::to_string(&ClientMsg::Heartbeat)?;
-                write.send(Message::Text(msg.into())).await?;
+                write.send(Message::Text(msg)).await?;
             }
             _ = tokio::signal::ctrl_c() => { println!("Cerrando…"); break; }
         }
@@ -208,7 +208,7 @@ fn process_incoming(identity: Arc<Identity>, txt: String, tx: &mpsc::UnboundedSe
             let signature = identity.sign_b64(&nonce_bytes);
             println!("Reto recibido; firmando…");
             if let Ok(reply) = serde_json::to_string(&ClientMsg::Auth { signature }) {
-                let _ = tx.send(Message::Text(reply.into()));
+                let _ = tx.send(Message::Text(reply));
             }
         }
         ServerMsg::Ready => println!("✓ Autenticado. Canal operativo."),
@@ -224,7 +224,7 @@ fn process_incoming(identity: Arc<Identity>, txt: String, tx: &mpsc::UnboundedSe
                     }
                 };
                 if let Ok(s) = serde_json::to_string(&reply) {
-                    let _ = tx.send(Message::Text(s.into()));
+                    let _ = tx.send(Message::Text(s));
                 }
             });
         }

@@ -1,0 +1,35 @@
+name: agent-ci
+
+# Gate del agente "Noctcom Connector" (Rust): solo corre cuando cambia agent/.
+# Linux basta como smoke de compilación + clippy + tests; la matriz multi-SO
+# completa vive en agent-release.yml (al taggear).
+on:
+  push:
+    branches: [main]
+    paths: ['agent/**', '.github/workflows/agent-ci.yml']
+  pull_request:
+    branches: [main]
+    paths: ['agent/**', '.github/workflows/agent-ci.yml']
+
+concurrency:
+  group: agent-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: cargo check + clippy + test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: agent
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: agent
+      - run: cargo check --all-targets
+      - run: cargo clippy --all-targets -- -D warnings
+      - run: cargo test

@@ -36,7 +36,7 @@ impl State {
             return Ok(Self::default());
         }
         let raw = std::fs::read(&p).context("leyendo state.json")?;
-        Ok(serde_json::from_slice(&raw).context("state.json corrupto")?)
+        serde_json::from_slice(&raw).context("state.json corrupto")
     }
 
     pub fn save(&self) -> Result<()> {
