@@ -21,6 +21,21 @@
 
 > Actualmente ofrecemos crédito público en `HALL_OF_FAME.md`. El programa de recompensas económicas se activará cuando el proyecto cuente con patrocinios o financiación.
 
+## Seguridad continua (CI)
+
+Cada push y cada PR a `main` pasa por un escaneo automático de seguridad
+(`.github/workflows/security.yml`), y Dependabot abre PRs con los parches:
+
+- **CodeQL** (`security-extended` + `security-and-quality`) — SAST de JS/TS.
+- **Semgrep** — reglas OWASP Top 10, JWT, secretos, TS/JS.
+- **OSV-Scanner** y **npm audit** — vulnerabilidades conocidas en dependencias (npm y Cargo).
+- **Trivy** — sistema de archivos y Dockerfiles.
+- **Gitleaks** — detección de secretos en el historial.
+- **Dependabot** — actualizaciones y parches automáticos (npm, Cargo, GitHub Actions).
+
+No sustituye a una auditoría externa (pendiente, ver más abajo), pero mantiene
+una línea base verificable en cada commit.
+
 ## Qué NO consideramos vulnerabilidad
 
 - Reportes automatizados de scanners sin explotación demostrada
