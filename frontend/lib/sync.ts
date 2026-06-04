@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useCallback } from 'react';
 import { toast } from 'sonner';
+import { rt } from './i18n-runtime';
 import { useAuth } from './auth-store';
 import { useVault } from './vault-store';
 import { loadTokens, setTokens } from './api';
@@ -25,12 +26,12 @@ export function useSync() {
   const handleChange = useCallback((event: { resource: string; action: string }) => {
     if (event.resource === 'devices') {
       if (event.action === 'new') {
-        toast.info('Nuevo dispositivo conectado a tu cuenta');
+        toast.info(rt('toasts.newDevice'));
       }
       if (event.action === 'revoked') {
         const storedId = typeof window !== 'undefined' ? localStorage.getItem('noctcom.deviceId') : null;
         if (storedId && storedId === deviceId) {
-          toast.error('Este dispositivo ha sido revocado');
+          toast.error(rt('toasts.deviceRevoked'));
           setTokens(null, null);
           logout();
         }

@@ -1400,5 +1400,22 @@
       "activity": "Activity",
       "trash": "Trash"
     }
+  },
+  "toasts": {
+    "loadVaultError": "Failed to load the vault",
+    "loadFilesError": "Failed to load files",
+    "movedToTrash": "“{name}” moved to trash",
+    "deleteFailed": "Couldn't delete: {error}",
+    "uploaded": "“{name}” encrypted and uploaded",
+    "uploadError": "Error: {name} — {error}",
+    "downloading": "Downloading “{name}”…",
+    "downloaded": "“{name}” downloaded",
+    "downloadFailed": "Download failed: {error}",
+    "restored": "File restored",
+    "deletedForever": "Permanently deleted",
+    "sharedWith": "Shared with “{name}”",
+    "shareRevoked": "Share revoked",
+    "newDevice": "New device connected to your account",
+    "deviceRevoked": "This device has been revoked"
   }
 }

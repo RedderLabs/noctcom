@@ -2,6 +2,7 @@
 
 import { create } from 'zustand';
 import { toast } from 'sonner';
+import { rt } from './i18n-runtime';
 import { useAuth } from './auth-store';
 import { apiFetch, uploadToPresignedUrl, getAccessToken } from './api';
 import {
@@ -192,7 +193,7 @@ export const useVault = create<VaultState & VaultActions>((set, get) => ({
       await get().refreshStorage();
       if (currentVaultId) await get().loadNodes(null);
     } catch (err: any) {
-      toast.error(err.message ?? 'Error al cargar la bóveda');
+      toast.error(err.message ?? rt('toasts.loadVaultError'));
     } finally {
       set({ loading: false });
     }
@@ -211,7 +212,7 @@ export const useVault = create<VaultState & VaultActions>((set, get) => ({
       );
       set({ nodes: decryptNodeList(raw, vaultKey), parentId });
     } catch (err: any) {
-      toast.error(err.message ?? 'Error al cargar archivos');
+      toast.error(err.message ?? rt('toasts.loadFilesError'));
     } finally {
       set({ loading: false });
     }
@@ -260,12 +261,12 @@ export const useVault = create<VaultState & VaultActions>((set, get) => ({
     try {
       await apiFetch(`/api/v1/nodes/${nodeId}`, { method: 'DELETE' });
       if (node) {
-        toast.success(`«${node.name}» movido a la papelera`);
+        toast.success(rt('toasts.movedToTrash', { name: node.name }));
         get().logActivity({ type: 'delete', description: 'Archivo eliminado', target: node.name });
       }
       await get().loadNodes(get().parentId);
     } catch (err: any) {
-      toast.error(`No se pudo eliminar: ${err.message}`);
+      toast.error(rt('toasts.deleteFailed', { error: err.message }));
     }
   },
 
@@ -388,13 +389,13 @@ export const useVault = create<VaultState & VaultActions>((set, get) => ({
         set((s) => ({
           uploads: { ...s.uploads, [uid]: { ...s.uploads[uid]!, status: 'done', progress: 100 } },
         }));
-        toast.success(`«${file.name}» cifrado y subido`);
+        toast.success(rt('toasts.uploaded', { name: file.name }));
         get().logActivity({ type: 'upload', description: 'Archivo subido', target: file.name });
       } catch (err: any) {
         set((s) => ({
           uploads: { ...s.uploads, [uid]: { ...s.uploads[uid]!, status: 'error' } },
         }));
-        toast.error(`Error: ${file.name} — ${err.message}`);
+        toast.error(rt('toasts.uploadError', { name: file.name, error: err.message }));
       }
     }
 
@@ -455,7 +456,7 @@ export const useVault = create<VaultState & VaultActions>((set, get) => ({
   downloadFile: async (node) => {
     if (node.kind !== 'file' || !node.currentVersionId) return;
     try {
-      toast.info(`Descargando «${node.name}»…`);
+      toast.info(rt('toasts.downloading', { name: node.name }));
       const blob = await get().getFileBlob(node);
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
@@ -463,9 +464,9 @@ export const useVault = create<VaultState & VaultActions>((set, get) => ({
       document.body.appendChild(a);
       a.click();
       setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(a.href); }, 100);
-      toast.success(`«${node.name}» descargado`);
+      toast.success(rt('toasts.downloaded', { name: node.name }));
     } catch (err: any) {
-      toast.error(`Error al descargar: ${err.message}`);
+      toast.error(rt('toasts.downloadFailed', { error: err.message }));
     }
   },
 
@@ -486,15 +487,15 @@ export const useVault = create<VaultState & VaultActions>((set, get) => ({
 
   restoreNode: async (nodeId) => {
     await apiFetch(`/api/v1/nodes/${nodeId}/restore`, { method: 'POST' });
-    toast.success('Archivo restaurado');
+    toast.success(rt('toasts.restored'));
   },
 
   purgeNode: async (nodeId) => {
     try {
       await apiFetch(`/api/v1/nodes/${nodeId}/permanent`, { method: 'DELETE' });
-      toast.success('Eliminado definitivamente');
+      toast.success(rt('toasts.deletedForever'));
     } catch (err: any) {
-      toast.error(`No se pudo eliminar: ${err.message}`);
+      toast.error(rt('toasts.deleteFailed', { error: err.message }));
       throw err;
     }
   },
@@ -579,7 +580,7 @@ export const useVault = create<VaultState & VaultActions>((set, get) => ({
       }),
     });
 
-    toast.success(`Compartido con «${recipient.username}»`);
+    toast.success(rt('toasts.sharedWith', { name: recipient.username }));
     get().logActivity({ type: 'share', description: `Compartido con ${recipient.username}`, target: node.name });
   },
 
@@ -594,7 +595,7 @@ export const useVault = create<VaultState & VaultActions>((set, get) => ({
 
   revokeShare: async (shareId) => {
     await apiFetch(`/api/v1/shares/${shareId}`, { method: 'DELETE' });
-    toast.success('Compartido revocado');
+    toast.success(rt('toasts.shareRevoked'));
   },
 
   // ─── Activity log ───────────────────────────────────────────

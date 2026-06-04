@@ -1400,5 +1400,22 @@
       "activity": "Actividad",
       "trash": "Papelera"
     }
+  },
+  "toasts": {
+    "loadVaultError": "Error al cargar la bóveda",
+    "loadFilesError": "Error al cargar archivos",
+    "movedToTrash": "«{name}» movido a la papelera",
+    "deleteFailed": "No se pudo eliminar: {error}",
+    "uploaded": "«{name}» cifrado y subido",
+    "uploadError": "Error: {name} — {error}",
+    "downloading": "Descargando «{name}»…",
+    "downloaded": "«{name}» descargado",
+    "downloadFailed": "Error al descargar: {error}",
+    "restored": "Archivo restaurado",
+    "deletedForever": "Eliminado definitivamente",
+    "sharedWith": "Compartido con «{name}»",
+    "shareRevoked": "Compartido revocado",
+    "newDevice": "Nuevo dispositivo conectado a tu cuenta",
+    "deviceRevoked": "Este dispositivo ha sido revocado"
   }
 }
