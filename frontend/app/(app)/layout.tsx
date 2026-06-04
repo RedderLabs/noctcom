@@ -260,16 +260,16 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                   href="/vault/settings"
                   onClick={() => setMobileOpen(false)}
                   aria-label="Ajustes"
-                  className="p-1.5 rounded-md hover:bg-bg-surface-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
+                  className="p-1.5 rounded-md hover:bg-bg-surface-2 transition-colors"
                 >
-                  <Settings className="size-4 text-text-tertiary" />
+                  <Settings className="size-4 text-text-tertiary hover:text-text-secondary transition-colors" />
                 </Link>
                 <button
                   onClick={() => { resetVault(); logout(); router.push('/login'); }}
-                  className="p-1.5 rounded-md hover:bg-bg-surface-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
+                  className="p-1.5 rounded-md hover:bg-bg-surface-2 transition-colors"
                   aria-label="Cerrar sesión"
                 >
-                  <LogOut className="size-4 text-text-tertiary" />
+                  <LogOut className="size-4 text-text-tertiary hover:text-text-secondary transition-colors" />
                 </button>
               </>
             )}
