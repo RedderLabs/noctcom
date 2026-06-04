@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useTranslations, useLocale } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import {
   User, Shield, ShieldCheck, Monitor, Smartphone, HardDrive,
@@ -50,14 +51,16 @@ interface AdminUser {
   lastLoginAt: string | null;
 }
 
-function parseDeviceName(raw: string): { browser: string; os: string } {
-  let browser = 'Navegador';
+type TFn = (key: string, values?: Record<string, string | number>) => string;
+
+function parseDeviceName(raw: string, t: TFn): { browser: string; os: string } {
+  let browser = t('browserFallback');
   if (raw.includes('Firefox/')) browser = `Firefox ${raw.split('Firefox/')[1]?.split(' ')[0] ?? ''}`;
   else if (raw.includes('Edg/')) browser = `Edge ${raw.split('Edg/')[1]?.split(' ')[0] ?? ''}`;
   else if (raw.includes('Chrome/')) browser = `Chrome ${raw.split('Chrome/')[1]?.split(' ')[0] ?? ''}`;
   else if (raw.includes('Safari/') && !raw.includes('Chrome')) browser = 'Safari';
 
-  let os = 'Desconocido';
+  let os = t('osUnknown');
   if (raw.includes('Windows NT 10')) os = 'Windows 10/11';
   else if (raw.includes('Windows')) os = 'Windows';
   else if (raw.includes('Mac OS X')) os = 'macOS';
@@ -76,25 +79,27 @@ function fmtSize(bytes: number): string {
   return `${n.toFixed(n < 10 && i > 0 ? 1 : 0)} ${units[i]}`;
 }
 
-function timeAgo(iso: string | null): string {
-  if (!iso) return 'Nunca';
+function timeAgo(iso: string | null, t: TFn): string {
+  if (!iso) return t('never');
   const diff = Date.now() - new Date(iso).getTime();
   const mins = Math.floor(diff / 60000);
-  if (mins < 1) return 'Justo ahora';
-  if (mins < 60) return `Hace ${mins} min`;
+  if (mins < 1) return t('justNow');
+  if (mins < 60) return t('agoMinutes', { count: mins });
   const hours = Math.floor(mins / 60);
-  if (hours < 24) return `Hace ${hours}h`;
+  if (hours < 24) return t('agoHours', { count: hours });
   const days = Math.floor(hours / 24);
-  return `Hace ${days}d`;
+  return t('agoDays', { count: days });
 }
 
-function fmtDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('es-ES', {
+function fmtDate(iso: string, locale: string): string {
+  return new Date(iso).toLocaleDateString(locale, {
     day: 'numeric', month: 'short', year: 'numeric',
   });
 }
 
 export default function ProfilePage() {
+  const t = useTranslations('profile');
+  const locale = useLocale();
   const { username, masterKey } = useAuth();
   const { storageUsed, storageQuota } = useVault();
   const [me, setMe] = useState<MeData | null>(null);
@@ -115,11 +120,11 @@ export default function ProfilePage() {
     try {
       const raw = await apiFetch<ApiDevice[]>('/api/v1/auth/devices');
       setDevices(raw.map((d) => {
-        let browser = 'Dispositivo';
+        let browser = t('deviceFallback');
         let os = '';
         try {
           const name = decryptString(fromB64(d.nameEncrypted), fromB64(d.nameNonce), masterKey);
-          const info = parseDeviceName(name);
+          const info = parseDeviceName(name, t);
           browser = info.browser;
           os = info.os;
         } catch { /* fallback */ }
@@ -150,10 +155,10 @@ export default function ProfilePage() {
         method: 'PATCH',
         body: JSON.stringify({ isAdmin: !current }),
       });
-      toast.success(current ? 'Rol de admin revocado' : 'Rol de admin otorgado');
+      toast.success(current ? t('toastAdminRevoked') : t('toastAdminGranted'));
       fetchAdminUsers();
     } catch (e: any) {
-      toast.error(e.message ?? 'Error al cambiar rol');
+      toast.error(e.message ?? t('toastRoleError'));
     }
     setTogglingUserId(null);
   };
@@ -171,32 +176,32 @@ export default function ProfilePage() {
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-3 flex-wrap">
-              <h1 className="font-display text-2xl font-semibold tracking-tight">{username ?? 'Usuario'}</h1>
+              <h1 className="font-display text-2xl font-semibold tracking-tight">{username ?? t('defaultUsername')}</h1>
               {isAdmin ? (
                 <span className="inline-flex items-center gap-1 text-[10px] font-mono uppercase tracking-wider text-violet-300 bg-violet-500/15 border border-violet-500/30 px-2 py-0.5 rounded-full">
-                  <ShieldCheck className="size-3" /> Admin
+                  <ShieldCheck className="size-3" /> {t('roleAdmin')}
                 </span>
               ) : (
                 <span className="inline-flex items-center gap-1 text-[10px] font-mono uppercase tracking-wider text-text-muted bg-bg-surface-2 border border-border-faint px-2 py-0.5 rounded-full">
-                  <User className="size-3" /> Usuario
+                  <User className="size-3" /> {t('roleUser')}
                 </span>
               )}
             </div>
-            <p className="text-sm text-text-tertiary mt-1">Plan gratuito</p>
+            <p className="text-sm text-text-tertiary mt-1">{t('freePlan')}</p>
             <div className="flex items-center gap-4 mt-3 flex-wrap">
               <div className="flex items-center gap-1.5 text-xs text-text-muted">
                 <Monitor className="size-3.5" />
-                <span>{devices.length} {devices.length === 1 ? 'dispositivo' : 'dispositivos'}</span>
+                <span>{t('deviceCount', { count: devices.length })}</span>
               </div>
               <div className="flex items-center gap-1.5 text-xs text-text-muted">
                 <HardDrive className="size-3.5" />
-                <span>{fmtSize(storageUsed)} usado</span>
+                <span>{t('storageUsedLabel', { size: fmtSize(storageUsed) })}</span>
               </div>
             </div>
           </div>
           <Link href="/vault/settings">
             <Button variant="ghost" size="sm">
-              <Settings className="size-3.5 mr-1" /> Ajustes
+              <Settings className="size-3.5 mr-1" /> {t('settings')}
             </Button>
           </Link>
         </div>
@@ -207,14 +212,14 @@ export default function ProfilePage() {
         <div className="flex items-center gap-2 mb-4">
           <HardDrive className="size-4 text-amber-300" />
           <h2 className="text-sm font-semibold uppercase tracking-wider text-text-secondary">
-            Almacenamiento
+            {t('storageHeading')}
           </h2>
         </div>
         <div className="p-5 rounded-xl border border-border-faint bg-bg-surface">
           <div className="flex items-end justify-between mb-3">
             <div>
               <span className="text-2xl font-mono font-medium">{fmtSize(storageUsed)}</span>
-              <span className="text-sm text-text-tertiary ml-1">de {fmtSize(storageQuota)}</span>
+              <span className="text-sm text-text-tertiary ml-1">{t('storageOf', { size: fmtSize(storageQuota) })}</span>
             </div>
             <span className="text-xs font-mono text-text-muted">{usedPct.toFixed(1)}%</span>
           </div>
@@ -232,12 +237,12 @@ export default function ProfilePage() {
         <div className="flex items-center gap-2 mb-4">
           <Monitor className="size-4 text-cyan-300" />
           <h2 className="text-sm font-semibold uppercase tracking-wider text-text-secondary">
-            Sesiones activas
+            {t('sessionsHeading')}
           </h2>
         </div>
         <div className="space-y-1">
           {loadingDevices && (
-            <p className="text-xs text-text-muted px-1 animate-pulse">Cargando dispositivos...</p>
+            <p className="text-xs text-text-muted px-1 animate-pulse">{t('loadingDevices')}</p>
           )}
           {devices.map((device) => {
             const isMobile = device.os.includes('iOS') || device.os.includes('Android');
@@ -263,7 +268,7 @@ export default function ProfilePage() {
                     <h3 className="text-sm font-medium">{device.browser}</h3>
                     {device.isCurrent && (
                       <span className="text-[10px] font-mono uppercase tracking-wider text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded">
-                        actual
+                        {t('current')}
                       </span>
                     )}
                   </div>
@@ -271,17 +276,17 @@ export default function ProfilePage() {
                 </div>
                 <div className="text-right">
                   <p className="text-[10px] font-mono text-text-muted uppercase tracking-wider">
-                    {device.isCurrent ? 'Ahora' : timeAgo(device.lastSeenAt)}
+                    {device.isCurrent ? t('now') : timeAgo(device.lastSeenAt, t)}
                   </p>
                   <p className="text-[10px] text-text-muted">
-                    Desde {fmtDate(device.createdAt)}
+                    {t('since', { date: fmtDate(device.createdAt, locale) })}
                   </p>
                 </div>
               </div>
             );
           })}
           {!loadingDevices && devices.length === 0 && (
-            <p className="text-xs text-text-muted px-1">Sin dispositivos registrados.</p>
+            <p className="text-xs text-text-muted px-1">{t('noDevices')}</p>
           )}
         </div>
       </section>
@@ -291,26 +296,26 @@ export default function ProfilePage() {
         <div className="flex items-center gap-2 mb-4">
           <Shield className="size-4 text-violet-300" />
           <h2 className="text-sm font-semibold uppercase tracking-wider text-text-secondary">
-            Seguridad
+            {t('securityHeading')}
           </h2>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div className="p-4 rounded-xl border border-border-faint bg-bg-surface">
             <KeyRound className="size-4 text-violet-300 mb-2" />
-            <p className="text-xs font-medium">Cifrado E2E</p>
-            <p className="text-[10px] font-mono text-emerald-400 uppercase tracking-wider mt-1">Activo</p>
+            <p className="text-xs font-medium">{t('e2eEncryption')}</p>
+            <p className="text-[10px] font-mono text-emerald-400 uppercase tracking-wider mt-1">{t('statusActive')}</p>
           </div>
           <div className="p-4 rounded-xl border border-border-faint bg-bg-surface">
             <Fingerprint className="size-4 text-violet-300 mb-2" />
-            <p className="text-xs font-medium">2FA / Passkey</p>
+            <p className="text-xs font-medium">{t('twoFaPasskey')}</p>
             <Link href="/vault/settings" className="text-[10px] font-mono text-violet-400 uppercase tracking-wider mt-1 block hover:text-violet-300 transition-colors">
-              Configurar
+              {t('configure')}
             </Link>
           </div>
           <div className="p-4 rounded-xl border border-border-faint bg-bg-surface">
             <Shield className="size-4 text-violet-300 mb-2" />
-            <p className="text-xs font-medium">Zero-knowledge</p>
-            <p className="text-[10px] font-mono text-emerald-400 uppercase tracking-wider mt-1">Verificado</p>
+            <p className="text-xs font-medium">{t('zeroKnowledge')}</p>
+            <p className="text-[10px] font-mono text-emerald-400 uppercase tracking-wider mt-1">{t('statusVerified')}</p>
           </div>
         </div>
       </section>
@@ -321,12 +326,12 @@ export default function ProfilePage() {
           <div className="flex items-center gap-2 mb-4">
             <Users className="size-4 text-amber-300" />
             <h2 className="text-sm font-semibold uppercase tracking-wider text-text-secondary">
-              Administrar usuarios
+              {t('adminUsersHeading')}
             </h2>
           </div>
           <div className="space-y-1">
             {loadingUsers && (
-              <p className="text-xs text-text-muted px-1 animate-pulse">Cargando usuarios...</p>
+              <p className="text-xs text-text-muted px-1 animate-pulse">{t('loadingUsers')}</p>
             )}
             {adminUsers.map((u) => (
               <div
@@ -347,17 +352,17 @@ export default function ProfilePage() {
                     <h3 className="text-sm font-medium">{u.username}</h3>
                     {u.isAdmin && (
                       <span className="text-[10px] font-mono uppercase tracking-wider text-violet-300 bg-violet-500/10 px-1.5 py-0.5 rounded">
-                        admin
+                        {t('badgeAdmin')}
                       </span>
                     )}
                     {u.id === me?.id && (
                       <span className="text-[10px] font-mono uppercase tracking-wider text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded">
-                        t&uacute;
+                        {t('badgeYou')}
                       </span>
                     )}
                   </div>
                   <p className="text-xs text-text-tertiary mt-0.5">
-                    Registro: {fmtDate(u.createdAt)} &middot; {u.lastLoginAt ? `Activo ${timeAgo(u.lastLoginAt)}` : 'Sin login'}
+                    {t('registered', { date: fmtDate(u.createdAt, locale) })} &middot; {u.lastLoginAt ? t('activeAgo', { ago: timeAgo(u.lastLoginAt, t) }) : t('noLogin')}
                   </p>
                 </div>
                 {u.id !== me?.id && (
@@ -367,7 +372,7 @@ export default function ProfilePage() {
                     loading={togglingUserId === u.id}
                     onClick={() => toggleAdmin(u.id, u.isAdmin)}
                   >
-                    {u.isAdmin ? 'Revocar admin' : 'Dar admin'}
+                    {u.isAdmin ? t('revokeAdmin') : t('grantAdmin')}
                   </Button>
                 )}
               </div>

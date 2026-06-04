@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useMemo } from 'react';
+import { useTranslations, useLocale } from 'next-intl';
 import { useDropzone } from 'react-dropzone';
 import {
   DndContext, useDraggable, useDroppable, DragOverlay,
@@ -45,14 +46,16 @@ function formatSize(bytes?: number) {
   return `${n.toFixed(n < 10 && i > 0 ? 1 : 0)} ${units[i]}`;
 }
 
-function formatDate(iso: string) {
+type VaultT = ReturnType<typeof useTranslations<'vault'>>;
+
+function formatDate(iso: string, t: VaultT, locale: string) {
   const d = new Date(iso);
   const now = new Date();
   const diff = (now.getTime() - d.getTime()) / 1000 / 60 / 60 / 24;
-  if (diff < 1) return 'Hoy';
-  if (diff < 2) return 'Ayer';
-  if (diff < 7) return `Hace ${Math.floor(diff)} días`;
-  return d.toLocaleDateString('es', { day: 'numeric', month: 'short', year: d.getFullYear() !== now.getFullYear() ? 'numeric' : undefined });
+  if (diff < 1) return t('date.today');
+  if (diff < 2) return t('date.yesterday');
+  if (diff < 7) return t('date.daysAgo', { count: Math.floor(diff) });
+  return d.toLocaleDateString(locale, { day: 'numeric', month: 'short', year: d.getFullYear() !== now.getFullYear() ? 'numeric' : undefined });
 }
 
 // ─── Carpeta ────────────────────────────────────────────────────
@@ -65,6 +68,8 @@ function FolderCard({
   onClick: () => void;
   onDelete: () => void;
 }) {
+  const t = useTranslations('vault');
+  const locale = useLocale();
   const { attributes, listeners, setNodeRef: setDragRef } = useDraggable({ id: node.id });
   const { isOver, setNodeRef: setDropRef } = useDroppable({ id: `drop-${node.id}` });
   const color = getFolderColor(node.color);
@@ -92,11 +97,11 @@ function FolderCard({
         )}>
           <IconComp className={cn('size-5', color.text)} />
         </div>
-        <CardActionsMenu actions={[{ label: 'Eliminar', icon: Trash2, onSelect: onDelete, danger: true }]} />
+        <CardActionsMenu actions={[{ label: t('actions.delete'), icon: Trash2, onSelect: onDelete, danger: true }]} />
       </div>
       <h3 className="text-sm font-medium truncate mb-0.5">{node.name}</h3>
       <p className="text-[10px] text-text-tertiary uppercase tracking-wider">
-        {formatDate(node.updatedAt)}
+        {formatDate(node.updatedAt, t, locale)}
       </p>
     </div>
   );
@@ -115,6 +120,8 @@ function FileCard({
   onShare: () => void;
   onStar: () => void;
 }) {
+  const t = useTranslations('vault');
+  const locale = useLocale();
   const { attributes, listeners, setNodeRef } = useDraggable({ id: node.id });
   const FileIcon = fileIcon(node.mimeType);
 
@@ -137,16 +144,16 @@ function FileCard({
         </div>
         <CardActionsMenu
           actions={[
-            { label: node.starred ? 'Quitar de destacados' : 'Destacar', icon: Star, onSelect: onStar },
-            { label: 'Compartir', icon: Share2, onSelect: onShare },
-            { label: 'Descargar', icon: Download, onSelect: onDownload },
-            { label: 'Eliminar', icon: Trash2, onSelect: onDelete, danger: true },
+            { label: node.starred ? t('actions.unstar') : t('actions.star'), icon: Star, onSelect: onStar },
+            { label: t('actions.share'), icon: Share2, onSelect: onShare },
+            { label: t('actions.download'), icon: Download, onSelect: onDownload },
+            { label: t('actions.delete'), icon: Trash2, onSelect: onDelete, danger: true },
           ]}
         />
       </div>
       <h3 className="text-sm font-medium truncate mb-0.5">{node.name}</h3>
       <p className="text-[10px] text-text-tertiary uppercase tracking-wider">
-        {formatSize(node.size)} · {formatDate(node.updatedAt)}
+        {formatSize(node.size)} · {formatDate(node.updatedAt, t, locale)}
       </p>
     </div>
   );
@@ -154,6 +161,7 @@ function FileCard({
 
 // ─── Upload progress bar ────────────────────────────────────────
 function UploadBar({ uploads }: { uploads: Record<string, { fileName: string; progress: number; status: string }> }) {
+  const t = useTranslations('vault');
   const entries = Object.entries(uploads);
   if (entries.length === 0) return null;
 
@@ -164,10 +172,10 @@ function UploadBar({ uploads }: { uploads: Record<string, { fileName: string; pr
           <div className="flex items-center justify-between mb-1.5">
             <span className="text-xs font-medium truncate max-w-[200px]">{u.fileName}</span>
             <span className="text-[10px] font-mono text-text-tertiary">
-              {u.status === 'encrypting' && 'Cifrando…'}
+              {u.status === 'encrypting' && t('upload.encrypting')}
               {u.status === 'uploading' && `${u.progress}%`}
               {u.status === 'done' && '✓'}
-              {u.status === 'error' && 'Error'}
+              {u.status === 'error' && t('upload.error')}
             </span>
           </div>
           <div className="h-1.5 bg-bg-surface-3 rounded-full overflow-hidden">
@@ -187,6 +195,7 @@ function UploadBar({ uploads }: { uploads: Record<string, { fileName: string; pr
 
 // ─── Página principal ───────────────────────────────────────────
 export default function VaultPage() {
+  const t = useTranslations('vault');
   const {
     nodes, loading, breadcrumb, uploads, initialized,
     init, navigateToFolder, navigateUp, createFolder,
@@ -238,7 +247,7 @@ export default function VaultPage() {
       const moved = nodes.find((n) => n.id === e.active.id);
       if (target && moved && target.kind === 'folder') {
         moveNode(moved.id, target.id);
-        toast.success(`«${moved.name}» movido a «${target.name}»`);
+        toast.success(t('toast.moved', { name: moved.name, target: target.name }));
       }
     }
   }
@@ -262,7 +271,7 @@ export default function VaultPage() {
             <div className="size-16 rounded-full bg-violet-500/20 grid place-items-center mx-auto animate-pulse">
               <Upload className="size-7 text-violet-300" />
             </div>
-            <p className="text-lg font-display font-light text-violet-100">Suelta para cifrar y subir</p>
+            <p className="text-lg font-display font-light text-violet-100">{t('dropzone.title')}</p>
             <p className="text-xs text-violet-200/70 font-mono">XChaCha20-Poly1305 · 4 MiB chunks</p>
           </div>
         </div>
@@ -316,7 +325,7 @@ export default function VaultPage() {
                 leftIcon={<FolderPlus className="size-3.5" />}
                 onClick={() => setNewFolderOpen(true)}
               >
-                Nueva carpeta
+                {t('toolbar.newFolder')}
               </Button>
               <Button
                 variant="primary"
@@ -324,7 +333,7 @@ export default function VaultPage() {
                 leftIcon={<Upload className="size-3.5" />}
                 onClick={() => fileInputRef.current?.click()}
               >
-                Subir archivos
+                {t('toolbar.upload')}
               </Button>
             </div>
           </div>
@@ -336,7 +345,7 @@ export default function VaultPage() {
                 type="search"
                 value={search}
                 onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-                placeholder="Filtrar por nombre…"
+                placeholder={t('search.placeholder')}
                 className="w-full h-9 px-3 bg-bg-surface border border-border-subtle rounded-md text-sm placeholder:text-text-muted focus:outline-none focus:border-violet-500/60"
               />
             </div>
@@ -345,7 +354,7 @@ export default function VaultPage() {
               className="h-9 px-3 flex items-center gap-1.5 bg-bg-surface border border-border-subtle rounded-md text-xs text-text-secondary hover:bg-bg-surface-2"
             >
               <Filter className="size-3.5" />
-              Filtros
+              {t('search.filters')}
             </button>
             <div className="flex bg-bg-surface border border-border-subtle rounded-md p-0.5">
               <button
@@ -375,7 +384,7 @@ export default function VaultPage() {
           {loading && !initialized && (
             <div className="py-24 text-center">
               <Loader2 className="size-8 text-violet-400 animate-spin mx-auto mb-4" />
-              <p className="text-sm text-text-tertiary">Descifrando bóveda…</p>
+              <p className="text-sm text-text-tertiary">{t('loading')}</p>
             </div>
           )}
 
@@ -383,7 +392,7 @@ export default function VaultPage() {
           {initialized && folders.length > 0 && (
             <section className="mb-8">
               <h2 className="text-[10px] uppercase tracking-widest text-text-tertiary mb-3">
-                Carpetas · {folders.length}
+                {t('sections.folders', { count: folders.length })}
               </h2>
               <div className={cn(
                 view === 'grid'
@@ -407,7 +416,7 @@ export default function VaultPage() {
           {initialized && files.length > 0 && (
             <section>
               <h2 className="text-[10px] uppercase tracking-widest text-text-tertiary mb-3">
-                Archivos · {files.length}
+                {t('sections.files', { count: files.length })}
               </h2>
               <div className={cn(
                 view === 'grid'
@@ -436,9 +445,9 @@ export default function VaultPage() {
               <div className="size-16 rounded-full bg-bg-surface border border-border-subtle grid place-items-center mx-auto mb-4">
                 <Upload className="size-6 text-text-tertiary" />
               </div>
-              <h3 className="font-display text-lg mb-1">Nada por aquí todavía</h3>
+              <h3 className="font-display text-lg mb-1">{t('empty.title')}</h3>
               <p className="text-sm text-text-tertiary mb-4">
-                Arrastra archivos a esta ventana o crea una carpeta para empezar
+                {t('empty.description')}
               </p>
             </div>
           )}
@@ -447,7 +456,7 @@ export default function VaultPage() {
           {totalPages > 1 && (
             <div className="mt-8 flex items-center justify-between text-sm">
               <span className="text-text-tertiary text-xs">
-                Página {page} de {totalPages} · {filtered.length} elementos
+                {t('pagination.status', { page, total: totalPages, count: filtered.length })}
               </span>
               <div className="flex items-center gap-1">
                 <button
@@ -491,7 +500,7 @@ export default function VaultPage() {
             <div className="p-4 rounded-xl bg-bg-surface-3 border border-violet-500/40 shadow-[0_8px_32px_-4px_rgba(0,0,0,0.6)] rotate-2 w-48">
               <p className="text-sm font-medium truncate">{draggedNode.name}</p>
               <p className="text-[10px] text-text-tertiary uppercase tracking-wider">
-                {draggedNode.kind === 'folder' ? 'Carpeta' : formatSize(draggedNode.size)}
+                {draggedNode.kind === 'folder' ? t('folder') : formatSize(draggedNode.size)}
               </p>
             </div>
           )}

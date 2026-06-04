@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useTranslations } from 'next-intl';
 import {
   Shield, KeyRound, Monitor, Lock, HardDrive,
   AlertTriangle, Fingerprint, Smartphone, Usb, Plus, Power, Trash2, Disc,
@@ -28,14 +29,14 @@ import { cn } from '@/lib/utils';
 import { useRouter } from '@/i18n/navigation';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 
-function parseDeviceName(raw: string): { browser: string; os: string } {
-  let browser = 'Navegador';
+function parseDeviceName(raw: string, t: (key: string) => string): { browser: string; os: string } {
+  let browser = t('devices.browserFallback');
   if (raw.includes('Firefox/')) browser = `Firefox ${raw.split('Firefox/')[1]?.split(' ')[0] ?? ''}`;
   else if (raw.includes('Edg/')) browser = `Edge ${raw.split('Edg/')[1]?.split(' ')[0] ?? ''}`;
   else if (raw.includes('Chrome/')) browser = `Chrome ${raw.split('Chrome/')[1]?.split(' ')[0] ?? ''}`;
   else if (raw.includes('Safari/') && !raw.includes('Chrome')) browser = 'Safari';
 
-  let os = 'Desconocido';
+  let os = t('devices.osUnknown');
   if (raw.includes('Windows NT 10')) os = 'Windows 10/11';
   else if (raw.includes('Windows')) os = 'Windows';
   else if (raw.includes('Mac OS X')) os = 'macOS';
@@ -46,16 +47,16 @@ function parseDeviceName(raw: string): { browser: string; os: string } {
   return { browser, os };
 }
 
-function timeAgo(iso: string | null): string {
-  if (!iso) return 'Nunca';
+function timeAgo(iso: string | null, t: (key: string, values?: Record<string, any>) => string): string {
+  if (!iso) return t('timeAgo.never');
   const diff = Date.now() - new Date(iso).getTime();
   const mins = Math.floor(diff / 60000);
-  if (mins < 1) return 'Justo ahora';
-  if (mins < 60) return `Hace ${mins} min`;
+  if (mins < 1) return t('timeAgo.justNow');
+  if (mins < 60) return t('timeAgo.minutes', { count: mins });
   const hours = Math.floor(mins / 60);
-  if (hours < 24) return `Hace ${hours}h`;
+  if (hours < 24) return t('timeAgo.hours', { count: hours });
   const days = Math.floor(hours / 24);
-  return `Hace ${days}d`;
+  return t('timeAgo.days', { count: days });
 }
 
 interface ApiDevice {
@@ -110,6 +111,7 @@ interface VolumeInfo {
 }
 
 export default function SettingsPage() {
+  const t = useTranslations('settings');
   const router = useRouter();
   const { username, masterKey, logout } = useAuth();
   const { storageUsed, storageQuota, reset: resetVault } = useVault();
@@ -129,11 +131,11 @@ export default function SettingsPage() {
     try {
       const raw = await apiFetch<ApiDevice[]>('/api/v1/auth/devices');
       const parsed = raw.map((d) => {
-        let browser = 'Dispositivo';
+        let browser = t('devices.deviceFallback');
         let os = '';
         try {
           const name = decryptString(fromB64(d.nameEncrypted), fromB64(d.nameNonce), masterKey);
-          const info = parseDeviceName(name);
+          const info = parseDeviceName(name, t);
           browser = info.browser;
           os = info.os;
         } catch { /* fallback */ }
@@ -179,7 +181,7 @@ export default function SettingsPage() {
     try {
       const raw = await apiFetch<ApiAgent[]>('/api/v1/agent');
       const views: AgentView[] = raw.map((a) => {
-        let name = 'Agente';
+        let name = t('connector.agentFallback');
         try { name = decryptString(fromB64(a.nameEncrypted), fromB64(a.nameNonce), masterKey); } catch { /* */ }
         return { id: a.id, name, platform: a.platform, online: a.online };
       });
@@ -206,7 +208,7 @@ export default function SettingsPage() {
       logout();
       router.replace('/');
     } catch (err: any) {
-      toast.error(`No se pudo eliminar la cuenta: ${err.message}`);
+      toast.error(`${t('danger.deleteError')}: ${err.message}`);
       setDeleting(false);
       setConfirmDelete(false);
     }
@@ -221,9 +223,9 @@ export default function SettingsPage() {
   return (
     <div className="px-8 py-6 max-w-3xl mx-auto">
       <div className="mb-8">
-        <h1 className="font-display text-2xl font-semibold tracking-tight">Configuración</h1>
+        <h1 className="font-display text-2xl font-semibold tracking-tight">{t('title')}</h1>
         <p className="text-sm text-text-tertiary mt-1">
-          Seguridad, dispositivos y preferencias de tu bóveda
+          {t('subtitle')}
         </p>
       </div>
 
@@ -251,25 +253,25 @@ export default function SettingsPage() {
           <div className="flex items-center gap-2">
             <Monitor className="size-4 text-cyan-300" />
             <h2 className="text-sm font-semibold uppercase tracking-wider text-text-secondary">
-              Dispositivos activos
+              {t('devices.title')}
             </h2>
           </div>
           {devices.filter((d) => !d.isCurrent).length > 0 && (
             <Button variant="danger" size="sm" onClick={async () => {
               try {
                 await apiFetch('/api/v1/auth/devices', { method: 'DELETE' });
-                toast.success('Todas las otras sesiones revocadas');
+                toast.success(t('devices.allRevoked'));
                 fetchDevices();
-              } catch { toast.error('Error al revocar sesiones'); }
+              } catch { toast.error(t('devices.revokeSessionsError')); }
             }}>
-              Cerrar otras sesiones
+              {t('devices.closeOthers')}
             </Button>
           )}
         </div>
         <div className="space-y-1">
           {loadingDevices && (
             <p className="text-xs text-text-muted px-1 animate-pulse">
-              Cargando dispositivos…
+              {t('devices.loading')}
             </p>
           )}
 
@@ -301,7 +303,7 @@ export default function SettingsPage() {
                     <h3 className="text-sm font-medium">{device.browser}</h3>
                     {device.isCurrent && (
                       <span className="text-[10px] font-mono uppercase tracking-wider text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded">
-                        activo
+                        {t('devices.activeBadge')}
                       </span>
                     )}
                   </div>
@@ -309,18 +311,18 @@ export default function SettingsPage() {
                     {device.os}
                   </p>
                   <span className="text-[10px] text-text-muted font-mono uppercase tracking-wider">
-                    {device.isCurrent ? 'Sesión actual' : timeAgo(device.lastSeenAt)}
+                    {device.isCurrent ? t('devices.currentSession') : timeAgo(device.lastSeenAt, t)}
                   </span>
                 </div>
                 {!device.isCurrent && (
                   <Button variant="ghost" size="sm" onClick={async () => {
                     try {
                       await apiFetch(`/api/v1/auth/devices/${device.id}`, { method: 'DELETE' });
-                      toast.success(`Dispositivo «${device.browser}» revocado`);
+                      toast.success(t('devices.revoked', { name: device.browser }));
                       fetchDevices();
-                    } catch { toast.error('Error al revocar dispositivo'); }
+                    } catch { toast.error(t('devices.revokeError')); }
                   }}>
-                    Revocar
+                    {t('devices.revoke')}
                   </Button>
                 )}
               </div>
@@ -329,7 +331,7 @@ export default function SettingsPage() {
 
           {!loadingDevices && devices.length <= 1 && (
             <p className="text-xs text-text-muted mt-2 px-1">
-              No hay otros dispositivos con sesión activa.
+              {t('devices.noOthers')}
             </p>
           )}
         </div>
@@ -340,14 +342,14 @@ export default function SettingsPage() {
         <div className="flex items-center gap-2 mb-4">
           <HardDrive className="size-4 text-amber-300" />
           <h2 className="text-sm font-semibold uppercase tracking-wider text-text-secondary">
-            Almacenamiento
+            {t('storage.title')}
           </h2>
         </div>
         <div className="p-5 rounded-xl border border-border-faint bg-bg-surface">
           <div className="flex items-end justify-between mb-3">
             <div>
               <span className="text-2xl font-mono font-medium">{fmtSize(storageUsed)}</span>
-              <span className="text-sm text-text-tertiary ml-1">de {fmtSize(storageQuota)}</span>
+              <span className="text-sm text-text-tertiary ml-1">{t('storage.of', { total: fmtSize(storageQuota) })}</span>
             </div>
           </div>
           <div className="h-2 bg-bg-surface-2 rounded-full overflow-hidden mb-4">
@@ -358,8 +360,8 @@ export default function SettingsPage() {
           </div>
           <p className="text-xs text-text-muted">
             {storageUsed === 0
-              ? 'El desglose por tipo de archivo se mostrará cuando subas archivos.'
-              : `${((storageUsed / storageQuota) * 100).toFixed(1)}% utilizado`}
+              ? t('storage.emptyBreakdown')
+              : t('storage.usedPct', { pct: ((storageUsed / storageQuota) * 100).toFixed(1) })}
           </p>
         </div>
       </section>
@@ -375,7 +377,7 @@ export default function SettingsPage() {
         <div className="flex items-center gap-2 mb-4">
           <Usb className="size-4 text-blue-300" />
           <h2 className="text-sm font-semibold uppercase tracking-wider text-text-secondary">
-            Discos de almacenamiento
+            {t('disks.title')}
           </h2>
         </div>
 
@@ -384,10 +386,13 @@ export default function SettingsPage() {
           <div key={a.id} className="mb-4">
             <p className="text-xs text-text-secondary mb-2 px-1 flex items-center gap-1.5">
               <Server className="size-3.5 text-emerald-300" />
-              Discos de <strong className="font-medium">{a.name}</strong>
+              {t.rich('disks.diskOf', {
+                name: a.name,
+                strong: (chunks) => <strong className="font-medium">{chunks}</strong>,
+              })}
             </p>
             {(agentDisks[a.id] ?? []).length === 0 ? (
-              <p className="text-xs text-text-muted px-1">El agente no detectó discos.</p>
+              <p className="text-xs text-text-muted px-1">{t('disks.agentNoDisks')}</p>
             ) : (
               <div className="space-y-1">
                 {(agentDisks[a.id] ?? []).map((d) => (
@@ -399,8 +404,9 @@ export default function SettingsPage() {
         ))}
         {onlineAgents.length > 0 && (
           <p className="text-[10px] text-text-muted px-1 mb-4">
-            «Usar este disco» crea una carpeta <span className="font-mono">noctcom-blobs</span> en él para guardar tus
-            archivos cifrados; no formatea ni borra nada. El formateo de discos llega en la próxima versión del agente.
+            {t.rich('disks.useDiskHint', {
+              folder: () => <span className="font-mono">noctcom-blobs</span>,
+            })}
           </p>
         )}
 
@@ -426,7 +432,7 @@ export default function SettingsPage() {
                     <h3 className="text-sm font-medium">{vol.label}</h3>
                     {vol.active && (
                       <span className="text-[10px] font-mono uppercase tracking-wider text-blue-400 bg-blue-500/10 px-1.5 py-0.5 rounded">
-                        activo
+                        {t('disks.activeBadge')}
                       </span>
                     )}
                   </div>
@@ -449,15 +455,15 @@ export default function SettingsPage() {
                       </div>
                       <div className="grid grid-cols-3 gap-1 text-center">
                         <div>
-                          <p className="text-[10px] text-text-muted uppercase">Total</p>
+                          <p className="text-[10px] text-text-muted uppercase">{t('disks.total')}</p>
                           <p className="text-xs font-mono font-medium">{fmtSize(vol.totalBytes)}</p>
                         </div>
                         <div>
-                          <p className="text-[10px] text-text-muted uppercase">Usado</p>
+                          <p className="text-[10px] text-text-muted uppercase">{t('disks.used')}</p>
                           <p className="text-xs font-mono font-medium text-amber-400">{fmtSize(vol.usedBytes)}</p>
                         </div>
                         <div>
-                          <p className="text-[10px] text-text-muted uppercase">Libre</p>
+                          <p className="text-[10px] text-text-muted uppercase">{t('disks.free')}</p>
                           <p className="text-xs font-mono font-medium text-emerald-400">{fmtSize(vol.freeBytes)}</p>
                         </div>
                       </div>
@@ -471,10 +477,10 @@ export default function SettingsPage() {
                         method: 'PATCH',
                         body: JSON.stringify({ active: !vol.active }),
                       });
-                      toast.success(vol.active ? 'Volumen desactivado' : 'Volumen activado');
+                      toast.success(vol.active ? t('disks.volumeDeactivated') : t('disks.volumeActivated'));
                       fetchVolumes();
                       fetchDisks();
-                    } catch { toast.error('Error al actualizar volumen'); }
+                    } catch { toast.error(t('disks.volumeUpdateError')); }
                   }}>
                     <Power className="size-3.5" />
                   </Button>
@@ -486,10 +492,10 @@ export default function SettingsPage() {
                           method: 'DELETE',
                           headers: { 'x-step-up-token': stepUpToken },
                         });
-                        toast.success('Volumen eliminado');
+                        toast.success(t('disks.volumeDeleted'));
                         fetchVolumes();
                         fetchDisks();
-                      } catch (e: any) { toast.error(e.message ?? 'Error al eliminar'); }
+                      } catch (e: any) { toast.error(e.message ?? t('disks.deleteError')); }
                     }}>
                       <Trash2 className="size-3.5" />
                     </Button>
@@ -504,7 +510,7 @@ export default function SettingsPage() {
             vienen del agente; los del servidor de la web son ajenos y no se muestran. */}
         {isSelfHost && disks.filter((d) => !d.active).length > 0 && (
           <>
-            <p className="text-xs text-text-muted mb-2 px-1">Discos detectados:</p>
+            <p className="text-xs text-text-muted mb-2 px-1">{t('disks.detected')}</p>
             <div className="space-y-1">
               {disks.filter((d) => !d.active).map((disk) => (
                 <div
@@ -541,24 +547,24 @@ export default function SettingsPage() {
                       </div>
                       <div className="grid grid-cols-3 gap-1 text-center">
                         <div>
-                          <p className="text-[10px] text-text-muted uppercase">Total</p>
+                          <p className="text-[10px] text-text-muted uppercase">{t('disks.total')}</p>
                           <p className="text-xs font-mono font-medium">{fmtSize(disk.totalBytes)}</p>
                         </div>
                         <div>
-                          <p className="text-[10px] text-text-muted uppercase">Usado</p>
+                          <p className="text-[10px] text-text-muted uppercase">{t('disks.used')}</p>
                           <p className="text-xs font-mono font-medium text-amber-400">{fmtSize(disk.totalBytes - disk.freeBytes)}</p>
                         </div>
                         <div>
-                          <p className="text-[10px] text-text-muted uppercase">Libre</p>
+                          <p className="text-[10px] text-text-muted uppercase">{t('disks.free')}</p>
                           <p className="text-xs font-mono font-medium text-emerald-400">{fmtSize(disk.freeBytes)}</p>
                         </div>
                       </div>
                       <div className="flex items-center justify-center gap-2 mt-1.5 pt-1.5 border-t border-border-faint">
                         <span className={cn('text-[10px] font-mono uppercase', disk.needsFormat ? 'text-amber-400' : 'text-text-muted')}>
-                          {disk.filesystem || 'sin formato'}
+                          {disk.filesystem || t('disks.noFilesystem')}
                         </span>
-                        {disk.needsFormat && <span className="text-[10px] text-amber-400 font-medium">(incompatible)</span>}
-                        {!disk.removable && <span className="text-[10px] text-text-muted">· Interno</span>}
+                        {disk.needsFormat && <span className="text-[10px] text-amber-400 font-medium">{t('disks.incompatible')}</span>}
+                        {!disk.removable && <span className="text-[10px] text-text-muted">{t('disks.internalSuffix')}</span>}
                       </div>
                     </div>
                   </div>
@@ -567,7 +573,7 @@ export default function SettingsPage() {
                       setFormatDisk(disk);
                       setFormatOpen(true);
                     }}>
-                      <Disc className="size-3.5 mr-1" /> Formatear
+                      <Disc className="size-3.5 mr-1" /> {t('disks.format')}
                     </Button>
                   ) : !disk.mounted ? (
                     <Button variant="secondary" size="sm" onClick={async () => {
@@ -580,12 +586,12 @@ export default function SettingsPage() {
                           method: 'POST',
                           body: JSON.stringify({ path: res.mountPath, label: disk.label }),
                         });
-                        toast.success(`«${disk.label}» montado y añadido`);
+                        toast.success(t('disks.mountedAdded', { label: disk.label }));
                         fetchVolumes();
                         fetchDisks();
-                      } catch (e: any) { toast.error(e.message ?? 'Error al montar disco'); }
+                      } catch (e: any) { toast.error(e.message ?? t('disks.mountError')); }
                     }}>
-                      <Plus className="size-3.5 mr-1" /> Montar
+                      <Plus className="size-3.5 mr-1" /> {t('disks.mount')}
                     </Button>
                   ) : (
                     <Button variant="outline" size="sm" onClick={async () => {
@@ -594,12 +600,12 @@ export default function SettingsPage() {
                           method: 'POST',
                           body: JSON.stringify({ path: disk.path, label: disk.label }),
                         });
-                        toast.success(`«${disk.label}» añadido como volumen`);
+                        toast.success(t('disks.addedAsVolume', { label: disk.label }));
                         fetchVolumes();
                         fetchDisks();
-                      } catch (e: any) { toast.error(e.message ?? 'Error al añadir disco'); }
+                      } catch (e: any) { toast.error(e.message ?? t('disks.addError')); }
                     }}>
-                      <Plus className="size-3.5 mr-1" /> Añadir
+                      <Plus className="size-3.5 mr-1" /> {t('disks.add')}
                     </Button>
                   )}
                 </div>
@@ -612,8 +618,7 @@ export default function SettingsPage() {
           <div className="p-3 rounded-lg bg-bg-surface border border-border-faint flex items-start gap-2">
             <AlertTriangle className="size-4 text-amber-300 mt-0.5 shrink-0" />
             <p className="text-xs text-text-tertiary leading-relaxed">
-              No se detectaron discos en el servidor. Conecta un disco (USB/SATA) a la máquina
-              donde corre Noctcom y aparecerá aquí para añadirlo como volumen.
+              {t('disks.noServerDisks')}
             </p>
           </div>
         )}
@@ -635,15 +640,15 @@ export default function SettingsPage() {
         <div className="flex items-center gap-2 mb-4">
           <AlertTriangle className="size-4 text-red-400" />
           <h2 className="text-sm font-semibold uppercase tracking-wider text-red-400">
-            Zona de peligro
+            {t('danger.title')}
           </h2>
         </div>
         <div className="p-5 rounded-xl border border-red-500/20 bg-red-500/5">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-sm font-medium text-red-300">Eliminar cuenta</h3>
+              <h3 className="text-sm font-medium text-red-300">{t('danger.deleteAccount')}</h3>
               <p className="text-xs text-text-tertiary mt-0.5">
-                Elimina permanentemente tu cuenta y todos tus archivos. Esta acción es irreversible.
+                {t('danger.deleteDesc')}
               </p>
             </div>
             <Button
@@ -652,7 +657,7 @@ export default function SettingsPage() {
               loading={deleting}
               onClick={() => setConfirmDelete(true)}
             >
-              Eliminar
+              {t('danger.delete')}
             </Button>
           </div>
         </div>
@@ -661,10 +666,10 @@ export default function SettingsPage() {
       <ConfirmDialog
         open={confirmDelete}
         danger
-        title="¿Eliminar tu cuenta?"
-        message="Se borrarán para siempre tu cuenta, todas tus bóvedas y todos tus archivos cifrados. No hay forma de recuperarlos. Esta acción es irreversible."
-        confirmLabel="Eliminar mi cuenta"
-        cancelLabel="Cancelar"
+        title={t('danger.confirmTitle')}
+        message={t('danger.confirmMessage')}
+        confirmLabel={t('danger.confirmLabel')}
+        cancelLabel={t('danger.cancel')}
         onConfirm={handleDeleteAccount}
         onCancel={() => setConfirmDelete(false)}
       />
@@ -675,6 +680,7 @@ export default function SettingsPage() {
 // ─── Export / Import Section ─────────────────────────────────────
 
 function ExportImportSection() {
+  const t = useTranslations('settings');
   const [exporting, setExporting] = useState(false);
   const [importing, setImporting] = useState(false);
   const [importPhase, setImportPhase] = useState('');
@@ -694,9 +700,9 @@ function ExportImportSection() {
     try {
       const { exportVault } = await import('@/lib/vault-export');
       await exportVault(currentVaultId);
-      toast.success('Bóveda exportada');
+      toast.success(t('exportImport.exported'));
     } catch (err: any) {
-      toast.error(`Error al exportar: ${err.message}`);
+      toast.error(`${t('exportImport.exportError')}: ${err.message}`);
     } finally {
       setExporting(false);
     }
@@ -725,9 +731,9 @@ function ExportImportSection() {
       setPasswordValidated(true);
     } catch (err: any) {
       if (err.message === 'wrong_password') {
-        toast.error('Contraseña incorrecta');
+        toast.error(t('exportImport.wrongPassword'));
       } else {
-        toast.error(`Error: ${err.message}`);
+        toast.error(`${t('exportImport.errorPrefix')}: ${err.message}`);
       }
     } finally {
       setValidatingPw(false);
@@ -743,7 +749,7 @@ function ExportImportSection() {
         setImportPhase(phase);
         setImportPct(pct);
       });
-      toast.success('Bóveda importada correctamente');
+      toast.success(t('exportImport.imported'));
       setImportFile(null);
       setImportPassword('');
       setPasswordValidated(false);
@@ -751,7 +757,7 @@ function ExportImportSection() {
       setVaultKeyRef(null);
       useVault.getState().init();
     } catch (err: any) {
-      toast.error(`Error al importar: ${err.message}`);
+      toast.error(`${t('exportImport.importError')}: ${err.message}`);
     } finally {
       setImporting(false);
       setImportPhase('');
@@ -760,11 +766,11 @@ function ExportImportSection() {
   };
 
   const phaseLabel: Record<string, string> = {
-    parsing: 'Leyendo archivo...',
-    validating: 'Validando...',
-    rewrapping: 'Re-cifrando claves...',
-    uploading: 'Subiendo archivos...',
-    done: 'Completado',
+    parsing: t('exportImport.phaseParsing'),
+    validating: t('exportImport.phaseValidating'),
+    rewrapping: t('exportImport.phaseRewrapping'),
+    uploading: t('exportImport.phaseUploading'),
+    done: t('exportImport.phaseDone'),
   };
 
   return (
@@ -772,7 +778,7 @@ function ExportImportSection() {
       <div className="flex items-center gap-2 mb-4">
         <Download className="size-4 text-violet-300" />
         <h2 className="text-sm font-semibold uppercase tracking-wider text-text-secondary">
-          Exportar / Importar bóveda
+          {t('exportImport.title')}
         </h2>
       </div>
 
@@ -781,11 +787,12 @@ function ExportImportSection() {
         <div className="p-5 rounded-xl border border-border-faint bg-bg-surface">
           <div className="flex items-center gap-2 mb-2">
             <Download className="size-4 text-emerald-300" />
-            <h3 className="text-sm font-medium">Exportar</h3>
+            <h3 className="text-sm font-medium">{t('exportImport.exportTitle')}</h3>
           </div>
           <p className="text-xs text-text-tertiary mb-4">
-            Descarga toda tu bóveda como un archivo <code className="text-[10px] bg-bg-surface-2 px-1 py-0.5 rounded">.noctcom</code> cifrado.
-            Puedes importarlo en cualquier instancia de Noctcom.
+            {t.rich('exportImport.exportDesc', {
+              code: () => <code className="text-[10px] bg-bg-surface-2 px-1 py-0.5 rounded">.noctcom</code>,
+            })}
           </p>
           <Button
             variant="outline"
@@ -794,7 +801,7 @@ function ExportImportSection() {
             onClick={handleExport}
             disabled={exporting || !currentVaultId}
           >
-            {exporting ? 'Exportando...' : 'Exportar bóveda'}
+            {exporting ? t('exportImport.exporting') : t('exportImport.exportButton')}
           </Button>
         </div>
 
@@ -802,15 +809,17 @@ function ExportImportSection() {
         <div className="p-5 rounded-xl border border-border-faint bg-bg-surface">
           <div className="flex items-center gap-2 mb-2">
             <Upload className="size-4 text-violet-300" />
-            <h3 className="text-sm font-medium">Importar</h3>
+            <h3 className="text-sm font-medium">{t('exportImport.importTitle')}</h3>
           </div>
           <p className="text-xs text-text-tertiary mb-4">
-            Importa un archivo <code className="text-[10px] bg-bg-surface-2 px-1 py-0.5 rounded">.noctcom</code> exportado desde otra instancia.
+            {t.rich('exportImport.importDesc', {
+              code: () => <code className="text-[10px] bg-bg-surface-2 px-1 py-0.5 rounded">.noctcom</code>,
+            })}
           </p>
 
           <div className="space-y-3">
             <label className="block">
-              <span className="text-xs text-text-tertiary">Archivo .noctcom</span>
+              <span className="text-xs text-text-tertiary">{t('exportImport.fileLabel')}</span>
               <input
                 type="file"
                 accept=".noctcom"
@@ -826,12 +835,12 @@ function ExportImportSection() {
             {importFile && !passwordValidated && (
               <>
                 <label className="block">
-                  <span className="text-xs text-text-tertiary">Contraseña de la cuenta origen</span>
+                  <span className="text-xs text-text-tertiary">{t('exportImport.sourcePasswordLabel')}</span>
                   <input
                     type="password"
                     value={importPassword}
                     onChange={(e) => setImportPassword(e.target.value)}
-                    placeholder="Contraseña usada al exportar"
+                    placeholder={t('exportImport.sourcePasswordPlaceholder')}
                     className="mt-1 w-full px-3 py-2 rounded-lg border border-border-faint
                                bg-bg-deep text-sm text-text-primary
                                placeholder:text-text-muted
@@ -846,7 +855,7 @@ function ExportImportSection() {
                   onClick={handleValidatePassword}
                   disabled={!importPassword || validatingPw}
                 >
-                  {validatingPw ? 'Verificando...' : 'Verificar contraseña'}
+                  {validatingPw ? t('exportImport.verifying') : t('exportImport.verifyPassword')}
                 </Button>
               </>
             )}
@@ -856,7 +865,10 @@ function ExportImportSection() {
                 <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
                   <Shield className="size-3.5 text-emerald-300" />
                   <span className="text-xs text-emerald-300">
-                    Bóveda: <strong>{vaultName}</strong>
+                    {t.rich('exportImport.vaultLabel', {
+                      name: vaultName,
+                      strong: (chunks) => <strong>{chunks}</strong>,
+                    })}
                   </span>
                 </div>
                 <Button
@@ -866,7 +878,7 @@ function ExportImportSection() {
                   onClick={handleImport}
                   disabled={importing}
                 >
-                  {importing ? 'Importando...' : 'Importar bóveda'}
+                  {importing ? t('exportImport.importing') : t('exportImport.importButton')}
                 </Button>
               </div>
             )}
@@ -895,6 +907,7 @@ function ExportImportSection() {
 // ─── 2FA por email (OTP) Section ─────────────────────────────────
 
 function EmailOtp2FASection() {
+  const t = useTranslations('settings');
   const [loading, setLoading] = useState(true);
   const [working, setWorking] = useState(false);
   const [enabled, setEnabled] = useState(false);
@@ -922,14 +935,14 @@ function EmailOtp2FASection() {
       if (enabled) {
         await apiFetch('/api/v1/2fa/email/disable', { method: 'POST' });
         setEnabled(false);
-        toast.success('2FA por email desactivado');
+        toast.success(t('emailOtp.disabled'));
       } else {
         await apiFetch('/api/v1/2fa/email/enable', { method: 'POST' });
         setEnabled(true);
-        toast.success('2FA por email activado');
+        toast.success(t('emailOtp.enabled'));
       }
     } catch (err: any) {
-      toast.error(err.message ?? 'No se pudo cambiar el 2FA por email');
+      toast.error(err.message ?? t('emailOtp.toggleError'));
     } finally {
       setWorking(false);
     }
@@ -940,7 +953,7 @@ function EmailOtp2FASection() {
       <div className="flex items-center gap-2 mb-4">
         <Mail className="size-4 text-violet-300" />
         <h2 className="text-sm font-semibold uppercase tracking-wider text-text-secondary">
-          Código por email
+          {t('emailOtp.title')}
         </h2>
       </div>
 
@@ -949,11 +962,11 @@ function EmailOtp2FASection() {
           <Mail className="size-4 text-violet-300" />
         </div>
         <div className="flex-1 min-w-0">
-          <h3 className="text-sm font-medium">Verificación por email en el login</h3>
+          <h3 className="text-sm font-medium">{t('emailOtp.cardTitle')}</h3>
           <p className="text-xs text-text-tertiary mt-0.5">
             {emailVerified
-              ? 'Te pediremos un código de 6 dígitos enviado a tu email al iniciar sesión.'
-              : 'Verifica tu email primero para poder activar esta opción.'}
+              ? t('emailOtp.descVerified')
+              : t('emailOtp.descUnverified')}
           </p>
         </div>
         {loading ? (
@@ -966,7 +979,7 @@ function EmailOtp2FASection() {
             disabled={!emailVerified && !enabled}
             onClick={toggle}
           >
-            {enabled ? 'Desactivar' : 'Activar'}
+            {enabled ? t('emailOtp.deactivate') : t('emailOtp.activate')}
           </Button>
         )}
       </div>
@@ -990,6 +1003,7 @@ interface RecoveryStatus {
 }
 
 function RecoveryKitSection() {
+  const t = useTranslations('settings');
   const [status, setStatus] = useState<RecoveryStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [working, setWorking] = useState(false);
@@ -1022,12 +1036,12 @@ function RecoveryKitSection() {
     await initCrypto();
     const auth = useAuth.getState();
     if (!auth.exchangePrivateKey) {
-      toast.error('Sesión bloqueada — vuelve a iniciar sesión');
+      toast.error(t('recovery.sessionLocked'));
       return;
     }
     const vaultKeys = Object.values(auth.vaultKeys);
     if (vaultKeys.length === 0) {
-      toast.error('No hay bóvedas cargadas — abre tu bóveda y vuelve a intentarlo');
+      toast.error(t('recovery.noVaultsLoaded'));
       return;
     }
 
@@ -1038,7 +1052,7 @@ function RecoveryKitSection() {
       // La frase introducida debe ser LA de la cuenta: misma pública de firma.
       if (!status?.recoveryPublicKey || toB64(signKp.publicKey) !== status.recoveryPublicKey) {
         wipe(seed, signKp.privateKey);
-        toast.error('Esa frase no corresponde a esta cuenta');
+        toast.error(t('recovery.phraseMismatch'));
         return;
       }
     }
@@ -1070,12 +1084,12 @@ function RecoveryKitSection() {
     setWorking(true);
     try {
       await uploadKit(words, false);
-      toast.success('Kit de recuperación activado');
+      toast.success(t('recovery.kitActivated'));
       setMode('idle');
       setWords(Array(12).fill(''));
       fetchStatus();
     } catch (err: any) {
-      toast.error(err.message ?? 'No se pudo activar el kit');
+      toast.error(err.message ?? t('recovery.kitActivateError'));
     } finally {
       setWorking(false);
     }
@@ -1086,13 +1100,13 @@ function RecoveryKitSection() {
     setWorking(true);
     try {
       await uploadKit(newMnemonic, true);
-      toast.success('Frase nueva activada — la anterior ya no sirve');
+      toast.success(t('recovery.newPhraseActivated'));
       setMode('idle');
       setNewMnemonic([]);
       setSavedConfirmed(false);
       fetchStatus();
     } catch (err: any) {
-      toast.error(err.message ?? 'No se pudo regenerar la frase');
+      toast.error(err.message ?? t('recovery.regenerateError'));
     } finally {
       setWorking(false);
     }
@@ -1103,7 +1117,7 @@ function RecoveryKitSection() {
       <div className="flex items-center gap-2 mb-4">
         <FileKey2 className="size-4 text-violet-300" />
         <h2 className="text-sm font-semibold uppercase tracking-wider text-text-secondary">
-          Kit de recuperación
+          {t('recovery.title')}
         </h2>
       </div>
 
@@ -1123,21 +1137,21 @@ function RecoveryKitSection() {
           </div>
           <div className="flex-1 min-w-0">
             <h3 className="text-sm font-medium">
-              {loading ? 'Comprobando…' : complete ? 'Kit completo' : 'Kit incompleto'}
+              {loading ? t('recovery.checking') : complete ? t('recovery.kitComplete') : t('recovery.kitIncomplete')}
             </h3>
             <p className="text-xs text-text-tertiary mt-0.5">
               {loading
-                ? 'Consultando el estado de tu kit de recuperación.'
+                ? t('recovery.checkingDesc')
                 : complete
-                  ? `Si recuperas la cuenta con tu frase, tus ${status!.vaultsTotal > 1 ? `${status!.vaultsTotal} bóvedas` : 'archivos'} y compartidos se conservan.`
-                  : 'Con tu frase recuperarías el acceso, pero no los archivos. Re-introduce tu frase (o genera una nueva) para completarlo.'}
+                  ? t('recovery.completeDesc', { count: status!.vaultsTotal })
+                  : t('recovery.incompleteDesc')}
             </p>
           </div>
           {!loading && mode === 'idle' && (
             <div className="flex gap-2 shrink-0">
               {!complete && (
                 <Button size="sm" variant="primary" onClick={() => setMode('enter')}>
-                  Ya tengo mi frase
+                  {t('recovery.haveMyPhrase')}
                 </Button>
               )}
               <Button
@@ -1150,7 +1164,7 @@ function RecoveryKitSection() {
                   setMode('generate');
                 }}
               >
-                {complete ? 'Regenerar frase' : 'Frase nueva'}
+                {complete ? t('recovery.regeneratePhrase') : t('recovery.newPhrase')}
               </Button>
             </div>
           )}
@@ -1159,8 +1173,7 @@ function RecoveryKitSection() {
         {mode === 'enter' && (
           <form onSubmit={handleEnterSubmit} className="space-y-3 pt-3 border-t border-border-faint">
             <p className="text-xs text-text-secondary">
-              Introduce tu frase de recuperación de 12 palabras. Se verifica localmente:
-              nunca sale de tu navegador.
+              {t('recovery.enterInstructions')}
             </p>
             <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
               {words.map((w, i) => (
@@ -1195,10 +1208,10 @@ function RecoveryKitSection() {
             </div>
             <div className="flex gap-2 justify-end">
               <Button type="button" size="sm" variant="ghost" onClick={() => { setMode('idle'); setWords(Array(12).fill('')); }}>
-                Cancelar
+                {t('recovery.cancel')}
               </Button>
               <Button type="submit" size="sm" variant="primary" loading={working} disabled={words.some((w) => !w)}>
-                Verificar y activar
+                {t('recovery.verifyActivate')}
               </Button>
             </div>
           </form>
@@ -1209,8 +1222,9 @@ function RecoveryKitSection() {
             <div className="flex gap-2 p-3 rounded-lg bg-amber-500/5 border border-amber-500/20">
               <AlertTriangle className="size-4 text-amber-300 mt-0.5 shrink-0" />
               <p className="text-xs text-text-secondary leading-relaxed">
-                Esta frase <strong className="text-amber-200">sustituye a la anterior</strong>, que
-                dejará de funcionar. Guárdala en un lugar seguro: es tu única vía si olvidas la contraseña.
+                {t.rich('recovery.generateWarning', {
+                  strong: (chunks) => <strong className="text-amber-200">{chunks}</strong>,
+                })}
               </p>
             </div>
             <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
@@ -1231,10 +1245,10 @@ function RecoveryKitSection() {
                 setCopied(true);
                 setTimeout(() => setCopied(false), 2000);
                 setTimeout(() => { navigator.clipboard.writeText('').catch(() => {}); }, 60_000);
-                toast.success('Copiada al portapapeles (se borrará en 60s)');
+                toast.success(t('recovery.copiedClipboard'));
               }}
             >
-              {copied ? 'Copiada' : 'Copiar frase'}
+              {copied ? t('recovery.copied') : t('recovery.copyPhrase')}
             </Button>
             <label className="flex items-start gap-2 text-xs cursor-pointer p-2 rounded-lg hover:bg-bg-surface-2 transition-colors">
               <input
@@ -1244,15 +1258,15 @@ function RecoveryKitSection() {
                 className="mt-0.5 size-3.5 accent-violet-500"
               />
               <span className="text-text-secondary">
-                He guardado la frase nueva en un lugar seguro y entiendo que la anterior dejará de funcionar.
+                {t('recovery.savedConfirmLabel')}
               </span>
             </label>
             <div className="flex gap-2 justify-end">
               <Button size="sm" variant="ghost" onClick={() => { setMode('idle'); setNewMnemonic([]); setSavedConfirmed(false); }}>
-                Cancelar
+                {t('recovery.cancel')}
               </Button>
               <Button size="sm" variant="primary" loading={working} disabled={!savedConfirmed} onClick={handleGenerateConfirm}>
-                Activar frase nueva
+                {t('recovery.activateNewPhrase')}
               </Button>
             </div>
           </div>
@@ -1268,6 +1282,7 @@ function RecoveryKitSection() {
 // uso. El cobro va por cuota de bytes, nunca por contenido (ZK).
 
 function PlanUsageSection() {
+  const t = useTranslations('settings');
   const { storageUsed, storageQuota, refreshStorage } = useVault();
   const [status, setStatus] = useState<BillingStatus | null>(null);
   const [working, setWorking] = useState(false);
@@ -1288,7 +1303,7 @@ function PlanUsageSection() {
     try {
       await openBillingPortal();
     } catch (err: any) {
-      toast.error(err?.message ?? 'No se pudo abrir el portal');
+      toast.error(err?.message ?? t('plan.portalError'));
       setWorking(false);
     }
   }
@@ -1298,7 +1313,7 @@ function PlanUsageSection() {
       <div className="flex items-center gap-2 mb-4">
         <Gauge className="size-4 text-violet-300" />
         <h2 className="text-sm font-semibold uppercase tracking-wider text-text-secondary">
-          Plan y uso
+          {t('plan.title')}
         </h2>
       </div>
 
@@ -1306,22 +1321,22 @@ function PlanUsageSection() {
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div>
             <h3 className="text-sm font-medium">
-              Plan {status?.planLabel ?? '—'}
+              {t('plan.planPrefix', { label: status?.planLabel ?? '—' })}
               {isPaid && status?.subscriptionStatus && status.subscriptionStatus !== 'active' && (
                 <span className="ml-2 text-[10px] font-mono uppercase text-amber-300">{status.subscriptionStatus}</span>
               )}
             </h3>
             <p className="text-xs text-text-tertiary mt-0.5">
-              {formatBytes(storageUsed)} de {formatBytes(storageQuota)} usados
+              {t('plan.usage', { used: formatBytes(storageUsed), total: formatBytes(storageQuota) })}
             </p>
             {isPaid && status?.currentPeriodEnd && (
               status.cancelAtPeriodEnd ? (
                 <p className="text-xs text-amber-300 mt-1">
-                  Vuelve al plan Gratis el {new Date(status.currentPeriodEnd).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}
+                  {t('plan.revertsToFree', { date: new Date(status.currentPeriodEnd).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' }) })}
                 </p>
               ) : (
                 <p className="text-[11px] text-text-muted mt-1">
-                  Se renueva el {new Date(status.currentPeriodEnd).toLocaleDateString('es-ES', { day: 'numeric', month: 'long' })}
+                  {t('plan.renews', { date: new Date(status.currentPeriodEnd).toLocaleDateString('es-ES', { day: 'numeric', month: 'long' }) })}
                 </p>
               )
             )}
@@ -1329,12 +1344,12 @@ function PlanUsageSection() {
           <div className="flex gap-2">
             {status?.billingEnabled && (
               <Button size="sm" variant={isPaid ? 'ghost' : 'primary'} onClick={() => setShowPlans(true)}>
-                {isPaid ? 'Cambiar plan' : 'Mejorar plan'}
+                {isPaid ? t('plan.changePlan') : t('plan.upgradePlan')}
               </Button>
             )}
             {isPaid && status?.hasCustomer && (
               <Button size="sm" variant="outline" loading={working} leftIcon={<CreditCard className="size-3.5" />} onClick={manage}>
-                Gestionar
+                {t('plan.manage')}
               </Button>
             )}
           </div>
@@ -1350,7 +1365,7 @@ function PlanUsageSection() {
           </div>
           {near && (
             <p className="text-xs text-amber-300 mt-2">
-              Estás cerca del límite de tu plan. {status?.billingEnabled ? 'Amplía espacio cuando lo necesites.' : ''}
+              {t('plan.nearLimit')} {status?.billingEnabled ? t('plan.expandHint') : ''}
             </p>
           )}
         </div>
@@ -1375,6 +1390,7 @@ function PlanPickerModal({ currentPlan, onClose, onUpdated }: {
   onClose: () => void;
   onUpdated: () => void;
 }) {
+  const t = useTranslations('settings');
   const [plans, setPlans] = useState<PublicPlan[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
@@ -1392,7 +1408,7 @@ function PlanPickerModal({ currentPlan, onClose, onUpdated }: {
     try {
       const res = await startCheckout(plan.id);
       if (res.updated) {
-        toast.success(res.unchanged ? 'Ya tienes este plan' : `Plan actualizado a ${plan.label}`);
+        toast.success(res.unchanged ? t('planPicker.alreadyOnPlan') : t('planPicker.planUpdated', { plan: plan.label }));
         // La cuota se ajusta vía webhook: refrescamos un par de veces.
         setTimeout(onUpdated, 1500);
         setTimeout(onUpdated, 4000);
@@ -1401,7 +1417,7 @@ function PlanPickerModal({ currentPlan, onClose, onUpdated }: {
       }
       // Si hay url, el navegador ya está redirigiendo a Stripe Checkout.
     } catch (err: any) {
-      toast.error(err?.message ?? 'No se pudo cambiar el plan');
+      toast.error(err?.message ?? t('planPicker.changeError'));
       setBusy(null);
     }
   }
@@ -1416,11 +1432,11 @@ function PlanPickerModal({ currentPlan, onClose, onUpdated }: {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between mb-1">
-          <h3 className="font-display text-lg font-medium">Elige tu plan</h3>
-          <button onClick={() => !busy && onClose()} className="p-1 rounded-md hover:bg-bg-surface-2 text-text-tertiary" aria-label="Cerrar">✕</button>
+          <h3 className="font-display text-lg font-medium">{t('planPicker.title')}</h3>
+          <button onClick={() => !busy && onClose()} className="p-1 rounded-md hover:bg-bg-surface-2 text-text-tertiary" aria-label={t('planPicker.close')}>✕</button>
         </div>
         <p className="text-xs text-text-tertiary mb-5">
-          Mismo cifrado zero-knowledge. Solo cambia el espacio. Cambia o cancela cuando quieras.
+          {t('planPicker.subtitle')}
         </p>
 
         {loading ? (
@@ -1443,15 +1459,15 @@ function PlanPickerModal({ currentPlan, onClose, onUpdated }: {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-baseline gap-2">
                       <span className="text-sm font-semibold">{plan.label}</span>
-                      <span className="font-mono text-sm text-violet-200 font-bold">{plan.priceEurMonth}€<span className="text-[10px] text-text-tertiary font-sans">/mes</span></span>
+                      <span className="font-mono text-sm text-violet-200 font-bold">{plan.priceEurMonth}€<span className="text-[10px] text-text-tertiary font-sans">{t('planPicker.perMonth')}</span></span>
                     </div>
-                    <p className="text-[11px] text-text-tertiary mt-0.5">{formatBytes(plan.quotaBytes)} cifrados</p>
+                    <p className="text-[11px] text-text-tertiary mt-0.5">{t('planPicker.encryptedQuota', { quota: formatBytes(plan.quotaBytes) })}</p>
                   </div>
                   {isCurrent ? (
-                    <span className="text-[10px] font-mono uppercase tracking-wider text-violet-300 bg-violet-500/10 px-2 py-1 rounded">Actual</span>
+                    <span className="text-[10px] font-mono uppercase tracking-wider text-violet-300 bg-violet-500/10 px-2 py-1 rounded">{t('planPicker.current')}</span>
                   ) : (
                     <Button size="sm" variant="outline" disabled={soon} loading={busy === plan.id} onClick={() => pick(plan)}>
-                      {soon ? 'Pronto' : 'Elegir'}
+                      {soon ? t('planPicker.soon') : t('planPicker.choose')}
                     </Button>
                   )}
                 </div>
@@ -1461,7 +1477,7 @@ function PlanPickerModal({ currentPlan, onClose, onUpdated }: {
         )}
 
         <p className="text-[11px] text-text-tertiary text-center mt-5">
-          Pago seguro con Stripe · Noctcom nunca ve tu tarjeta
+          {t('planPicker.securePayment')}
         </p>
       </div>
     </div>
@@ -1474,6 +1490,7 @@ function PlanPickerModal({ currentPlan, onClose, onUpdated }: {
 // contraseña actual se exige para probar identidad (firma del challenge).
 
 function ChangePasswordSection() {
+  const t = useTranslations('settings');
   const [open, setOpen] = useState(false);
   const [current, setCurrent] = useState('');
   const [next, setNext] = useState('');
@@ -1486,20 +1503,20 @@ function ChangePasswordSection() {
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (next.length < 8) { toast.error('La nueva contraseña debe tener al menos 8 caracteres'); return; }
-    if (next !== confirm) { toast.error('Las contraseñas nuevas no coinciden'); return; }
-    if (next === current) { toast.error('La nueva contraseña debe ser distinta de la actual'); return; }
+    if (next.length < 8) { toast.error(t('password.tooShort')); return; }
+    if (next !== confirm) { toast.error(t('password.mismatch')); return; }
+    if (next === current) { toast.error(t('password.mustDiffer')); return; }
     setWorking(true);
     try {
       await changeMasterPassword(current, next);
-      toast.success('Contraseña maestra cambiada. Las sesiones en otros dispositivos se han cerrado.');
+      toast.success(t('password.changed'));
       reset();
       setOpen(false);
     } catch (err: any) {
       const msg = err?.message ?? '';
       toast.error(/incorrecta|invalid|401/i.test(msg)
-        ? 'La contraseña actual es incorrecta'
-        : (msg || 'No se pudo cambiar la contraseña'));
+        ? t('password.currentWrong')
+        : (msg || t('password.changeError')));
     } finally {
       setWorking(false);
     }
@@ -1510,7 +1527,7 @@ function ChangePasswordSection() {
       <div className="flex items-center gap-2 mb-4">
         <Lock className="size-4 text-violet-300" />
         <h2 className="text-sm font-semibold uppercase tracking-wider text-text-secondary">
-          Seguridad
+          {t('password.sectionTitle')}
         </h2>
       </div>
 
@@ -1519,12 +1536,12 @@ function ChangePasswordSection() {
           <Lock className="size-4 text-violet-300" />
         </div>
         <div className="flex-1 min-w-0">
-          <h3 className="text-sm font-medium">Cambiar contraseña maestra</h3>
+          <h3 className="text-sm font-medium">{t('password.cardTitle')}</h3>
           <p className="text-xs text-text-tertiary mt-0.5">
-            Re-cifra todas tus claves con una contraseña nueva. Tus archivos no se vuelven a subir.
+            {t('password.cardDesc')}
           </p>
         </div>
-        <Button size="sm" variant="outline" onClick={() => setOpen(true)}>Cambiar</Button>
+        <Button size="sm" variant="outline" onClick={() => setOpen(true)}>{t('password.change')}</Button>
       </div>
 
       {open && (
@@ -1538,13 +1555,13 @@ function ChangePasswordSection() {
             onClick={(e) => e.stopPropagation()}
           >
             <div>
-              <h3 className="font-display text-lg font-medium">Cambiar contraseña maestra</h3>
+              <h3 className="font-display text-lg font-medium">{t('password.modalTitle')}</h3>
               <p className="text-xs text-text-tertiary mt-1 leading-relaxed">
-                Se re-cifran tus claves localmente. El servidor nunca ve ninguna de las dos contraseñas.
+                {t('password.modalDesc')}
               </p>
             </div>
             <Input
-              label="Contraseña actual"
+              label={t('password.currentLabel')}
               type="password"
               value={current}
               onChange={(e) => setCurrent(e.target.value)}
@@ -1553,7 +1570,7 @@ function ChangePasswordSection() {
               autoFocus
             />
             <Input
-              label="Nueva contraseña"
+              label={t('password.newLabel')}
               type="password"
               value={next}
               onChange={(e) => setNext(e.target.value.slice(0, 128))}
@@ -1561,20 +1578,20 @@ function ChangePasswordSection() {
               required
             />
             <Input
-              label="Repetir nueva contraseña"
+              label={t('password.repeatLabel')}
               type="password"
               value={confirm}
               onChange={(e) => setConfirm(e.target.value.slice(0, 128))}
               leftIcon={<KeyRound className="size-4" />}
               required
-              error={confirm.length > 0 && next !== confirm ? 'No coincide' : undefined}
+              error={confirm.length > 0 && next !== confirm ? t('password.noMatch') : undefined}
             />
             <div className="flex gap-2 justify-end pt-1">
               <Button type="button" variant="ghost" size="sm" disabled={working} onClick={() => setOpen(false)}>
-                Cancelar
+                {t('password.cancel')}
               </Button>
               <Button type="submit" variant="primary" size="sm" loading={working}>
-                {working ? 'Re-cifrando…' : 'Cambiar contraseña'}
+                {working ? t('password.rewrapping') : t('password.submit')}
               </Button>
             </div>
           </form>
@@ -1590,6 +1607,7 @@ function ChangePasswordSection() {
 // compartido un archivo»): el nombre va cifrado y el servidor no lo conoce.
 
 function PushNotificationsSection() {
+  const t = useTranslations('settings');
   const [status, setStatus] = useState<PushStatus>('unsupported');
   const [chosen, setChosen] = useState(false);
   const [working, setWorking] = useState(false);
@@ -1607,19 +1625,19 @@ function PushNotificationsSection() {
       if (active) {
         await disablePush();
         setChosen(false);
-        toast.success('Notificaciones desactivadas en este navegador');
+        toast.success(t('push.disabledToast'));
       } else {
         const result = await enablePush();
         setStatus(result);
         if (result === 'granted') {
           setChosen(true);
-          toast.success('Notificaciones activadas');
+          toast.success(t('push.enabledToast'));
         } else if (result === 'denied') {
-          toast.error('El navegador tiene las notificaciones bloqueadas para este sitio');
+          toast.error(t('push.deniedToast'));
         }
       }
     } catch (err: any) {
-      toast.error(err.message ?? 'No se pudo cambiar las notificaciones');
+      toast.error(err.message ?? t('push.toggleError'));
     } finally {
       setWorking(false);
     }
@@ -1630,7 +1648,7 @@ function PushNotificationsSection() {
       <div className="flex items-center gap-2 mb-4">
         <Bell className="size-4 text-violet-300" />
         <h2 className="text-sm font-semibold uppercase tracking-wider text-text-secondary">
-          Notificaciones
+          {t('push.title')}
         </h2>
       </div>
 
@@ -1639,15 +1657,15 @@ function PushNotificationsSection() {
           {active ? <Bell className="size-4 text-violet-300" /> : <BellOff className="size-4 text-text-tertiary" />}
         </div>
         <div className="flex-1 min-w-0">
-          <h3 className="text-sm font-medium">Avisos cuando te comparten archivos</h3>
+          <h3 className="text-sm font-medium">{t('push.cardTitle')}</h3>
           <p className="text-xs text-text-tertiary mt-0.5">
             {status === 'unsupported'
-              ? 'Este navegador no soporta notificaciones push.'
+              ? t('push.unsupported')
               : status === 'denied'
-                ? 'Bloqueadas en el navegador — actívalas desde el icono del candado de la barra de direcciones.'
+                ? t('push.denied')
                 : active
-                  ? 'Recibirás un aviso aunque la pestaña esté cerrada. El contenido del aviso es genérico: los nombres de tus archivos siguen cifrados.'
-                  : 'Activa los avisos en este navegador. Solo se notifica el evento — nunca el contenido, que va cifrado.'}
+                  ? t('push.activeDesc')
+                  : t('push.inactiveDesc')}
           </p>
         </div>
         {status !== 'unsupported' && status !== 'denied' && (
@@ -1657,7 +1675,7 @@ function PushNotificationsSection() {
             loading={working}
             onClick={toggle}
           >
-            {active ? 'Desactivar' : 'Activar'}
+            {active ? t('push.deactivate') : t('push.activate')}
           </Button>
         )}
       </div>
@@ -1676,6 +1694,7 @@ interface PasskeyView {
 }
 
 function PasskeysSection() {
+  const t = useTranslations('settings');
   const [passkeys, setPasskeys] = useState<PasskeyView[]>([]);
   const [loading, setLoading] = useState(true);
   const [registering, setRegistering] = useState(false);
@@ -1695,7 +1714,7 @@ function PasskeysSection() {
 
   async function handleRegister() {
     if (typeof window !== 'undefined' && !window.PublicKeyCredential) {
-      toast.error('Este navegador no soporta passkeys');
+      toast.error(t('passkeys.unsupported'));
       return;
     }
     setRegistering(true);
@@ -1708,11 +1727,11 @@ function PasskeysSection() {
         attResp = await startRegistration({ optionsJSON: options as any });
       } catch (err: any) {
         if (err?.name === 'NotAllowedError' || err?.name === 'AbortError') {
-          toast.info('Registro de passkey cancelado');
+          toast.info(t('passkeys.registerCancelled'));
           return;
         }
         if (err?.name === 'InvalidStateError') {
-          toast.info('Esta passkey ya está registrada');
+          toast.info(t('passkeys.alreadyRegistered'));
           return;
         }
         throw err;
@@ -1725,10 +1744,10 @@ function PasskeysSection() {
         method: 'POST',
         body: JSON.stringify({ response: attResp, nickname }),
       });
-      toast.success('Passkey registrada');
+      toast.success(t('passkeys.registered'));
       fetchPasskeys();
     } catch {
-      toast.error('No se pudo registrar la passkey');
+      toast.error(t('passkeys.registerError'));
     } finally {
       setRegistering(false);
     }
@@ -1737,10 +1756,10 @@ function PasskeysSection() {
   async function handleRevoke(id: string) {
     try {
       await apiFetch(`/api/v1/2fa/webauthn/${id}`, { method: 'DELETE' });
-      toast.success('Passkey revocada');
+      toast.success(t('passkeys.revoked'));
       setPasskeys((p) => p.filter((k) => k.id !== id));
     } catch {
-      toast.error('No se pudo revocar la passkey');
+      toast.error(t('passkeys.revokeError'));
     }
   }
 
@@ -1750,29 +1769,28 @@ function PasskeysSection() {
         <div className="flex items-center gap-2">
           <Fingerprint className="size-4 text-violet-300" />
           <h2 className="text-sm font-semibold uppercase tracking-wider text-text-secondary">
-            Passkeys (WebAuthn)
+            {t('passkeys.title')}
           </h2>
         </div>
         <Button size="sm" loading={registering} onClick={handleRegister}>
           <Plus className="size-4" />
-          Añadir passkey
+          {t('passkeys.add')}
         </Button>
       </div>
 
       <p className="text-xs text-text-tertiary mb-4">
-        Usa tu huella, Face ID o una llave de seguridad física como segundo factor.
-        La clave privada nunca sale de tu dispositivo.
+        {t('passkeys.desc')}
       </p>
 
       <div className="space-y-1">
         {loading ? (
           <div className="flex items-center gap-2 p-4 text-sm text-text-tertiary">
             <Loader2 className="size-4 animate-spin" />
-            Cargando passkeys…
+            {t('passkeys.loading')}
           </div>
         ) : passkeys.length === 0 ? (
           <div className="p-4 rounded-xl border border-dashed border-border-faint text-sm text-text-tertiary">
-            No tienes ninguna passkey registrada todavía.
+            {t('passkeys.empty')}
           </div>
         ) : (
           passkeys.map((pk) => (
@@ -1786,15 +1804,15 @@ function PasskeysSection() {
               <div className="flex-1 min-w-0">
                 <h3 className="text-sm font-medium truncate">{pk.nickname || 'Passkey'}</h3>
                 <p className="text-xs text-text-tertiary mt-0.5">
-                  {pk.device_type === 'multiDevice' ? 'Sincronizada' : 'Este dispositivo'}
+                  {pk.device_type === 'multiDevice' ? t('passkeys.synced') : t('passkeys.thisDevice')}
                   {' · '}
-                  {pk.last_used_at ? `usada ${timeAgo(pk.last_used_at)}` : 'sin usar'}
+                  {pk.last_used_at ? t('passkeys.usedAgo', { ago: timeAgo(pk.last_used_at, t) }) : t('passkeys.neverUsed')}
                 </p>
               </div>
               <button
                 onClick={() => handleRevoke(pk.id)}
                 className="p-2 rounded-lg text-text-tertiary hover:text-red-400 hover:bg-red-500/10 transition-colors"
-                title="Revocar passkey"
+                title={t('passkeys.revokeTitle')}
               >
                 <Trash2 className="size-4" />
               </button>
@@ -1847,6 +1865,7 @@ function AgentDiskCard({ disk, agentId, onChanged }: {
   agentId: string;
   onChanged: () => void;
 }) {
+  const t = useTranslations('settings');
   const usedPct = disk.totalBytes > 0 ? Math.min(100, (disk.usedBytes / disk.totalBytes) * 100) : 0;
   const [busy, setBusy] = useState(false);
   const [formatOpen, setFormatOpen] = useState(false);
@@ -1865,12 +1884,12 @@ function AgentDiskCard({ disk, agentId, onChanged }: {
           totalBytes: disk.totalBytes,
         }),
       });
-      toast.success(`Disco "${disk.label || disk.device}" listo para almacenar`);
+      toast.success(t('disks.diskReady', { name: disk.label || disk.device }));
       onChanged();
       // Refresca el "Almacenamiento": ahora suma la capacidad del disco.
       void useVault.getState().refreshStorage();
     } catch (err: any) {
-      toast.error(err.message ?? 'No se pudo preparar el disco');
+      toast.error(err.message ?? t('disks.prepareError'));
     } finally {
       setBusy(false);
     }
@@ -1883,11 +1902,11 @@ function AgentDiskCard({ disk, agentId, onChanged }: {
         method: 'POST',
         body: JSON.stringify({ agentId, path: disk.path }),
       });
-      toast.success('Disco dado de baja (tus datos siguen intactos)');
+      toast.success(t('disks.diskUnused'));
       onChanged();
       void useVault.getState().refreshStorage();
     } catch (err: any) {
-      toast.error(err.message ?? 'No se pudo dar de baja el disco');
+      toast.error(err.message ?? t('disks.unuseError'));
     } finally {
       setBusy(false);
     }
@@ -1914,7 +1933,7 @@ function AgentDiskCard({ disk, agentId, onChanged }: {
           )}
           {disk.active && (
             <span className="text-[10px] font-mono uppercase tracking-wider text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded flex items-center gap-1">
-              <Check className="size-3" /> En uso
+              <Check className="size-3" /> {t('disks.inUse')}
             </span>
           )}
         </div>
@@ -1927,24 +1946,24 @@ function AgentDiskCard({ disk, agentId, onChanged }: {
           </div>
           <div className="grid grid-cols-3 gap-1 text-center">
             <div>
-              <p className="text-[10px] text-text-muted uppercase">Total</p>
+              <p className="text-[10px] text-text-muted uppercase">{t('disks.total')}</p>
               <p className="text-xs font-mono font-medium">{fmtSize(disk.totalBytes)}</p>
             </div>
             <div>
-              <p className="text-[10px] text-text-muted uppercase">Usado</p>
+              <p className="text-[10px] text-text-muted uppercase">{t('disks.used')}</p>
               <p className="text-xs font-mono font-medium text-amber-400">{fmtSize(disk.usedBytes)}</p>
             </div>
             <div>
-              <p className="text-[10px] text-text-muted uppercase">Libre</p>
+              <p className="text-[10px] text-text-muted uppercase">{t('disks.free')}</p>
               <p className="text-xs font-mono font-medium text-emerald-400">{fmtSize(disk.freeBytes)}</p>
             </div>
           </div>
           <div className="flex items-center justify-center gap-2 mt-1.5 pt-1.5 border-t border-border-faint">
             <span className={cn('text-[10px] font-mono uppercase', disk.needsFormat ? 'text-amber-400' : 'text-text-muted')}>
-              {disk.filesystem || 'sin formato'}
+              {disk.filesystem || t('disks.noFilesystem')}
             </span>
-            {disk.needsFormat && <span className="text-[10px] text-amber-400 font-medium">(incompatible)</span>}
-            {!disk.removable && <span className="text-[10px] text-text-muted">· Interno</span>}
+            {disk.needsFormat && <span className="text-[10px] text-amber-400 font-medium">{t('disks.incompatible')}</span>}
+            {!disk.removable && <span className="text-[10px] text-text-muted">{t('disks.internalSuffix')}</span>}
           </div>
         </div>
       </div>
@@ -1958,18 +1977,18 @@ function AgentDiskCard({ disk, agentId, onChanged }: {
             disabled={busy}
             onClick={() => setFormatOpen(true)}
             className="text-red-400 hover:text-red-300"
-            title="Formatear el disco (borra todo su contenido)"
+            title={t('disks.formatTitle')}
           >
-            <Eraser className="size-3.5 mr-1" /> Formatear
+            <Eraser className="size-3.5 mr-1" /> {t('disks.format')}
           </Button>
         )}
         {disk.active ? (
           <Button variant="ghost" size="sm" loading={busy} onClick={handleUnuse}>
-            <Power className="size-3.5 mr-1" /> Dejar de usar
+            <Power className="size-3.5 mr-1" /> {t('disks.stopUsing')}
           </Button>
         ) : (
           <Button variant="secondary" size="sm" loading={busy} onClick={handleUse}>
-            <FolderPlus className="size-3.5 mr-1" /> Usar este disco
+            <FolderPlus className="size-3.5 mr-1" /> {t('disks.useThisDisk')}
           </Button>
         )}
       </div>
@@ -1986,6 +2005,7 @@ function AgentDiskCard({ disk, agentId, onChanged }: {
 }
 
 function ConnectorAgentsSection() {
+  const t = useTranslations('settings');
   const { masterKey } = useAuth();
   const [agents, setAgents] = useState<AgentView[]>([]);
   const [loading, setLoading] = useState(true);
@@ -2009,7 +2029,7 @@ function ConnectorAgentsSection() {
       const raw = await apiFetch<ApiAgent[]>('/api/v1/agent');
       setAgents(
         raw.map((a) => {
-          let name = 'Agente';
+          let name = t('connector.agentFallback');
           try {
             name = decryptString(fromB64(a.nameEncrypted), fromB64(a.nameNonce), masterKey);
           } catch { /* nombre no descifrable */ }
@@ -2024,7 +2044,7 @@ function ConnectorAgentsSection() {
 
   async function handlePair() {
     if (!masterKey) return;
-    const name = window.prompt('Nombre para este agente (p. ej. "PC del salón"):', 'Mi equipo');
+    const name = window.prompt(t('connector.namePrompt'), t('connector.nameDefault'));
     if (!name?.trim()) return;
     setPairing(true);
     try {
@@ -2035,7 +2055,7 @@ function ConnectorAgentsSection() {
       });
       setPairCode(r.code);
     } catch (err: any) {
-      toast.error(err.message ?? 'No se pudo generar el código de emparejamiento');
+      toast.error(err.message ?? t('connector.pairCodeError'));
     } finally {
       setPairing(false);
     }
@@ -2044,10 +2064,10 @@ function ConnectorAgentsSection() {
   async function handleRevoke(id: string) {
     try {
       await apiFetch(`/api/v1/agent/${id}`, { method: 'DELETE' });
-      toast.success('Agente desvinculado');
+      toast.success(t('connector.unlinked'));
       setAgents((a) => a.filter((x) => x.id !== id));
     } catch {
-      toast.error('No se pudo desvincular el agente');
+      toast.error(t('connector.unlinkError'));
     }
   }
 
@@ -2062,26 +2082,25 @@ function ConnectorAgentsSection() {
         </div>
         <Button size="sm" loading={pairing} onClick={handlePair}>
           <Plus className="size-4" />
-          Vincular agente
+          {t('connector.linkAgent')}
         </Button>
       </div>
 
       <p className="text-xs text-text-tertiary mb-4">
-        Instala el agente en tu equipo para gestionar sus discos desde aquí. Abre una
-        conexión saliente cifrada (sin puertos abiertos) y tus claves nunca salen de tu máquina.
+        {t('connector.intro')}
       </p>
 
       {/* Paso 1: descargar el binario */}
       <div className="mb-4 p-4 rounded-xl border border-border-faint bg-bg-surface">
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div className="min-w-0">
-            <h3 className="text-sm font-medium">1 · Descarga e instala el agente</h3>
+            <h3 className="text-sm font-medium">{t('connector.step1Title')}</h3>
             <p className="text-xs text-text-tertiary mt-0.5">
               {os === 'windows'
-                ? 'Detectamos Windows. Descarga el ejecutable y ábrelo.'
+                ? t('connector.step1Windows')
                 : os === 'macos' || os === 'linux'
-                  ? `Detectamos ${os === 'macos' ? 'macOS' : 'Linux'}: su binario llega pronto. De momento hay versión de Windows.`
-                  : 'Descarga el agente para tu sistema.'}
+                  ? t('connector.step1OtherOs', { os: os === 'macos' ? 'macOS' : 'Linux' })
+                  : t('connector.step1Generic')}
             </p>
           </div>
           <a
@@ -2089,12 +2108,12 @@ function ConnectorAgentsSection() {
             className="inline-flex items-center gap-2 h-9 px-4 rounded-lg bg-violet-600 hover:bg-violet-500 text-white text-sm font-medium transition-colors shrink-0"
           >
             <Download className="size-4" />
-            Descargar para Windows
+            {t('connector.downloadWindows')}
           </a>
         </div>
         {(os === 'macos' || os === 'linux') && (
           <p className="text-[10px] text-text-muted mt-2">
-            Builds para macOS y Linux: próximamente.
+            {t('connector.buildsSoon')}
           </p>
         )}
       </div>
@@ -2102,8 +2121,9 @@ function ConnectorAgentsSection() {
       {pairCode && (
         <div className="mb-4 p-4 rounded-xl border border-emerald-500/30 bg-emerald-500/5">
           <p className="text-xs text-text-secondary">
-            2 · Abre una terminal <strong>en la carpeta donde se descargó</strong> (normalmente
-            Descargas) y ejecuta:
+            {t.rich('connector.step2', {
+              strong: (chunks) => <strong>{chunks}</strong>,
+            })}
           </p>
           <div className="flex items-center gap-2 mt-2">
             <code className="flex-1 text-xs font-mono bg-bg-surface-2 px-3 py-2 rounded-lg break-all">
@@ -2112,27 +2132,25 @@ function ConnectorAgentsSection() {
             <button
               onClick={() => {
                 navigator.clipboard?.writeText(`.\\noctcom-connector.exe pair --code ${pairCode}`);
-                toast.success('Comando copiado');
+                toast.success(t('connector.commandCopied'));
               }}
               className="p-2 rounded-lg text-text-tertiary hover:text-text-primary hover:bg-bg-surface-2 transition-colors"
-              title="Copiar"
+              title={t('connector.copy')}
             >
               <Copy className="size-4" />
             </button>
           </div>
           <p className="text-[10px] text-text-muted mt-2">
-            Luego déjalo conectado con{' '}
-            <span className="font-mono text-text-tertiary">.\noctcom-connector.exe run</span>.
-            El código caduca en 10 minutos y es de un solo uso.
-            <br />
-            <span className="text-text-tertiary">
-              Truco: en el Explorador, entra en la carpeta de descargas, escribe <span className="font-mono">cmd</span> en
-              la barra de direcciones y pulsa Enter para abrir la terminal ahí.
-            </span>
+            {t.rich('connector.runHint', {
+              run: () => <span className="font-mono text-text-tertiary">.\noctcom-connector.exe run</span>,
+              br: () => <br />,
+              tip: (chunks) => <span className="text-text-tertiary">{chunks}</span>,
+              cmd: () => <span className="font-mono">cmd</span>,
+            })}
           </p>
           <div className="mt-3">
             <Button size="sm" variant="outline" onClick={() => { setPairCode(null); fetchAgents(); }}>
-              Ya lo he vinculado
+              {t('connector.alreadyLinked')}
             </Button>
           </div>
         </div>
@@ -2142,11 +2160,11 @@ function ConnectorAgentsSection() {
         {loading ? (
           <div className="flex items-center gap-2 p-4 text-sm text-text-tertiary">
             <Loader2 className="size-4 animate-spin" />
-            Cargando agentes…
+            {t('connector.loadingAgents')}
           </div>
         ) : agents.length === 0 ? (
           <p className="text-xs text-text-muted px-1">
-            No tienes ningún agente vinculado todavía.
+            {t('connector.noAgents')}
           </p>
         ) : (
           agents.map((a) => (
@@ -2161,18 +2179,18 @@ function ConnectorAgentsSection() {
                 <div className="flex-1 min-w-0">
                   <h3 className="text-sm font-medium truncate">{a.name}</h3>
                   <p className="text-xs text-text-tertiary mt-0.5">
-                    {a.platform ?? 'desconocido'} ·{' '}
+                    {a.platform ?? t('connector.unknownPlatform')} ·{' '}
                     {a.online ? (
-                      <span className="text-emerald-400">en línea</span>
+                      <span className="text-emerald-400">{t('connector.online')}</span>
                     ) : (
-                      <span>desconectado</span>
+                      <span>{t('connector.offline')}</span>
                     )}
                   </p>
                 </div>
                 <button
                   onClick={() => handleRevoke(a.id)}
                   className="p-2 rounded-lg text-text-tertiary hover:text-red-400 hover:bg-red-500/10 transition-colors"
-                  title="Desvincular agente"
+                  title={t('connector.unlinkTitle')}
                 >
                   <Trash2 className="size-4" />
                 </button>

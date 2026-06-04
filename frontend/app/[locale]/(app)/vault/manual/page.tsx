@@ -1,9 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useTranslations } from 'next-intl';
 import { BookOpen } from 'lucide-react';
 
 export default function ManualPage() {
+  const t = useTranslations('manual');
   const [html, setHtml] = useState('');
   const [loading, setLoading] = useState(true);
 
@@ -36,9 +38,9 @@ export default function ManualPage() {
           <BookOpen className="size-5 text-violet-300" />
         </div>
         <div>
-          <h1 className="font-display text-2xl font-semibold tracking-tight">Manual de usuario</h1>
+          <h1 className="font-display text-2xl font-semibold tracking-tight">{t('title')}</h1>
           <p className="text-xs text-text-muted font-mono uppercase tracking-wider">
-            Se actualiza con cada versión
+            {t('subtitle')}
           </p>
         </div>
       </div>
