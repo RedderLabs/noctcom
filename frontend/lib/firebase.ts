@@ -53,17 +53,20 @@ export function getPushStatus(): PushStatus {
   return Notification.permission as PushStatus;
 }
 
-async function fetchToken(): Promise<string | null> {
+// Obtiene el token FCM. LANZA con la causa real si falla (SW no registrable,
+// VAPID inválida, push service caído…) — un fallo aquí NUNCA debe parecer
+// éxito: antes se tragaba el error y Ajustes decía "activado" sin registrar
+// nada en push_tokens.
+async function fetchToken(): Promise<string> {
   const m = getFirebaseMessaging();
-  if (!m) return null;
-  try {
-    return await getToken(m, {
-      vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY,
-      serviceWorkerRegistration: await navigator.serviceWorker.register('/firebase-messaging-sw.js'),
-    });
-  } catch {
-    return null;
-  }
+  if (!m) throw new Error('Firebase Messaging no está disponible en este navegador');
+  const swReg = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+  const token = await getToken(m, {
+    vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY,
+    serviceWorkerRegistration: swReg,
+  });
+  if (!token) throw new Error('FCM no devolvió token (¿permiso revocado a mitad?)');
+  return token;
 }
 
 /**
@@ -76,12 +79,14 @@ export async function syncPushToken(): Promise<void> {
   try {
     if (!isPushChosen() || getPushStatus() !== 'granted') return;
     const token = await fetchToken();
-    if (!token) return;
     await apiFetch('/api/v1/push/register', {
       method: 'POST',
       body: JSON.stringify({ token }),
     });
-  } catch { /* FCM no disponible — ignorar */ }
+  } catch (err) {
+    // Pasivo: no molestar al usuario, pero dejar rastro para depurar.
+    console.warn('[push] sync falló:', err);
+  }
 }
 
 /**
@@ -95,13 +100,13 @@ export async function enablePush(): Promise<PushStatus> {
   const permission = await Notification.requestPermission();
   if (permission !== 'granted') return permission as PushStatus;
 
+  // Si fetchToken o el registro fallan, LANZAN: el flag solo se pone (y la UI
+  // solo dice "activado") cuando el token está de verdad en push_tokens.
   const token = await fetchToken();
-  if (token) {
-    await apiFetch('/api/v1/push/register', {
-      method: 'POST',
-      body: JSON.stringify({ token }),
-    });
-  }
+  await apiFetch('/api/v1/push/register', {
+    method: 'POST',
+    body: JSON.stringify({ token }),
+  });
   localStorage.setItem(ENABLED_KEY, 'true');
   return 'granted';
 }
@@ -115,13 +120,13 @@ export async function disablePush(): Promise<void> {
   localStorage.setItem(ENABLED_KEY, 'false');
   const m = getFirebaseMessaging();
   if (!m) return;
-  const token = await fetchToken();
-  if (token) {
+  try {
+    const token = await fetchToken();
     await apiFetch('/api/v1/push/unregister', {
       method: 'DELETE',
       body: JSON.stringify({ token }),
     }).catch(() => {});
-  }
+  } catch { /* sin token que dar de baja */ }
   await deleteToken(m).catch(() => {});
 }
 
