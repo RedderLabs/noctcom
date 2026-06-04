@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useTranslations } from 'next-intl';
 import {
   Upload, Download, Trash2, FolderPlus, Share2, Lock, KeyRound,
   Shield, Monitor, LogIn, LogOut, Edit3, Eye,
@@ -14,21 +15,21 @@ type ActivityType =
   | 'encrypt' | 'key_rotate' | '2fa_enable' | 'device_add'
   | 'login' | 'logout' | 'rename' | 'view' | 'unknown';
 
-const ACTIVITY_META: Record<string, { icon: typeof Upload; color: string; label: string }> = {
-  upload:        { icon: Upload,      color: 'text-emerald-400 bg-emerald-500/10', label: 'Subida' },
-  download:      { icon: Download,    color: 'text-blue-400 bg-blue-500/10',       label: 'Descarga' },
-  delete:        { icon: Trash2,      color: 'text-red-400 bg-red-500/10',         label: 'Eliminación' },
-  folder_create: { icon: FolderPlus,  color: 'text-violet-400 bg-violet-500/10',   label: 'Carpeta' },
-  share:         { icon: Share2,      color: 'text-amber-400 bg-amber-500/10',     label: 'Compartir' },
-  encrypt:       { icon: Lock,        color: 'text-violet-400 bg-violet-500/10',   label: 'Cifrado' },
-  key_rotate:    { icon: KeyRound,    color: 'text-orange-400 bg-orange-500/10',   label: 'Rotación' },
-  '2fa_enable':  { icon: Shield,      color: 'text-emerald-400 bg-emerald-500/10', label: '2FA' },
-  device_add:    { icon: Monitor,     color: 'text-cyan-400 bg-cyan-500/10',       label: 'Dispositivo' },
-  login:         { icon: LogIn,       color: 'text-emerald-400 bg-emerald-500/10', label: 'Inicio sesión' },
-  logout:        { icon: LogOut,      color: 'text-slate-400 bg-slate-500/10',     label: 'Cierre sesión' },
-  rename:        { icon: Edit3,       color: 'text-blue-400 bg-blue-500/10',       label: 'Renombrar' },
-  view:          { icon: Eye,         color: 'text-slate-400 bg-slate-500/10',     label: 'Vista' },
-  unknown:       { icon: Eye,         color: 'text-slate-400 bg-slate-500/10',     label: 'Evento' },
+const ACTIVITY_META: Record<string, { icon: typeof Upload; color: string; labelKey: string }> = {
+  upload:        { icon: Upload,      color: 'text-emerald-400 bg-emerald-500/10', labelKey: 'types.upload' },
+  download:      { icon: Download,    color: 'text-blue-400 bg-blue-500/10',       labelKey: 'types.download' },
+  delete:        { icon: Trash2,      color: 'text-red-400 bg-red-500/10',         labelKey: 'types.delete' },
+  folder_create: { icon: FolderPlus,  color: 'text-violet-400 bg-violet-500/10',   labelKey: 'types.folder_create' },
+  share:         { icon: Share2,      color: 'text-amber-400 bg-amber-500/10',     labelKey: 'types.share' },
+  encrypt:       { icon: Lock,        color: 'text-violet-400 bg-violet-500/10',   labelKey: 'types.encrypt' },
+  key_rotate:    { icon: KeyRound,    color: 'text-orange-400 bg-orange-500/10',   labelKey: 'types.key_rotate' },
+  '2fa_enable':  { icon: Shield,      color: 'text-emerald-400 bg-emerald-500/10', labelKey: 'types.2fa_enable' },
+  device_add:    { icon: Monitor,     color: 'text-cyan-400 bg-cyan-500/10',       labelKey: 'types.device_add' },
+  login:         { icon: LogIn,       color: 'text-emerald-400 bg-emerald-500/10', labelKey: 'types.login' },
+  logout:        { icon: LogOut,      color: 'text-slate-400 bg-slate-500/10',     labelKey: 'types.logout' },
+  rename:        { icon: Edit3,       color: 'text-blue-400 bg-blue-500/10',       labelKey: 'types.rename' },
+  view:          { icon: Eye,         color: 'text-slate-400 bg-slate-500/10',     labelKey: 'types.view' },
+  unknown:       { icon: Eye,         color: 'text-slate-400 bg-slate-500/10',     labelKey: 'types.unknown' },
 };
 
 interface Activity {
@@ -56,6 +57,7 @@ function groupByDate(items: Activity[]) {
 const PAGE_SIZE = 20;
 
 export default function ActivityPage() {
+  const t = useTranslations('activity');
   const { loadActivity } = useVault();
   const [activities, setActivities] = useState<Activity[]>([]);
   const [total, setTotal] = useState(0);
@@ -78,21 +80,21 @@ export default function ActivityPage() {
   const grouped = groupByDate(filtered);
 
   const filterOptions = [
-    { value: 'all', label: 'Todo' },
-    { value: 'upload', label: 'Subidas' },
-    { value: 'download', label: 'Descargas' },
-    { value: 'share', label: 'Compartidos' },
-    { value: 'delete', label: 'Eliminaciones' },
-    { value: 'folder_create', label: 'Carpetas' },
+    { value: 'all', label: t('filters.all') },
+    { value: 'upload', label: t('filters.upload') },
+    { value: 'download', label: t('filters.download') },
+    { value: 'share', label: t('filters.share') },
+    { value: 'delete', label: t('filters.delete') },
+    { value: 'folder_create', label: t('filters.folder_create') },
   ];
 
   return (
     <div className="px-8 py-6 max-w-4xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="font-display text-2xl font-semibold tracking-tight">Registro de actividad</h1>
+          <h1 className="font-display text-2xl font-semibold tracking-tight">{t('title')}</h1>
           <p className="text-sm text-text-tertiary mt-1">
-            Historial cifrado de acciones en tu bóveda
+            {t('subtitle')}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -112,7 +114,7 @@ export default function ActivityPage() {
       {loading && (
         <div className="py-24 text-center">
           <Loader2 className="size-8 text-violet-400 animate-spin mx-auto mb-4" />
-          <p className="text-sm text-text-tertiary">Descifrando actividad…</p>
+          <p className="text-sm text-text-tertiary">{t('loading')}</p>
         </div>
       )}
 
@@ -127,6 +129,7 @@ export default function ActivityPage() {
                 {items.map((activity) => {
                   const meta = ACTIVITY_META[activity.type] ?? ACTIVITY_META.unknown;
                   const Icon = meta.icon;
+                  const metaLabel = t(meta.labelKey);
                   const [iconText, iconBg] = meta.color.split(' ');
                   return (
                     <div
@@ -153,7 +156,7 @@ export default function ActivityPage() {
                         'text-[10px] font-mono uppercase tracking-wider px-2 py-1 rounded',
                         iconBg, iconText,
                       )}>
-                        {meta.label}
+                        {metaLabel}
                       </span>
                     </div>
                   );
@@ -169,15 +172,15 @@ export default function ActivityPage() {
           <div className="size-16 rounded-full bg-bg-surface border border-border-subtle grid place-items-center mx-auto mb-4">
             <Eye className="size-6 text-text-tertiary" />
           </div>
-          <h3 className="font-display text-lg mb-1">Sin actividad</h3>
-          <p className="text-sm text-text-tertiary">Las acciones que realices aparecerán aquí, cifradas</p>
+          <h3 className="font-display text-lg mb-1">{t('empty.title')}</h3>
+          <p className="text-sm text-text-tertiary">{t('empty.subtitle')}</p>
         </div>
       )}
 
       {totalPages > 1 && (
         <div className="mt-8 flex items-center justify-between text-sm">
           <span className="text-text-tertiary text-xs">
-            {total} eventos
+            {t('eventCount', { count: total })}
           </span>
           <div className="flex items-center gap-1">
             <button

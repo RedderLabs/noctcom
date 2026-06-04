@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import * as Dialog from '@radix-ui/react-dialog';
 import { X } from 'lucide-react';
 import { toast } from 'sonner';
@@ -19,6 +20,8 @@ interface Props {
 }
 
 export function NewFolderModal({ open, onClose, onCreated }: Props) {
+  const t = useTranslations('newFolderModal');
+  const tIcons = useTranslations('folderIcons');
   const [name, setName] = useState('');
   const [icon, setIcon] = useState<FolderIconKey>('folder');
   const [color, setColor] = useState<FolderColorKey>('violet');
@@ -37,11 +40,11 @@ export function NewFolderModal({ open, onClose, onCreated }: Props) {
     setLoading(true);
     try {
       onCreated?.(name.trim(), icon, color);
-      toast.success(`Carpeta «${name.trim()}» creada`);
+      toast.success(t('toastCreated', { name: name.trim() }));
       reset();
       onClose();
     } catch {
-      toast.error('Error al crear la carpeta');
+      toast.error(t('toastError'));
       setLoading(false);
     }
   }
@@ -55,7 +58,7 @@ export function NewFolderModal({ open, onClose, onCreated }: Props) {
         <Dialog.Content className="fixed left-1/2 top-1/2 z-50 -translate-x-1/2 -translate-y-1/2 w-full max-w-md rounded-xl bg-bg-surface border border-border-subtle shadow-modal animate-fade-in">
           <div className="flex items-center justify-between px-5 py-4 border-b border-border-faint">
             <Dialog.Title className="font-display text-lg font-medium tracking-tight">
-              Nueva carpeta
+              {t('title')}
             </Dialog.Title>
             <Dialog.Close asChild>
               <button className="p-1.5 rounded-md hover:bg-bg-surface-2 text-text-tertiary">
@@ -66,17 +69,17 @@ export function NewFolderModal({ open, onClose, onCreated }: Props) {
 
           <form onSubmit={handleCreate} className="p-5 space-y-5">
             <Input
-              label="Nombre"
+              label={t('nameLabel')}
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Documentos personales"
+              placeholder={t('namePlaceholder')}
               required
               autoFocus
             />
 
             <div>
               <span className="block text-xs font-medium text-text-secondary mb-2 tracking-wide uppercase">
-                Icono
+                {t('iconLabel')}
               </span>
               <div className="grid grid-cols-10 gap-1">
                 {(Object.keys(FOLDER_ICONS) as FolderIconKey[]).map((key) => {
@@ -92,7 +95,7 @@ export function NewFolderModal({ open, onClose, onCreated }: Props) {
                           ? `${selectedColor.bg} ${selectedColor.border} border`
                           : 'hover:bg-bg-surface-2 border border-transparent',
                       )}
-                      title={FOLDER_ICONS[key].label}
+                      title={tIcons(key)}
                     >
                       <Icon className={cn('size-4', icon === key ? selectedColor.text : 'text-text-tertiary')} />
                     </button>
@@ -103,7 +106,7 @@ export function NewFolderModal({ open, onClose, onCreated }: Props) {
 
             <div>
               <span className="block text-xs font-medium text-text-secondary mb-2 tracking-wide uppercase">
-                Color
+                {t('colorLabel')}
               </span>
               <div className="flex gap-2">
                 {FOLDER_COLORS.map((c) => (
@@ -126,10 +129,10 @@ export function NewFolderModal({ open, onClose, onCreated }: Props) {
 
             <div className="flex gap-2 pt-2">
               <Button type="button" variant="ghost" size="md" className="flex-1" onClick={() => { reset(); onClose(); }}>
-                Cancelar
+                {t('cancel')}
               </Button>
               <Button type="submit" variant="primary" size="md" className="flex-1" loading={loading}>
-                Crear carpeta
+                {t('create')}
               </Button>
             </div>
           </form>

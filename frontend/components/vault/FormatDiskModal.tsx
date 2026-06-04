@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import * as Dialog from '@radix-ui/react-dialog';
 import { X, AlertTriangle, HardDrive, Usb, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -37,6 +38,7 @@ function fmtSize(bytes: number): string {
 }
 
 export function FormatDiskModal({ open, onClose, disk, onFormatted }: Props) {
+  const t = useTranslations('formatDiskModal');
   const [filesystem, setFilesystem] = useState<'ext4' | 'xfs'>('ext4');
   const [label, setLabel] = useState('');
   const [confirmText, setConfirmText] = useState('');
@@ -88,11 +90,11 @@ export function FormatDiskModal({ open, onClose, disk, onFormatted }: Props) {
         body: JSON.stringify({ active: true }),
       });
 
-      toast.success('Disco formateado y registrado como volumen activo');
+      toast.success(t('toastSuccess'));
       onFormatted();
       handleClose();
     } catch (err: any) {
-      toast.error(err.message ?? 'Error al formatear el disco');
+      toast.error(err.message ?? t('toastError'));
     } finally {
       setLoading(false);
     }
@@ -111,7 +113,7 @@ export function FormatDiskModal({ open, onClose, disk, onFormatted }: Props) {
               <div className="size-8 rounded-lg bg-red-500/10 border border-red-500/20 grid place-items-center">
                 <AlertTriangle className="size-4 text-red-400" />
               </div>
-              <Dialog.Title className="text-lg font-semibold">Formatear disco</Dialog.Title>
+              <Dialog.Title className="text-lg font-semibold">{t('title')}</Dialog.Title>
             </div>
             <Dialog.Close asChild>
               <button className="size-8 grid place-items-center rounded-lg hover:bg-bg-surface-2 transition-colors">
@@ -138,7 +140,7 @@ export function FormatDiskModal({ open, onClose, disk, onFormatted }: Props) {
                   </span>
                   <span className="text-[10px] text-text-muted">·</span>
                   <span className="text-[10px] text-amber-400 font-mono uppercase">
-                    {disk.filesystem || 'sin formato'}
+                    {disk.filesystem || t('unformatted')}
                   </span>
                   {disk.removable && (
                     <>
@@ -154,7 +156,7 @@ export function FormatDiskModal({ open, onClose, disk, onFormatted }: Props) {
           {/* Filesystem selector */}
           <div className="mb-4">
             <label className="text-xs text-text-secondary font-medium mb-1.5 block">
-              Sistema de archivos
+              {t('filesystemLabel')}
             </label>
             <div className="flex gap-2">
               {(['ext4', 'xfs'] as const).map((fs) => (
@@ -170,7 +172,7 @@ export function FormatDiskModal({ open, onClose, disk, onFormatted }: Props) {
                 >
                   {fs}
                   <span className="block text-[10px] font-normal mt-0.5 opacity-60">
-                    {fs === 'ext4' ? 'Uso general' : 'Archivos grandes'}
+                    {fs === 'ext4' ? t('fsExt4Desc') : t('fsXfsDesc')}
                   </span>
                 </button>
               ))}
@@ -180,12 +182,12 @@ export function FormatDiskModal({ open, onClose, disk, onFormatted }: Props) {
           {/* Label input */}
           <div className="mb-4">
             <Input
-              label="Etiqueta del disco"
+              label={t('diskLabel')}
               placeholder="mi-disco"
               maxLength={12}
               value={label}
               onChange={(e) => setLabel(e.target.value.replace(/[^a-zA-Z0-9_-]/g, ''))}
-              hint="Max 12 caracteres, alfanumerico"
+              hint={t('diskLabelHint')}
             />
           </div>
 
@@ -195,10 +197,10 @@ export function FormatDiskModal({ open, onClose, disk, onFormatted }: Props) {
               <AlertTriangle className="size-4 text-red-400 shrink-0 mt-0.5" />
               <div>
                 <p className="text-xs font-medium text-red-300">
-                  ADVERTENCIA: Esta accion BORRARA TODOS LOS DATOS en este disco.
+                  {t('warningTitle')}
                 </p>
                 <p className="text-[10px] text-red-400/60 mt-0.5">
-                  Esta operacion es irreversible.
+                  {t('warningIrreversible')}
                 </p>
               </div>
             </div>
@@ -208,11 +210,11 @@ export function FormatDiskModal({ open, onClose, disk, onFormatted }: Props) {
           {labelValid && (
             <div className="mb-5">
               <Input
-                label={`Escribe «${label}» para confirmar`}
+                label={t('confirmLabel', { label })}
                 placeholder={label}
                 value={confirmText}
                 onChange={(e) => setConfirmText(e.target.value)}
-                error={confirmText.length > 0 && confirmText !== label ? 'No coincide' : undefined}
+                error={confirmText.length > 0 && confirmText !== label ? t('confirmMismatch') : undefined}
               />
             </div>
           )}
@@ -220,7 +222,7 @@ export function FormatDiskModal({ open, onClose, disk, onFormatted }: Props) {
           {/* Actions */}
           <div className="flex justify-end gap-2">
             <Button variant="ghost" onClick={handleClose} disabled={loading}>
-              Cancelar
+              {t('cancel')}
             </Button>
             <Button
               variant="danger"
@@ -230,10 +232,10 @@ export function FormatDiskModal({ open, onClose, disk, onFormatted }: Props) {
               {loading ? (
                 <>
                   <Loader2 className="size-3.5 mr-1.5 animate-spin" />
-                  Formateando…
+                  {t('formatting')}
                 </>
               ) : (
-                'Formatear disco'
+                t('formatButton')
               )}
             </Button>
           </div>

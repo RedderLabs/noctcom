@@ -7,6 +7,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/Button';
 import { useVault } from '@/lib/vault-store';
 import { cn } from '@/lib/utils';
@@ -43,6 +44,7 @@ function formatDate(iso: string) {
 }
 
 export default function SharedPage() {
+  const t = useTranslations('shared');
   const { loadShares, revokeShare } = useVault();
   const [tab, setTab] = useState<ShareDirection | 'all'>('all');
   const [incoming, setIncoming] = useState<ShareItem[]>([]);
@@ -67,9 +69,9 @@ export default function SharedPage() {
   const filtered = tab === 'all' ? allShares : allShares.filter((s) => s.direction === tab);
 
   const tabs = [
-    { value: 'all' as const, label: 'Todos', count: allShares.length },
-    { value: 'outgoing' as const, label: 'Enviados', count: outgoing.length },
-    { value: 'incoming' as const, label: 'Recibidos', count: incoming.length },
+    { value: 'all' as const, label: t('tabs.all'), count: allShares.length },
+    { value: 'outgoing' as const, label: t('tabs.outgoing'), count: outgoing.length },
+    { value: 'incoming' as const, label: t('tabs.incoming'), count: incoming.length },
   ];
 
   async function handleRevoke(shareId: string) {
@@ -81,9 +83,9 @@ export default function SharedPage() {
     <div className="px-8 py-6 max-w-5xl mx-auto flex flex-col min-h-full">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="font-display text-2xl font-semibold tracking-tight">Compartidos</h1>
+          <h1 className="font-display text-2xl font-semibold tracking-tight">{t('title')}</h1>
           <p className="text-sm text-text-tertiary mt-1">
-            Archivos compartidos mediante enlaces cifrados E2E
+            {t('subtitle')}
           </p>
         </div>
       </div>
@@ -109,7 +111,7 @@ export default function SharedPage() {
       {loading && (
         <div className="py-24 text-center">
           <Loader2 className="size-8 text-violet-400 animate-spin mx-auto mb-4" />
-          <p className="text-sm text-text-tertiary">Cargando compartidos…</p>
+          <p className="text-sm text-text-tertiary">{t('loading')}</p>
         </div>
       )}
 
@@ -131,7 +133,7 @@ export default function SharedPage() {
 
                 <div className="flex-1 min-w-0">
                   <h3 className="text-sm font-medium truncate">
-                    {isOutgoing ? `Compartido con ${item.sharedWithUsername ?? '—'}` : `De ${item.sharedByUsername ?? '—'}`}
+                    {isOutgoing ? t('sharedWith', { name: item.sharedWithUsername ?? '—' }) : t('receivedFrom', { name: item.sharedByUsername ?? '—' })}
                   </h3>
                   <div className="flex items-center gap-3 mt-1">
                     <span className="text-[10px] text-text-tertiary font-mono uppercase tracking-wider flex items-center gap-1">
@@ -161,11 +163,11 @@ export default function SharedPage() {
                       ? 'bg-amber-500/10 text-amber-300'
                       : 'bg-emerald-500/10 text-emerald-300',
                   )}>
-                    {item.permission === 'write' ? 'Editar' : 'Solo ver'}
+                    {item.permission === 'write' ? t('permission.write') : t('permission.read')}
                   </span>
                   {item.expiresAt && (
                     <span className="text-[10px] text-text-muted font-mono">
-                      Expira {formatDate(item.expiresAt)}
+                      {t('expires', { date: formatDate(item.expiresAt) })}
                     </span>
                   )}
                   {isOutgoing && (
@@ -190,9 +192,9 @@ export default function SharedPage() {
           <div className="size-16 rounded-full bg-bg-surface border border-border-subtle grid place-items-center mx-auto mb-4">
             <Share2 className="size-6 text-text-tertiary" />
           </div>
-          <h3 className="font-display text-lg mb-1">Sin archivos compartidos</h3>
+          <h3 className="font-display text-lg mb-1">{t('empty.title')}</h3>
           <p className="text-sm text-text-tertiary">
-            Los archivos que compartas aparecerán aquí
+            {t('empty.description')}
           </p>
         </div>
       )}
@@ -201,10 +203,9 @@ export default function SharedPage() {
         <div className="flex items-start gap-3">
           <Shield className="size-5 text-violet-300 mt-0.5 shrink-0" />
           <div>
-            <h4 className="text-sm font-medium text-violet-200 mb-1">Compartir con cifrado E2E</h4>
+            <h4 className="text-sm font-medium text-violet-200 mb-1">{t('e2e.title')}</h4>
             <p className="text-xs text-text-tertiary leading-relaxed">
-              Los archivos compartidos se cifran con una clave derivada única. El receptor necesita
-              el enlace completo con el fragmento de clave para descifrar. Noctcom nunca accede al contenido.
+              {t('e2e.description')}
             </p>
           </div>
         </div>

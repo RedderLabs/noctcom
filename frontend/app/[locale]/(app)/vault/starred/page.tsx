@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useTranslations } from 'next-intl';
 import {
   Star, FileText, File, Image, Download, Loader2, Share2, Trash2, Eye,
 } from 'lucide-react';
@@ -20,6 +21,7 @@ function formatSize(bytes?: number) {
 }
 
 export default function StarredPage() {
+  const t = useTranslations('starred');
   const { loadStarred, toggleStar, downloadFile, deleteNode } = useVault();
   const [items, setItems] = useState<DecryptedNode[]>([]);
   const [loading, setLoading] = useState(true);
@@ -48,16 +50,16 @@ export default function StarredPage() {
   return (
     <div className="px-8 py-6 max-w-4xl mx-auto">
       <div className="mb-6">
-        <h1 className="font-display text-2xl font-semibold tracking-tight">Destacados</h1>
+        <h1 className="font-display text-2xl font-semibold tracking-tight">{t('title')}</h1>
         <p className="text-sm text-text-tertiary mt-1">
-          Archivos y carpetas que marcaste como favoritos
+          {t('subtitle')}
         </p>
       </div>
 
       {loading && (
         <div className="py-24 text-center">
           <Loader2 className="size-8 text-violet-400 animate-spin mx-auto mb-4" />
-          <p className="text-sm text-text-tertiary">Cargando destacados…</p>
+          <p className="text-sm text-text-tertiary">{t('loading')}</p>
         </div>
       )}
 
@@ -78,13 +80,13 @@ export default function StarredPage() {
                     </div>
                     <CardActionsMenu
                       actions={[
-                        { label: 'Quitar de destacados', icon: Star, onSelect: () => handleUnstar(item.id) },
-                        { label: 'Eliminar', icon: Trash2, onSelect: () => handleDelete(item.id), danger: true },
+                        { label: t('actions.unstar'), icon: Star, onSelect: () => handleUnstar(item.id) },
+                        { label: t('actions.delete'), icon: Trash2, onSelect: () => handleDelete(item.id), danger: true },
                       ]}
                     />
                   </div>
                   <h3 className="text-sm font-medium truncate">{item.name}</h3>
-                  <p className="text-[10px] text-text-tertiary uppercase tracking-wider mt-0.5">Carpeta</p>
+                  <p className="text-[10px] text-text-tertiary uppercase tracking-wider mt-0.5">{t('folder')}</p>
                 </div>
               );
             }
@@ -102,11 +104,11 @@ export default function StarredPage() {
                   </div>
                   <CardActionsMenu
                     actions={[
-                      { label: 'Abrir', icon: Eye, onSelect: () => setPreviewNode(item) },
-                      { label: 'Quitar de destacados', icon: Star, onSelect: () => handleUnstar(item.id) },
-                      { label: 'Compartir', icon: Share2, onSelect: () => setShareNode(item) },
-                      { label: 'Descargar', icon: Download, onSelect: () => downloadFile(item) },
-                      { label: 'Eliminar', icon: Trash2, onSelect: () => handleDelete(item.id), danger: true },
+                      { label: t('actions.open'), icon: Eye, onSelect: () => setPreviewNode(item) },
+                      { label: t('actions.unstar'), icon: Star, onSelect: () => handleUnstar(item.id) },
+                      { label: t('actions.share'), icon: Share2, onSelect: () => setShareNode(item) },
+                      { label: t('actions.download'), icon: Download, onSelect: () => downloadFile(item) },
+                      { label: t('actions.delete'), icon: Trash2, onSelect: () => handleDelete(item.id), danger: true },
                     ]}
                   />
                 </div>
@@ -125,9 +127,9 @@ export default function StarredPage() {
           <div className="size-16 rounded-full bg-bg-surface border border-border-subtle grid place-items-center mx-auto mb-4">
             <Star className="size-6 text-text-tertiary" />
           </div>
-          <h3 className="font-display text-lg mb-1">Sin destacados</h3>
+          <h3 className="font-display text-lg mb-1">{t('empty.title')}</h3>
           <p className="text-sm text-text-tertiary">
-            Marca archivos con la estrella para acceder rápido
+            {t('empty.description')}
           </p>
         </div>
       )}

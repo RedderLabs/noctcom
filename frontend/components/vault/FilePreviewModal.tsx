@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useTranslations } from 'next-intl';
 import {
   X, Download, Loader2, AlertTriangle,
   File, FileText, Image, Video, Music, Archive, FileCode,
@@ -42,6 +43,7 @@ interface Props {
 }
 
 export function FilePreviewModal({ open, onClose, node }: Props) {
+  const t = useTranslations('filePreview');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [blobUrl, setBlobUrl] = useState<string | null>(null);
@@ -70,7 +72,7 @@ export function FilePreviewModal({ open, onClose, node }: Props) {
     setPreviewType(type);
 
     if (!node.currentVersionId) {
-      setError('Este archivo no se subio correctamente. Eliminalo y vuelve a subirlo.');
+      setError(t('error.notUploaded'));
       return;
     }
 
@@ -100,7 +102,7 @@ export function FilePreviewModal({ open, onClose, node }: Props) {
           setTextContent(await blob.text());
         } else {
           const partial = await blob.slice(0, MAX_TEXT_PREVIEW_SIZE).text();
-          setTextContent(partial + '\n\n--- Archivo truncado (' + formatSize(blob.size) + ') ---');
+          setTextContent(partial + '\n\n' + t('text.truncated', { size: formatSize(blob.size) }));
         }
       }
 
@@ -108,7 +110,7 @@ export function FilePreviewModal({ open, onClose, node }: Props) {
       setBlobUrl(url);
     } catch (err: any) {
       if (nodeIdRef.current === target.id) {
-        setError(err.message || 'Error al descifrar archivo');
+        setError(err.message || t('error.decrypt'));
       }
     } finally {
       if (nodeIdRef.current === target.id) setLoading(false);
@@ -153,7 +155,7 @@ export function FilePreviewModal({ open, onClose, node }: Props) {
             </p>
           </div>
           <Button variant="secondary" size="sm" onClick={handleDownload}>
-            <Download className="size-3.5 mr-1" /> Descargar
+            <Download className="size-3.5 mr-1" /> {t('actions.download')}
           </Button>
           <button
             onClick={onClose}
@@ -180,7 +182,7 @@ export function FilePreviewModal({ open, onClose, node }: Props) {
             <div className="h-full grid place-items-center">
               <div className="text-center space-y-3">
                 <Loader2 className="size-8 text-violet-400 animate-spin mx-auto" />
-                <p className="text-sm text-text-tertiary">Descifrando archivo...</p>
+                <p className="text-sm text-text-tertiary">{t('status.decrypting')}</p>
               </div>
             </div>
           )}
@@ -191,7 +193,7 @@ export function FilePreviewModal({ open, onClose, node }: Props) {
                 <AlertTriangle className="size-8 text-red-400 mx-auto" />
                 <p className="text-sm text-red-300">{error}</p>
                 <Button variant="secondary" size="sm" onClick={handleDownload}>
-                  Descargar en su lugar
+                  {t('actions.downloadInstead')}
                 </Button>
               </div>
             </div>
@@ -204,8 +206,8 @@ export function FilePreviewModal({ open, onClose, node }: Props) {
               {previewType === 'audio' && <AudioPreview url={blobUrl} name={node.name} />}
               {previewType === 'pdf' && <PdfPreview url={blobUrl} />}
               {previewType === 'text' && <TextPreview content={textContent} name={node.name} />}
-              {previewType === 'office' && <NotPreviewable name={node.name} onDownload={handleDownload} message="Los archivos de Office no se pueden previsualizar en el navegador" />}
-              {previewType === 'unknown' && <NotPreviewable name={node.name} onDownload={handleDownload} message="Este tipo de archivo no tiene previsualizacion disponible" />}
+              {previewType === 'office' && <NotPreviewable name={node.name} onDownload={handleDownload} message={t('unsupported.office')} downloadLabel={t('actions.downloadFile')} />}
+              {previewType === 'unknown' && <NotPreviewable name={node.name} onDownload={handleDownload} message={t('unsupported.unknown')} downloadLabel={t('actions.downloadFile')} />}
             </>
           )}
         </div>
@@ -217,19 +219,20 @@ export function FilePreviewModal({ open, onClose, node }: Props) {
 // ─── Sub-components ──────────────────────────────────────────────
 
 function LargeFileWarning({ size, onConfirm, onCancel }: { size: number; onConfirm: () => void; onCancel: () => void }) {
+  const t = useTranslations('filePreview');
   return (
     <div className="h-full grid place-items-center">
       <div className="text-center space-y-4 max-w-sm">
         <AlertTriangle className="size-10 text-amber-400 mx-auto" />
         <div>
-          <h3 className="text-sm font-medium mb-1">Archivo grande ({formatSize(size)})</h3>
+          <h3 className="text-sm font-medium mb-1">{t('largeFile.title', { size: formatSize(size) })}</h3>
           <p className="text-xs text-text-tertiary">
-            Descifrar este archivo en memoria puede ser lento y consumir bastante RAM.
+            {t('largeFile.description')}
           </p>
         </div>
         <div className="flex gap-2 justify-center">
-          <Button variant="secondary" size="sm" onClick={onCancel}>Cancelar</Button>
-          <Button variant="primary" size="sm" onClick={onConfirm}>Continuar</Button>
+          <Button variant="secondary" size="sm" onClick={onCancel}>{t('actions.cancel')}</Button>
+          <Button variant="primary" size="sm" onClick={onConfirm}>{t('actions.continue')}</Button>
         </div>
       </div>
     </div>
@@ -237,6 +240,7 @@ function LargeFileWarning({ size, onConfirm, onCancel }: { size: number; onConfi
 }
 
 function ImagePreview({ url }: { url: string }) {
+  const t = useTranslations('filePreview');
   const [scale, setScale] = useState(1);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -248,13 +252,13 @@ function ImagePreview({ url }: { url: string }) {
   return (
     <div className="h-full flex flex-col">
       <div className="flex items-center gap-1 px-4 py-2 border-b border-border-faint shrink-0">
-        <button onClick={() => setScale((s) => Math.min(10, s * 1.25))} className="p-1.5 rounded hover:bg-bg-surface-2 text-text-tertiary" title="Zoom in">
+        <button onClick={() => setScale((s) => Math.min(10, s * 1.25))} className="p-1.5 rounded hover:bg-bg-surface-2 text-text-tertiary" title={t('image.zoomIn')}>
           <ZoomIn className="size-4" />
         </button>
-        <button onClick={() => setScale((s) => Math.max(0.1, s / 1.25))} className="p-1.5 rounded hover:bg-bg-surface-2 text-text-tertiary" title="Zoom out">
+        <button onClick={() => setScale((s) => Math.max(0.1, s / 1.25))} className="p-1.5 rounded hover:bg-bg-surface-2 text-text-tertiary" title={t('image.zoomOut')}>
           <ZoomOut className="size-4" />
         </button>
-        <button onClick={() => setScale(1)} className="p-1.5 rounded hover:bg-bg-surface-2 text-text-tertiary" title="Reset">
+        <button onClick={() => setScale(1)} className="p-1.5 rounded hover:bg-bg-surface-2 text-text-tertiary" title={t('image.reset')}>
           <RotateCcw className="size-4" />
         </button>
         <span className="text-[10px] font-mono text-text-muted ml-2">{Math.round(scale * 100)}%</span>
@@ -301,6 +305,7 @@ function PdfPreview({ url }: { url: string }) {
 }
 
 function TextPreview({ content, name }: { content: string | null; name: string }) {
+  const t = useTranslations('filePreview');
   if (!content) return null;
   const lang = getLanguageLabel(name);
   const editable = isEditable(name);
@@ -313,7 +318,7 @@ function TextPreview({ content, name }: { content: string | null; name: string }
           {lang}
         </span>
         <span className="text-[10px] text-text-muted">
-          {lines.length} lineas
+          {t('text.lines', { count: lines.length })}
         </span>
       </div>
       <div className="flex-1 overflow-auto">
@@ -341,7 +346,7 @@ function TextPreview({ content, name }: { content: string | null; name: string }
   );
 }
 
-function NotPreviewable({ name, onDownload, message }: { name: string; onDownload: () => void; message: string }) {
+function NotPreviewable({ name, onDownload, message, downloadLabel }: { name: string; onDownload: () => void; message: string; downloadLabel: string }) {
   return (
     <div className="h-full grid place-items-center">
       <div className="text-center space-y-4 max-w-sm">
@@ -353,7 +358,7 @@ function NotPreviewable({ name, onDownload, message }: { name: string; onDownloa
           <p className="text-xs text-text-tertiary">{message}</p>
         </div>
         <Button variant="primary" size="sm" onClick={onDownload}>
-          <Download className="size-3.5 mr-1" /> Descargar archivo
+          <Download className="size-3.5 mr-1" /> {downloadLabel}
         </Button>
       </div>
     </div>

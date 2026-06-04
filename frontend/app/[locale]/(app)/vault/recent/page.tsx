@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useTranslations } from 'next-intl';
 import {
   FileText, File, Image, Video, Music, Archive, FileCode,
   Clock, Download, Star, Loader2, Share2, Trash2, Eye,
@@ -29,16 +30,17 @@ function formatSize(bytes: number) {
   return `${n.toFixed(n < 10 && i > 0 ? 1 : 0)} ${units[i]}`;
 }
 
-function timeAgo(iso: string) {
+function timeAgo(iso: string, t: ReturnType<typeof useTranslations>) {
   const diff = (Date.now() - new Date(iso).getTime()) / 1000;
-  if (diff < 60) return 'Ahora';
-  if (diff < 3600) return `Hace ${Math.floor(diff / 60)} min`;
-  if (diff < 86400) return `Hace ${Math.floor(diff / 3600)} h`;
-  if (diff < 172800) return 'Ayer';
-  return `Hace ${Math.floor(diff / 86400)} días`;
+  if (diff < 60) return t('timeAgo.now');
+  if (diff < 3600) return t('timeAgo.minutes', { count: Math.floor(diff / 60) });
+  if (diff < 86400) return t('timeAgo.hours', { count: Math.floor(diff / 3600) });
+  if (diff < 172800) return t('timeAgo.yesterday');
+  return t('timeAgo.days', { count: Math.floor(diff / 86400) });
 }
 
 export default function RecentPage() {
+  const t = useTranslations('recent');
   const { loadRecent, downloadFile, toggleStar, deleteNode } = useVault();
   const [items, setItems] = useState<DecryptedNode[]>([]);
   const [loading, setLoading] = useState(true);
@@ -67,16 +69,16 @@ export default function RecentPage() {
   return (
     <div className="px-8 py-6 max-w-4xl mx-auto">
       <div className="mb-6">
-        <h1 className="font-display text-2xl font-semibold tracking-tight">Recientes</h1>
+        <h1 className="font-display text-2xl font-semibold tracking-tight">{t('title')}</h1>
         <p className="text-sm text-text-tertiary mt-1">
-          Archivos modificados recientemente
+          {t('subtitle')}
         </p>
       </div>
 
       {loading && (
         <div className="py-24 text-center">
           <Loader2 className="size-8 text-violet-400 animate-spin mx-auto mb-4" />
-          <p className="text-sm text-text-tertiary">Cargando recientes…</p>
+          <p className="text-sm text-text-tertiary">{t('loading')}</p>
         </div>
       )}
 
@@ -102,15 +104,15 @@ export default function RecentPage() {
                 {file.starred && <Star className="size-3.5 fill-amber-400 text-amber-400 shrink-0" />}
                 <span className="text-xs text-text-muted flex items-center gap-1 min-w-[100px] justify-end">
                   <Clock className="size-3" />
-                  {timeAgo(file.updatedAt)}
+                  {timeAgo(file.updatedAt, t)}
                 </span>
                 <CardActionsMenu
                   actions={[
-                    { label: 'Abrir', icon: Eye, onSelect: () => setPreviewNode(file) },
-                    { label: file.starred ? 'Quitar de destacados' : 'Destacar', icon: Star, onSelect: () => handleStar(file.id) },
-                    { label: 'Compartir', icon: Share2, onSelect: () => setShareNode(file) },
-                    { label: 'Descargar', icon: Download, onSelect: () => downloadFile(file) },
-                    { label: 'Eliminar', icon: Trash2, onSelect: () => handleDelete(file.id), danger: true },
+                    { label: t('actions.open'), icon: Eye, onSelect: () => setPreviewNode(file) },
+                    { label: file.starred ? t('actions.unstar') : t('actions.star'), icon: Star, onSelect: () => handleStar(file.id) },
+                    { label: t('actions.share'), icon: Share2, onSelect: () => setShareNode(file) },
+                    { label: t('actions.download'), icon: Download, onSelect: () => downloadFile(file) },
+                    { label: t('actions.delete'), icon: Trash2, onSelect: () => handleDelete(file.id), danger: true },
                   ]}
                 />
               </div>
@@ -124,8 +126,8 @@ export default function RecentPage() {
           <div className="size-16 rounded-full bg-bg-surface border border-border-subtle grid place-items-center mx-auto mb-4">
             <Clock className="size-6 text-text-tertiary" />
           </div>
-          <h3 className="font-display text-lg mb-1">Sin actividad reciente</h3>
-          <p className="text-sm text-text-tertiary">Los archivos que subas aparecerán aquí</p>
+          <h3 className="font-display text-lg mb-1">{t('empty.title')}</h3>
+          <p className="text-sm text-text-tertiary">{t('empty.description')}</p>
         </div>
       )}
 

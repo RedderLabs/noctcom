@@ -1137,5 +1137,268 @@
   "manual": {
     "title": "User manual",
     "subtitle": "Updated with every release"
+  },
+  "recent": {
+    "title": "Recent",
+    "subtitle": "Recently modified files",
+    "loading": "Loading recent files…",
+    "timeAgo": {
+      "now": "Just now",
+      "minutes": "{count} min ago",
+      "hours": "{count} h ago",
+      "yesterday": "Yesterday",
+      "days": "{count} days ago"
+    },
+    "actions": {
+      "open": "Open",
+      "star": "Star",
+      "unstar": "Remove from starred",
+      "share": "Share",
+      "download": "Download",
+      "delete": "Delete"
+    },
+    "empty": {
+      "title": "No recent activity",
+      "description": "Files you upload will appear here"
+    }
+  },
+  "starred": {
+    "title": "Starred",
+    "subtitle": "Files and folders you marked as favorites",
+    "loading": "Loading starred…",
+    "folder": "Folder",
+    "actions": {
+      "open": "Open",
+      "unstar": "Remove from starred",
+      "share": "Share",
+      "download": "Download",
+      "delete": "Delete"
+    },
+    "empty": {
+      "title": "No starred items",
+      "description": "Star files for quick access"
+    }
+  },
+  "shared": {
+    "title": "Shared",
+    "subtitle": "Files shared via E2E-encrypted links",
+    "loading": "Loading shared files…",
+    "tabs": {
+      "all": "All",
+      "outgoing": "Sent",
+      "incoming": "Received"
+    },
+    "sharedWith": "Shared with {name}",
+    "receivedFrom": "From {name}",
+    "permission": {
+      "write": "Edit",
+      "read": "View only"
+    },
+    "expires": "Expires {date}",
+    "empty": {
+      "title": "No shared files",
+      "description": "Files you share will appear here"
+    },
+    "e2e": {
+      "title": "Share with E2E encryption",
+      "description": "Shared files are encrypted with a unique derived key. The recipient needs the full link with the key fragment to decrypt. Noctcom never accesses the content."
+    }
+  },
+  "trash": {
+    "title": "Trash",
+    "subtitle": "Files are permanently deleted after 30 days",
+    "encryptedNotice": "Files in the trash remain encrypted. When deleted permanently, the decryption keys are destroyed.",
+    "loading": "Loading trash…",
+    "folder": "Folder",
+    "expiry": "{hasDate, select, no {Expires in —} other {{days, plural, =0 {Expiring} =1 {Expires in 1 day} other {Expires in # days}}}}",
+    "restore": "Restore",
+    "deleteForever": "Delete permanently",
+    "emptyTitle": "Trash is empty",
+    "emptyDescription": "No deleted files",
+    "confirmTitle": "Delete permanently?",
+    "confirmMessage": "«{name}» will be deleted forever, along with its encrypted content. This action cannot be undone.",
+    "confirmLabel": "Delete",
+    "cancelLabel": "Cancel",
+    "toastRestored": "«{name}» restored"
+  },
+  "activity": {
+    "title": "Activity log",
+    "subtitle": "Encrypted history of actions in your vault",
+    "loading": "Decrypting activity…",
+    "eventCount": "{count, plural, one {# event} other {# events}}",
+    "filters": {
+      "all": "All",
+      "upload": "Uploads",
+      "download": "Downloads",
+      "share": "Shared",
+      "delete": "Deletions",
+      "folder_create": "Folders"
+    },
+    "types": {
+      "upload": "Upload",
+      "download": "Download",
+      "delete": "Deletion",
+      "folder_create": "Folder",
+      "share": "Share",
+      "encrypt": "Encryption",
+      "key_rotate": "Rotation",
+      "2fa_enable": "2FA",
+      "device_add": "Device",
+      "login": "Sign in",
+      "logout": "Sign out",
+      "rename": "Rename",
+      "view": "View",
+      "unknown": "Event"
+    },
+    "empty": {
+      "title": "No activity",
+      "subtitle": "The actions you take will appear here, encrypted"
+    }
+  },
+  "shareModal": {
+    "title": "Share file",
+    "encryptedBadge": "E2E encrypted · sealed box",
+    "usernameLabel": "Username",
+    "search": "Search",
+    "userNotFound": "User not found",
+    "found": "Found",
+    "permission": "Permission",
+    "permRead": "Read only",
+    "permWrite": "Read and write",
+    "securityNote": "The file key is encrypted with the recipient's public key (sealed box). Neither Noctcom nor anyone else can access the contents.",
+    "cancel": "Cancel",
+    "share": "Share",
+    "errorShare": "Error sharing"
+  },
+  "newFolderModal": {
+    "title": "New folder",
+    "nameLabel": "Name",
+    "namePlaceholder": "Personal documents",
+    "iconLabel": "Icon",
+    "colorLabel": "Color",
+    "cancel": "Cancel",
+    "create": "Create folder",
+    "toastCreated": "Folder “{name}” created",
+    "toastError": "Failed to create the folder"
+  },
+  "formatDiskModal": {
+    "title": "Format disk",
+    "unformatted": "unformatted",
+    "filesystemLabel": "Filesystem",
+    "fsExt4Desc": "General use",
+    "fsXfsDesc": "Large files",
+    "diskLabel": "Disk label",
+    "diskLabelHint": "Max 12 characters, alphanumeric",
+    "warningTitle": "WARNING: This action will ERASE ALL DATA on this disk.",
+    "warningIrreversible": "This operation is irreversible.",
+    "confirmLabel": "Type “{label}” to confirm",
+    "confirmMismatch": "Doesn't match",
+    "cancel": "Cancel",
+    "formatting": "Formatting…",
+    "formatButton": "Format disk",
+    "toastSuccess": "Disk formatted and registered as the active volume",
+    "toastError": "Failed to format the disk"
+  },
+  "agentFormatModal": {
+    "toastSuccess": "Disk formatted and ready to store",
+    "toastError": "Error formatting the disk",
+    "title": "Format disk",
+    "unformatted": "unformatted",
+    "labelInput": "Disk label",
+    "labelPlaceholder": "my-disk",
+    "labelHint": "Max. 12 characters, alphanumeric",
+    "warningTitle": "WARNING: this will ERASE all the contents of the disk.",
+    "warningBody": "For safety, the agent only formats empty disks and never the system disk. The operation is irreversible.",
+    "confirmLabel": "Type “{label}” to confirm",
+    "confirmMismatch": "Does not match",
+    "cancel": "Cancel",
+    "formatting": "Formatting…",
+    "formatButton": "Format disk"
+  },
+  "filePreview": {
+    "actions": {
+      "download": "Download",
+      "downloadInstead": "Download instead",
+      "downloadFile": "Download file",
+      "cancel": "Cancel",
+      "continue": "Continue"
+    },
+    "status": {
+      "decrypting": "Decrypting file..."
+    },
+    "error": {
+      "notUploaded": "This file was not uploaded correctly. Delete it and upload it again.",
+      "decrypt": "Failed to decrypt file"
+    },
+    "text": {
+      "truncated": "--- File truncated ({size}) ---",
+      "lines": "{count} lines"
+    },
+    "largeFile": {
+      "title": "Large file ({size})",
+      "description": "Decrypting this file in memory can be slow and use a lot of RAM."
+    },
+    "unsupported": {
+      "office": "Office files cannot be previewed in the browser",
+      "unknown": "This file type has no preview available"
+    },
+    "image": {
+      "zoomIn": "Zoom in",
+      "zoomOut": "Zoom out",
+      "reset": "Reset"
+    }
+  },
+  "cardActions": {
+    "menuAriaLabel": "Actions"
+  },
+  "confirmDialog": {
+    "confirm": "OK",
+    "cancel": "Cancel"
+  },
+  "folderIcons": {
+    "folder": "General",
+    "folder-open": "Open",
+    "folder-heart": "Favorites",
+    "folder-lock": "Private",
+    "folder-kanban": "Projects",
+    "folder-git": "Code",
+    "briefcase": "Work",
+    "graduation": "Studies",
+    "camera": "Photos",
+    "music": "Music",
+    "film": "Videos",
+    "code": "Development",
+    "book": "Reading",
+    "wallet": "Finances",
+    "plane": "Travel",
+    "home": "Home",
+    "gift": "Gifts",
+    "palette": "Design",
+    "cpu": "Tech"
+  },
+  "appShell": {
+    "vaultSubtitle": "Vault",
+    "new": "New",
+    "searchPlaceholder": "Search your vault…",
+    "encryptionActive": "Encryption active",
+    "storage": "Storage",
+    "storageOf": "<used></used> of <total></total>",
+    "manual": "Manual",
+    "freePlan": "Free plan",
+    "userFallback": "User",
+    "collapseSidebar": "Collapse sidebar",
+    "expandSidebar": "Expand sidebar",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu",
+    "settings": "Settings",
+    "logout": "Sign out",
+    "nav": {
+      "files": "My files",
+      "recent": "Recent",
+      "starred": "Starred",
+      "shared": "Shared",
+      "activity": "Activity",
+      "trash": "Trash"
+    }
   }
 }

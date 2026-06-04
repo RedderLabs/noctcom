@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import * as Dialog from '@radix-ui/react-dialog';
 import { X, Search, Share2, Shield, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -16,6 +17,7 @@ interface Props {
 }
 
 export function ShareModal({ open, onClose, node }: Props) {
+  const t = useTranslations('shareModal');
   const { createShare, lookupUser } = useVault();
   const [username, setUsername] = useState('');
   const [permission, setPermission] = useState<'read' | 'write'>('read');
@@ -49,7 +51,7 @@ export function ShareModal({ open, onClose, node }: Props) {
       reset();
       onClose();
     } catch (err: any) {
-      toast.error(err.message ?? 'Error al compartir');
+      toast.error(err.message ?? t('errorShare'));
     } finally {
       setLoading(false);
     }
@@ -63,7 +65,7 @@ export function ShareModal({ open, onClose, node }: Props) {
           <div className="flex items-center justify-between px-5 py-4 border-b border-border-faint">
             <Dialog.Title className="font-display text-lg font-medium tracking-tight flex items-center gap-2">
               <Share2 className="size-5 text-violet-300" />
-              Compartir archivo
+              {t('title')}
             </Dialog.Title>
             <Dialog.Close asChild>
               <button className="p-1.5 rounded-md hover:bg-bg-surface-2 text-text-tertiary">
@@ -77,7 +79,7 @@ export function ShareModal({ open, onClose, node }: Props) {
               <div className="p-3 rounded-lg bg-bg-surface-2 border border-border-faint">
                 <p className="text-sm font-medium truncate">{node.name}</p>
                 <p className="text-[10px] text-text-tertiary uppercase tracking-wider mt-0.5">
-                  Cifrado E2E · sealed box
+                  {t('encryptedBadge')}
                 </p>
               </div>
             )}
@@ -85,7 +87,7 @@ export function ShareModal({ open, onClose, node }: Props) {
             <div className="flex gap-2">
               <div className="flex-1">
                 <Input
-                  label="Nombre de usuario"
+                  label={t('usernameLabel')}
                   value={username}
                   onChange={(e) => { setUsername(e.target.value); setSearched(false); setFoundUser(null); }}
                   leftIcon={<Search className="size-4" />}
@@ -102,13 +104,13 @@ export function ShareModal({ open, onClose, node }: Props) {
                   loading={loading && !foundUser}
                   disabled={!username.trim()}
                 >
-                  Buscar
+                  {t('search')}
                 </Button>
               </div>
             </div>
 
             {searched && !loading && !foundUser && (
-              <p className="text-xs text-red-400">Usuario no encontrado</p>
+              <p className="text-xs text-red-400">{t('userNotFound')}</p>
             )}
 
             {foundUser && (
@@ -118,14 +120,14 @@ export function ShareModal({ open, onClose, node }: Props) {
                 </div>
                 <div className="flex-1">
                   <p className="text-sm font-medium">{foundUser.username}</p>
-                  <p className="text-[10px] text-emerald-400 font-mono uppercase tracking-wider">Encontrado</p>
+                  <p className="text-[10px] text-emerald-400 font-mono uppercase tracking-wider">{t('found')}</p>
                 </div>
               </div>
             )}
 
             <div>
               <span className="block text-xs font-medium text-text-secondary mb-2 tracking-wide uppercase">
-                Permiso
+                {t('permission')}
               </span>
               <div className="flex gap-2">
                 {(['read', 'write'] as const).map((p) => (
@@ -140,7 +142,7 @@ export function ShareModal({ open, onClose, node }: Props) {
                         : 'bg-bg-surface-2 border-border-faint text-text-tertiary hover:border-border-subtle',
                     )}
                   >
-                    {p === 'read' ? 'Solo lectura' : 'Lectura y escritura'}
+                    {p === 'read' ? t('permRead') : t('permWrite')}
                   </button>
                 ))}
               </div>
@@ -149,17 +151,16 @@ export function ShareModal({ open, onClose, node }: Props) {
             <div className="flex items-start gap-2 p-3 rounded-lg bg-violet-500/5 border border-violet-500/20">
               <Shield className="size-4 text-violet-300 mt-0.5 shrink-0" />
               <p className="text-[10px] text-text-tertiary leading-relaxed">
-                La clave del archivo se cifra con la clave pública del destinatario (sealed box).
-                Ni Noctcom ni nadie más puede acceder al contenido.
+                {t('securityNote')}
               </p>
             </div>
 
             <div className="flex gap-2 pt-2">
               <Button type="button" variant="ghost" size="md" className="flex-1" onClick={() => { reset(); onClose(); }}>
-                Cancelar
+                {t('cancel')}
               </Button>
               <Button type="submit" variant="primary" size="md" className="flex-1" loading={loading} disabled={!foundUser}>
-                Compartir
+                {t('share')}
               </Button>
             </div>
           </form>

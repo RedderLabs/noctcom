@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import * as Dialog from '@radix-ui/react-dialog';
 import { X, AlertTriangle, HardDrive, Usb, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -47,6 +48,7 @@ function driveLetterOf(disk: AgentDiskLite): string {
  * Pide re-autenticación (step-up) y confirmación escrita de la etiqueta.
  */
 export function AgentFormatModal({ open, onClose, agentId, disk, onFormatted }: Props) {
+  const t = useTranslations('agentFormatModal');
   const [label, setLabel] = useState('');
   const [confirmText, setConfirmText] = useState('');
   const [loading, setLoading] = useState(false);
@@ -82,13 +84,13 @@ export function AgentFormatModal({ open, onClose, agentId, disk, onFormatted }: 
           totalBytes: disk.totalBytes,
         }),
       });
-      toast.success('Disco formateado y listo para almacenar');
+      toast.success(t('toastSuccess'));
       onFormatted();
       // El disco queda activo → refresca el "Almacenamiento" total.
       void useVault.getState().refreshStorage();
       handleClose();
     } catch (err: any) {
-      toast.error(err.message ?? 'Error al formatear el disco');
+      toast.error(err.message ?? t('toastError'));
     } finally {
       setLoading(false);
     }
@@ -106,7 +108,7 @@ export function AgentFormatModal({ open, onClose, agentId, disk, onFormatted }: 
               <div className="size-8 rounded-lg bg-red-500/10 border border-red-500/20 grid place-items-center">
                 <AlertTriangle className="size-4 text-red-400" />
               </div>
-              <Dialog.Title className="text-lg font-semibold">Formatear disco</Dialog.Title>
+              <Dialog.Title className="text-lg font-semibold">{t('title')}</Dialog.Title>
             </div>
             <Dialog.Close asChild>
               <button className="size-8 grid place-items-center rounded-lg hover:bg-bg-surface-2 transition-colors">
@@ -128,7 +130,7 @@ export function AgentFormatModal({ open, onClose, agentId, disk, onFormatted }: 
                 <div className="flex items-center gap-2 mt-0.5">
                   <span className="text-[10px] text-text-muted font-mono">{fmtSize(disk.totalBytes)}</span>
                   <span className="text-[10px] text-text-muted">·</span>
-                  <span className="text-[10px] text-amber-400 font-mono uppercase">{disk.filesystem || 'sin formato'}</span>
+                  <span className="text-[10px] text-amber-400 font-mono uppercase">{disk.filesystem || t('unformatted')}</span>
                   <span className="text-[10px] text-text-muted">·</span>
                   <span className="text-[10px] text-text-muted font-mono uppercase">→ NTFS</span>
                 </div>
@@ -138,12 +140,12 @@ export function AgentFormatModal({ open, onClose, agentId, disk, onFormatted }: 
 
           <div className="mb-4">
             <Input
-              label="Etiqueta del disco"
-              placeholder="mi-disco"
+              label={t('labelInput')}
+              placeholder={t('labelPlaceholder')}
               maxLength={12}
               value={label}
               onChange={(e) => setLabel(e.target.value.replace(/[^a-zA-Z0-9_-]/g, ''))}
-              hint="Máx. 12 caracteres, alfanumérico"
+              hint={t('labelHint')}
             />
           </div>
 
@@ -152,11 +154,10 @@ export function AgentFormatModal({ open, onClose, agentId, disk, onFormatted }: 
               <AlertTriangle className="size-4 text-red-400 shrink-0 mt-0.5" />
               <div>
                 <p className="text-xs font-medium text-red-300">
-                  ADVERTENCIA: esto BORRARÁ todo el contenido del disco.
+                  {t('warningTitle')}
                 </p>
                 <p className="text-[10px] text-red-400/70 mt-0.5">
-                  Por seguridad, el agente solo formatea discos vacíos y nunca el de sistema.
-                  La operación es irreversible.
+                  {t('warningBody')}
                 </p>
               </div>
             </div>
@@ -165,21 +166,21 @@ export function AgentFormatModal({ open, onClose, agentId, disk, onFormatted }: 
           {labelValid && (
             <div className="mb-5">
               <Input
-                label={`Escribe «${label}» para confirmar`}
+                label={t('confirmLabel', { label })}
                 placeholder={label}
                 value={confirmText}
                 onChange={(e) => setConfirmText(e.target.value)}
-                error={confirmText.length > 0 && confirmText !== label ? 'No coincide' : undefined}
+                error={confirmText.length > 0 && confirmText !== label ? t('confirmMismatch') : undefined}
               />
             </div>
           )}
 
           <div className="flex justify-end gap-2">
-            <Button variant="ghost" onClick={handleClose} disabled={loading}>Cancelar</Button>
+            <Button variant="ghost" onClick={handleClose} disabled={loading}>{t('cancel')}</Button>
             <Button variant="danger" onClick={handleFormat} disabled={!confirmed || loading}>
               {loading ? (
-                <><Loader2 className="size-3.5 mr-1.5 animate-spin" />Formateando…</>
-              ) : 'Formatear disco'}
+                <><Loader2 className="size-3.5 mr-1.5 animate-spin" />{t('formatting')}</>
+              ) : t('formatButton')}
             </Button>
           </div>
         </Dialog.Content>

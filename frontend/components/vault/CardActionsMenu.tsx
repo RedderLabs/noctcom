@@ -2,6 +2,7 @@
 
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { MoreVertical, type LucideIcon } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
 
 export type CardAction = {
@@ -17,13 +18,14 @@ export type CardAction = {
  * Para el trigger frenamos mouse/touch/pointer down así no choca con el drag.
  */
 export function CardActionsMenu({ actions, className }: { actions: CardAction[]; className?: string }) {
+  const t = useTranslations('cardActions');
   const stop = (e: { stopPropagation: () => void }) => e.stopPropagation();
   return (
     <DropdownMenu.Root>
       <DropdownMenu.Trigger asChild>
         <button
           type="button"
-          aria-label="Acciones"
+          aria-label={t('menuAriaLabel')}
           className={cn(
             'p-1.5 rounded-md text-text-tertiary hover:text-text-primary hover:bg-bg-surface-3 transition-colors',
             className,

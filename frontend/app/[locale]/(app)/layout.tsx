@@ -10,12 +10,14 @@ import {
   BookOpen, Menu,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslations } from 'next-intl';
 import { useAuth } from '@/lib/auth-store';
 import { loadTokens } from '@/lib/api';
 import { useVault } from '@/lib/vault-store';
 import { cn } from '@/lib/utils';
 import { FontScaleControl } from '@/components/ui/FontScaleControl';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
+import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher';
 import { useFontScale } from '@/lib/font-scale';
 import { useSync } from '@/lib/sync';
 import { syncPushToken, onForegroundMessage } from '@/lib/firebase';
@@ -30,6 +32,7 @@ function formatStorageSize(bytes: number): string {
 }
 
 export default function AppLayout({ children }: { children: ReactNode }) {
+  const t = useTranslations('appShell');
   const router = useRouter();
   const { isAuthenticated, isUnlocked, username, logout, hydrate } = useAuth();
   const { sidebarCollapsed, toggleSidebar, hydrate: hydrateFontScale } = useFontScale();
@@ -80,12 +83,12 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   const collapsed = isMobile ? false : sidebarCollapsed;
 
   const navItems = [
-    { href: '/vault', label: 'Mis archivos', icon: FolderTree },
-    { href: '/vault/recent', label: 'Recientes', icon: Clock },
-    { href: '/vault/starred', label: 'Destacados', icon: Star },
-    { href: '/vault/shared', label: 'Compartidos', icon: Share2 },
-    { href: '/vault/activity', label: 'Actividad', icon: Activity },
-    { href: '/vault/trash', label: 'Papelera', icon: Trash2 },
+    { href: '/vault', label: t('nav.files'), icon: FolderTree },
+    { href: '/vault/recent', label: t('nav.recent'), icon: Clock },
+    { href: '/vault/starred', label: t('nav.starred'), icon: Star },
+    { href: '/vault/shared', label: t('nav.shared'), icon: Share2 },
+    { href: '/vault/activity', label: t('nav.activity'), icon: Activity },
+    { href: '/vault/trash', label: t('nav.trash'), icon: Trash2 },
   ];
 
   // Hasta confirmar sesión activa no se renderiza NADA del vault (ni chrome ni
@@ -128,7 +131,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             {!collapsed && (
               <div className="flex flex-col">
                 <span className="font-display text-sm tracking-tight leading-tight">Noctcom</span>
-                <span className="text-[10px] text-text-tertiary uppercase tracking-widest">Vault</span>
+                <span className="text-[10px] text-text-tertiary uppercase tracking-widest">{t('vaultSubtitle')}</span>
               </div>
             )}
           </Link>
@@ -136,7 +139,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             <button
               onClick={() => (isMobile ? setMobileOpen(false) : toggleSidebar())}
               className="p-1.5 rounded-md hover:bg-bg-surface text-text-muted hover:text-text-secondary transition-colors"
-              title={isMobile ? 'Cerrar menú' : 'Colapsar sidebar'}
+              title={isMobile ? t('closeMenu') : t('collapseSidebar')}
             >
               <PanelLeftClose className="size-4" />
             </button>
@@ -149,7 +152,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             <button
               onClick={toggleSidebar}
               className="p-1.5 rounded-md hover:bg-bg-surface text-text-muted hover:text-text-secondary transition-colors"
-              title="Expandir sidebar"
+              title={t('expandSidebar')}
             >
               <PanelLeftOpen className="size-4" />
             </button>
@@ -165,10 +168,10 @@ export default function AppLayout({ children }: { children: ReactNode }) {
               collapsed ? 'w-10 mx-auto' : 'w-full gap-2',
             )}
             onClick={() => window.dispatchEvent(new CustomEvent('noctcom:new-action'))}
-            title="Nuevo"
+            title={t('new')}
           >
             <Plus className="size-4 shrink-0" />
-            {!collapsed && <><span>Nuevo</span><ChevronDown className="size-3.5 opacity-70" /></>}
+            {!collapsed && <><span>{t('new')}</span><ChevronDown className="size-3.5 opacity-70" /></>}
           </button>
         </div>
 
@@ -198,7 +201,10 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           collapsed ? 'px-1.5 flex-col' : 'px-4 justify-between',
         )}>
           <FontScaleControl collapsed={collapsed} />
-          <ThemeToggle />
+          <div className={cn('flex items-center gap-2', collapsed && 'flex-col')}>
+            <ThemeToggle />
+            <LanguageSwitcher />
+          </div>
         </div>
 
         {/* Manual */}
@@ -206,7 +212,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           <Link
             href={'/vault/manual' as any}
             onClick={() => setMobileOpen(false)}
-            title={collapsed ? 'Manual de usuario' : undefined}
+            title={collapsed ? t('manual') : undefined}
             className={cn(
               'flex items-center h-9 rounded-md text-sm transition-colors',
               'text-violet-300/70 hover:text-violet-200 hover:bg-violet-500/10',
@@ -214,7 +220,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             )}
           >
             <BookOpen className="size-4 shrink-0" />
-            {!collapsed && <span>Manual</span>}
+            {!collapsed && <span>{t('manual')}</span>}
           </Link>
         </div>
 
@@ -225,7 +231,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           <div className="px-4 py-3 border-t border-border-faint">
             <div className="flex items-center gap-2 text-xs text-text-tertiary mb-2">
               <HardDrive className="size-3.5" />
-              <span>Almacenamiento</span>
+              <span>{t('storage')}</span>
             </div>
             <div className="h-1.5 bg-bg-surface-2 rounded-full overflow-hidden mb-1.5">
               <div
@@ -234,7 +240,10 @@ export default function AppLayout({ children }: { children: ReactNode }) {
               />
             </div>
             <p className="text-[10px] text-text-tertiary">
-              <span className="text-text-secondary font-mono">{formatStorageSize(storageUsed)}</span> de {formatStorageSize(storageQuota)}
+              {t.rich('storageOf', {
+                used: () => <span className="text-text-secondary font-mono">{formatStorageSize(storageUsed)}</span>,
+                total: () => formatStorageSize(storageQuota),
+              })}
             </p>
           </div>
         )}
@@ -250,7 +259,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             'flex items-center rounded-md hover:bg-bg-surface transition-colors group',
             collapsed ? 'justify-center p-1.5' : 'gap-3 px-2 py-2',
           )}>
-            <Link href={'/vault/profile' as any} className="shrink-0" title={username ?? 'Usuario'}>
+            <Link href={'/vault/profile' as any} className="shrink-0" title={username ?? t('userFallback')}>
               <div className="size-8 rounded-full bg-gradient-to-br from-violet-400 to-violet-600 grid place-items-center text-xs font-medium cursor-pointer hover:shadow-[0_0_12px_-2px_rgba(139,92,246,0.5)] transition-shadow">
                 {username?.[0]?.toUpperCase() ?? '?'}
               </div>
@@ -258,13 +267,13 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             {!collapsed && (
               <>
                 <Link href={'/vault/profile' as any} onClick={() => setMobileOpen(false)} className="flex-1 min-w-0 cursor-pointer">
-                  <div className="text-sm font-medium truncate hover:text-violet-300 transition-colors">{username ?? 'Usuario'}</div>
-                  <div className="text-[10px] text-text-tertiary">Plan gratuito</div>
+                  <div className="text-sm font-medium truncate hover:text-violet-300 transition-colors">{username ?? t('userFallback')}</div>
+                  <div className="text-[10px] text-text-tertiary">{t('freePlan')}</div>
                 </Link>
                 <Link
                   href="/vault/settings"
                   onClick={() => setMobileOpen(false)}
-                  aria-label="Ajustes"
+                  aria-label={t('settings')}
                   className="p-1.5 rounded-md hover:bg-bg-surface-2 transition-colors"
                 >
                   <Settings className="size-4 text-text-tertiary hover:text-text-secondary transition-colors" />
@@ -272,7 +281,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                 <button
                   onClick={() => { resetVault(); logout(); router.push('/login'); }}
                   className="p-1.5 rounded-md hover:bg-bg-surface-2 transition-colors"
-                  aria-label="Cerrar sesión"
+                  aria-label={t('logout')}
                 >
                   <LogOut className="size-4 text-text-tertiary hover:text-text-secondary transition-colors" />
                 </button>
@@ -289,7 +298,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             <button
               onClick={() => setMobileOpen(true)}
               className="shrink-0 p-2 -ml-1 rounded-md hover:bg-bg-surface text-text-secondary transition-colors"
-              aria-label="Abrir menú"
+              aria-label={t('openMenu')}
             >
               <Menu className="size-5" />
             </button>
@@ -298,7 +307,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-text-tertiary" />
             <input
               type="search"
-              placeholder="Buscar en tu bóveda…"
+              placeholder={t('searchPlaceholder')}
               className="w-full h-10 pl-10 pr-12 bg-bg-surface border border-border-subtle rounded-lg text-sm placeholder:text-text-muted focus:outline-none focus:border-violet-500/60 focus:shadow-[0_0_0_3px_rgba(139,92,246,0.12)]"
             />
             <kbd className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-mono text-text-tertiary px-1.5 py-0.5 rounded border border-border-subtle bg-bg-surface-2">
@@ -306,7 +315,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             </kbd>
           </div>
           <div className="text-xs text-text-tertiary font-mono">
-            🟢 Cifrado activo
+            🟢 {t('encryptionActive')}
           </div>
         </header>
 

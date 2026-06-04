@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import { useTranslations } from 'next-intl';
 import { AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 
@@ -8,8 +9,8 @@ export function ConfirmDialog({
   open,
   title,
   message,
-  confirmLabel = 'Aceptar',
-  cancelLabel = 'Cancelar',
+  confirmLabel,
+  cancelLabel,
   danger,
   onConfirm,
   onCancel,
@@ -23,6 +24,8 @@ export function ConfirmDialog({
   onConfirm: () => void;
   onCancel: () => void;
 }) {
+  const t = useTranslations('confirmDialog');
+
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onCancel(); };
@@ -55,14 +58,14 @@ export function ConfirmDialog({
           </div>
         </div>
         <div className="flex gap-2 justify-end">
-          <Button variant="ghost" size="sm" onClick={onCancel}>{cancelLabel}</Button>
+          <Button variant="ghost" size="sm" onClick={onCancel}>{cancelLabel ?? t('cancel')}</Button>
           <Button
             variant="danger"
             size="sm"
             onClick={onConfirm}
             className={danger ? 'bg-red-600 hover:bg-red-500 text-white border-red-500' : undefined}
           >
-            {confirmLabel}
+            {confirmLabel ?? t('confirm')}
           </Button>
         </div>
       </div>

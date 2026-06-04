@@ -1137,5 +1137,268 @@
   "manual": {
     "title": "Manual de usuario",
     "subtitle": "Se actualiza con cada versión"
+  },
+  "recent": {
+    "title": "Recientes",
+    "subtitle": "Archivos modificados recientemente",
+    "loading": "Cargando recientes…",
+    "timeAgo": {
+      "now": "Ahora",
+      "minutes": "Hace {count} min",
+      "hours": "Hace {count} h",
+      "yesterday": "Ayer",
+      "days": "Hace {count} días"
+    },
+    "actions": {
+      "open": "Abrir",
+      "star": "Destacar",
+      "unstar": "Quitar de destacados",
+      "share": "Compartir",
+      "download": "Descargar",
+      "delete": "Eliminar"
+    },
+    "empty": {
+      "title": "Sin actividad reciente",
+      "description": "Los archivos que subas aparecerán aquí"
+    }
+  },
+  "starred": {
+    "title": "Destacados",
+    "subtitle": "Archivos y carpetas que marcaste como favoritos",
+    "loading": "Cargando destacados…",
+    "folder": "Carpeta",
+    "actions": {
+      "open": "Abrir",
+      "unstar": "Quitar de destacados",
+      "share": "Compartir",
+      "download": "Descargar",
+      "delete": "Eliminar"
+    },
+    "empty": {
+      "title": "Sin destacados",
+      "description": "Marca archivos con la estrella para acceder rápido"
+    }
+  },
+  "shared": {
+    "title": "Compartidos",
+    "subtitle": "Archivos compartidos mediante enlaces cifrados E2E",
+    "loading": "Cargando compartidos…",
+    "tabs": {
+      "all": "Todos",
+      "outgoing": "Enviados",
+      "incoming": "Recibidos"
+    },
+    "sharedWith": "Compartido con {name}",
+    "receivedFrom": "De {name}",
+    "permission": {
+      "write": "Editar",
+      "read": "Solo ver"
+    },
+    "expires": "Expira {date}",
+    "empty": {
+      "title": "Sin archivos compartidos",
+      "description": "Los archivos que compartas aparecerán aquí"
+    },
+    "e2e": {
+      "title": "Compartir con cifrado E2E",
+      "description": "Los archivos compartidos se cifran con una clave derivada única. El receptor necesita el enlace completo con el fragmento de clave para descifrar. Noctcom nunca accede al contenido."
+    }
+  },
+  "trash": {
+    "title": "Papelera",
+    "subtitle": "Los archivos se eliminan permanentemente después de 30 días",
+    "encryptedNotice": "Los archivos en la papelera siguen cifrados. Al eliminarlos permanentemente, se destruyen las claves de descifrado.",
+    "loading": "Cargando papelera…",
+    "folder": "Carpeta",
+    "expiry": "{hasDate, select, no {Expira en —} other {{days, plural, =0 {Expirando} =1 {Expira en 1 día} other {Expira en # días}}}}",
+    "restore": "Restaurar",
+    "deleteForever": "Eliminar definitivamente",
+    "emptyTitle": "Papelera vacía",
+    "emptyDescription": "No hay archivos eliminados",
+    "confirmTitle": "¿Eliminar definitivamente?",
+    "confirmMessage": "«{name}» se borrará para siempre, junto con su contenido cifrado. Esta acción no se puede deshacer.",
+    "confirmLabel": "Eliminar",
+    "cancelLabel": "Cancelar",
+    "toastRestored": "«{name}» restaurado"
+  },
+  "activity": {
+    "title": "Registro de actividad",
+    "subtitle": "Historial cifrado de acciones en tu bóveda",
+    "loading": "Descifrando actividad…",
+    "eventCount": "{count, plural, one {# evento} other {# eventos}}",
+    "filters": {
+      "all": "Todo",
+      "upload": "Subidas",
+      "download": "Descargas",
+      "share": "Compartidos",
+      "delete": "Eliminaciones",
+      "folder_create": "Carpetas"
+    },
+    "types": {
+      "upload": "Subida",
+      "download": "Descarga",
+      "delete": "Eliminación",
+      "folder_create": "Carpeta",
+      "share": "Compartir",
+      "encrypt": "Cifrado",
+      "key_rotate": "Rotación",
+      "2fa_enable": "2FA",
+      "device_add": "Dispositivo",
+      "login": "Inicio sesión",
+      "logout": "Cierre sesión",
+      "rename": "Renombrar",
+      "view": "Vista",
+      "unknown": "Evento"
+    },
+    "empty": {
+      "title": "Sin actividad",
+      "subtitle": "Las acciones que realices aparecerán aquí, cifradas"
+    }
+  },
+  "shareModal": {
+    "title": "Compartir archivo",
+    "encryptedBadge": "Cifrado E2E · sealed box",
+    "usernameLabel": "Nombre de usuario",
+    "search": "Buscar",
+    "userNotFound": "Usuario no encontrado",
+    "found": "Encontrado",
+    "permission": "Permiso",
+    "permRead": "Solo lectura",
+    "permWrite": "Lectura y escritura",
+    "securityNote": "La clave del archivo se cifra con la clave pública del destinatario (sealed box). Ni Noctcom ni nadie más puede acceder al contenido.",
+    "cancel": "Cancelar",
+    "share": "Compartir",
+    "errorShare": "Error al compartir"
+  },
+  "newFolderModal": {
+    "title": "Nueva carpeta",
+    "nameLabel": "Nombre",
+    "namePlaceholder": "Documentos personales",
+    "iconLabel": "Icono",
+    "colorLabel": "Color",
+    "cancel": "Cancelar",
+    "create": "Crear carpeta",
+    "toastCreated": "Carpeta «{name}» creada",
+    "toastError": "Error al crear la carpeta"
+  },
+  "formatDiskModal": {
+    "title": "Formatear disco",
+    "unformatted": "sin formato",
+    "filesystemLabel": "Sistema de archivos",
+    "fsExt4Desc": "Uso general",
+    "fsXfsDesc": "Archivos grandes",
+    "diskLabel": "Etiqueta del disco",
+    "diskLabelHint": "Max 12 caracteres, alfanumerico",
+    "warningTitle": "ADVERTENCIA: Esta accion BORRARA TODOS LOS DATOS en este disco.",
+    "warningIrreversible": "Esta operacion es irreversible.",
+    "confirmLabel": "Escribe «{label}» para confirmar",
+    "confirmMismatch": "No coincide",
+    "cancel": "Cancelar",
+    "formatting": "Formateando…",
+    "formatButton": "Formatear disco",
+    "toastSuccess": "Disco formateado y registrado como volumen activo",
+    "toastError": "Error al formatear el disco"
+  },
+  "agentFormatModal": {
+    "toastSuccess": "Disco formateado y listo para almacenar",
+    "toastError": "Error al formatear el disco",
+    "title": "Formatear disco",
+    "unformatted": "sin formato",
+    "labelInput": "Etiqueta del disco",
+    "labelPlaceholder": "mi-disco",
+    "labelHint": "Máx. 12 caracteres, alfanumérico",
+    "warningTitle": "ADVERTENCIA: esto BORRARÁ todo el contenido del disco.",
+    "warningBody": "Por seguridad, el agente solo formatea discos vacíos y nunca el de sistema. La operación es irreversible.",
+    "confirmLabel": "Escribe «{label}» para confirmar",
+    "confirmMismatch": "No coincide",
+    "cancel": "Cancelar",
+    "formatting": "Formateando…",
+    "formatButton": "Formatear disco"
+  },
+  "filePreview": {
+    "actions": {
+      "download": "Descargar",
+      "downloadInstead": "Descargar en su lugar",
+      "downloadFile": "Descargar archivo",
+      "cancel": "Cancelar",
+      "continue": "Continuar"
+    },
+    "status": {
+      "decrypting": "Descifrando archivo..."
+    },
+    "error": {
+      "notUploaded": "Este archivo no se subio correctamente. Eliminalo y vuelve a subirlo.",
+      "decrypt": "Error al descifrar archivo"
+    },
+    "text": {
+      "truncated": "--- Archivo truncado ({size}) ---",
+      "lines": "{count} lineas"
+    },
+    "largeFile": {
+      "title": "Archivo grande ({size})",
+      "description": "Descifrar este archivo en memoria puede ser lento y consumir bastante RAM."
+    },
+    "unsupported": {
+      "office": "Los archivos de Office no se pueden previsualizar en el navegador",
+      "unknown": "Este tipo de archivo no tiene previsualizacion disponible"
+    },
+    "image": {
+      "zoomIn": "Acercar",
+      "zoomOut": "Alejar",
+      "reset": "Restablecer"
+    }
+  },
+  "cardActions": {
+    "menuAriaLabel": "Acciones"
+  },
+  "confirmDialog": {
+    "confirm": "Aceptar",
+    "cancel": "Cancelar"
+  },
+  "folderIcons": {
+    "folder": "General",
+    "folder-open": "Abierta",
+    "folder-heart": "Favoritos",
+    "folder-lock": "Privado",
+    "folder-kanban": "Proyectos",
+    "folder-git": "Código",
+    "briefcase": "Trabajo",
+    "graduation": "Estudios",
+    "camera": "Fotos",
+    "music": "Música",
+    "film": "Vídeos",
+    "code": "Desarrollo",
+    "book": "Lectura",
+    "wallet": "Finanzas",
+    "plane": "Viajes",
+    "home": "Casa",
+    "gift": "Regalos",
+    "palette": "Diseño",
+    "cpu": "Tech"
+  },
+  "appShell": {
+    "vaultSubtitle": "Vault",
+    "new": "Nuevo",
+    "searchPlaceholder": "Buscar en tu bóveda…",
+    "encryptionActive": "Cifrado activo",
+    "storage": "Almacenamiento",
+    "storageOf": "<used></used> de <total></total>",
+    "manual": "Manual",
+    "freePlan": "Plan gratuito",
+    "userFallback": "Usuario",
+    "collapseSidebar": "Colapsar sidebar",
+    "expandSidebar": "Expandir sidebar",
+    "openMenu": "Abrir menú",
+    "closeMenu": "Cerrar menú",
+    "settings": "Ajustes",
+    "logout": "Cerrar sesión",
+    "nav": {
+      "files": "Mis archivos",
+      "recent": "Recientes",
+      "starred": "Destacados",
+      "shared": "Compartidos",
+      "activity": "Actividad",
+      "trash": "Papelera"
+    }
   }
 }

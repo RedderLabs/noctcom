@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useTranslations } from 'next-intl';
 import {
   Trash2, FileText, File, Image, RotateCcw, AlertTriangle, Loader2, Folder,
 } from 'lucide-react';
@@ -17,12 +18,12 @@ function formatSize(bytes: number) {
   return `${n.toFixed(n < 10 && i > 0 ? 1 : 0)} ${units[i]}`;
 }
 
-function daysUntilExpiry(deletedAt?: string) {
-  if (!deletedAt) return '—';
+function daysUntilExpiry(deletedAt?: string): number | null {
+  if (!deletedAt) return null;
   const deleted = new Date(deletedAt);
   const expiry = new Date(deleted.getTime() + 30 * 86_400_000);
   const days = Math.ceil((expiry.getTime() - Date.now()) / 86_400_000);
-  return days > 0 ? `${days} días` : 'Expirando';
+  return days;
 }
 
 function getIcon(node: DecryptedNode) {
@@ -34,6 +35,7 @@ function getIcon(node: DecryptedNode) {
 }
 
 export default function TrashPage() {
+  const t = useTranslations('trash');
   const { loadTrash, restoreNode, purgeNode } = useVault();
   const [items, setItems] = useState<DecryptedNode[]>([]);
   const [loading, setLoading] = useState(true);
@@ -52,7 +54,7 @@ export default function TrashPage() {
     const item = items.find((i) => i.id === nodeId);
     await restoreNode(nodeId);
     setItems((prev) => prev.filter((i) => i.id !== nodeId));
-    if (item) toast.success(`«${item.name}» restaurado`);
+    if (item) toast.success(t('toastRestored', { name: item.name }));
   }
 
   async function handlePurge(node: DecryptedNode) {
@@ -67,9 +69,9 @@ export default function TrashPage() {
     <div className="px-8 py-6 max-w-4xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="font-display text-2xl font-semibold tracking-tight">Papelera</h1>
+          <h1 className="font-display text-2xl font-semibold tracking-tight">{t('title')}</h1>
           <p className="text-sm text-text-tertiary mt-1">
-            Los archivos se eliminan permanentemente después de 30 días
+            {t('subtitle')}
           </p>
         </div>
       </div>
@@ -78,7 +80,7 @@ export default function TrashPage() {
         <div className="p-3 rounded-lg bg-amber-500/5 border border-amber-500/20 mb-6 flex items-start gap-2">
           <AlertTriangle className="size-4 text-amber-300 mt-0.5 shrink-0" />
           <p className="text-xs text-text-secondary">
-            Los archivos en la papelera siguen cifrados. Al eliminarlos permanentemente, se destruyen las claves de descifrado.
+            {t('encryptedNotice')}
           </p>
         </div>
       )}
@@ -86,7 +88,7 @@ export default function TrashPage() {
       {loading && (
         <div className="py-24 text-center">
           <Loader2 className="size-8 text-violet-400 animate-spin mx-auto mb-4" />
-          <p className="text-sm text-text-tertiary">Cargando papelera…</p>
+          <p className="text-sm text-text-tertiary">{t('loading')}</p>
         </div>
       )}
 
@@ -107,13 +109,18 @@ export default function TrashPage() {
                     {item.name}
                   </h3>
                   <span className="text-[10px] text-text-tertiary font-mono uppercase tracking-wider">
-                    {item.kind === 'folder' ? 'Carpeta' : formatSize(item.size)} · Expira en {daysUntilExpiry(item.deletedAt)}
+                    {item.kind === 'folder' ? t('folder') : formatSize(item.size)} · {(() => {
+                      const days = daysUntilExpiry(item.deletedAt);
+                      return days === null
+                        ? t('expiry', { days: 0, hasDate: 'no' })
+                        : t('expiry', { days, hasDate: 'yes' });
+                    })()}
                   </span>
                 </div>
                 <CardActionsMenu
                   actions={[
-                    { label: 'Restaurar', icon: RotateCcw, onSelect: () => handleRestore(item.id) },
-                    { label: 'Eliminar definitivamente', icon: Trash2, onSelect: () => setConfirmNode(item), danger: true },
+                    { label: t('restore'), icon: RotateCcw, onSelect: () => handleRestore(item.id) },
+                    { label: t('deleteForever'), icon: Trash2, onSelect: () => setConfirmNode(item), danger: true },
                   ]}
                 />
               </div>
@@ -127,20 +134,20 @@ export default function TrashPage() {
           <div className="size-16 rounded-full bg-bg-surface border border-border-subtle grid place-items-center mx-auto mb-4">
             <Trash2 className="size-6 text-text-tertiary" />
           </div>
-          <h3 className="font-display text-lg mb-1">Papelera vacía</h3>
-          <p className="text-sm text-text-tertiary">No hay archivos eliminados</p>
+          <h3 className="font-display text-lg mb-1">{t('emptyTitle')}</h3>
+          <p className="text-sm text-text-tertiary">{t('emptyDescription')}</p>
         </div>
       )}
 
       <ConfirmDialog
         open={!!confirmNode}
         danger
-        title="¿Eliminar definitivamente?"
+        title={t('confirmTitle')}
         message={confirmNode
-          ? `«${confirmNode.name}» se borrará para siempre, junto con su contenido cifrado. Esta acción no se puede deshacer.`
+          ? t('confirmMessage', { name: confirmNode.name })
           : ''}
-        confirmLabel="Eliminar"
-        cancelLabel="Cancelar"
+        confirmLabel={t('confirmLabel')}
+        cancelLabel={t('cancelLabel')}
         onConfirm={() => { if (confirmNode) handlePurge(confirmNode); }}
         onCancel={() => setConfirmNode(null)}
       />
