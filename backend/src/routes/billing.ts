@@ -84,8 +84,9 @@ const billingRoutes: FastifyPluginAsync = async (app) => {
       customer: customerId,
       line_items: [{ price: priceId, quantity: 1 }],
       client_reference_id: req.user.sub,
-      // Stripe Tax (IVA) si está activado en la cuenta.
-      automatic_tax: { enabled: true },
+      // Stripe Tax (IVA): solo si STRIPE_AUTOMATIC_TAX=true (requiere códigos de
+      // impuesto en los productos). Apagado por defecto → el primer test no falla.
+      automatic_tax: { enabled: env.STRIPE_AUTOMATIC_TAX === 'true' },
       success_url: `${FRONTEND}/vault/settings?billing=success`,
       cancel_url: `${FRONTEND}/precios?billing=cancel`,
     });

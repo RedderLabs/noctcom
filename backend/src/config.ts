@@ -50,6 +50,9 @@ const envSchema = z.object({
   STRIPE_PRICE_PLUS: z.string().optional().or(z.literal('')),
   STRIPE_PRICE_PRO: z.string().optional().or(z.literal('')),
   STRIPE_PRICE_MAX: z.string().optional().or(z.literal('')),
+  // Stripe Tax (IVA). 'true' lo activa en el Checkout. Apagado por defecto para
+  // que el primer test no falle si los productos aún no tienen código de impuesto.
+  STRIPE_AUTOMATIC_TAX: z.string().optional().or(z.literal('')),
 });
 
 export const env = envSchema.parse(process.env);
