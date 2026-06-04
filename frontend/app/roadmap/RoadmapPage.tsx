@@ -8,19 +8,27 @@ import { cn } from '@/lib/utils';
 type Status = 'done' | 'progress' | 'next';
 
 const MILESTONES: { status: Status; title: string; desc: string }[] = [
+  // ─── Ya funciona ───
   { status: 'done', title: 'Núcleo criptográfico', desc: 'Argon2id, XChaCha20-Poly1305, Ed25519, X25519 y BLAKE2b, con la misma implementación en el navegador y en el servidor.' },
-  { status: 'done', title: 'Cuentas y acceso', desc: 'Registro con frase mnemónica (BIP39), inicio de sesión por reto-respuesta con Ed25519 y verificación en dos pasos (passkeys y código por email).' },
+  { status: 'done', title: 'Cuentas y acceso', desc: 'Registro con frase mnemónica (BIP39), inicio de sesión por reto-respuesta con Ed25519 y verificación en dos pasos: passkeys (huella o cara) y código por email.' },
   { status: 'done', title: 'Tus archivos, cifrados', desc: 'Subida y descarga en trozos de 4 MiB, una clave por archivo, papelera y versiones. El servidor solo ve cifrado.' },
+  { status: 'done', title: 'Vista previa de archivos', desc: 'Ver imágenes, vídeo, audio, texto y PDF descifrados en memoria, sin tener que descargarlos.' },
   { status: 'done', title: 'Compartir de extremo a extremo', desc: 'Compartes con otra persona usando sealed boxes (X25519): ni nosotros podemos abrir lo que circula.' },
   { status: 'done', title: 'Varios dispositivos', desc: 'Registras y revocas dispositivos, y tus claves se sincronizan desde tu contraseña sin pasar por el servidor en claro.' },
   { status: 'done', title: 'Cambios al instante', desc: 'Lo que tocas en un sitio aparece en el resto al momento, entre dispositivos y entre pestañas.' },
+  { status: 'done', title: 'Recuperación de cuenta', desc: 'Con tu frase de 12 palabras recuperas el acceso y también tus archivos, re-cifrados con tu nueva contraseña.' },
+  { status: 'done', title: 'Notificaciones', desc: 'Avisos cuando alguien comparte algo contigo, aunque tengas la app cerrada. El aviso nunca revela el contenido.' },
   { status: 'done', title: 'Tus propios discos', desc: 'Además de la nube, puedes usar discos físicos (USB/SATA) como almacenamiento y elegir dónde vive cada cosa.' },
-  { status: 'done', title: 'Listo para producción', desc: 'TLS automático, límites de peticiones, chequeos de salud, logs y una guía para alojarlo tú mismo.' },
-  { status: 'progress', title: 'Recuperación de cuenta', desc: 'Recuperar el acceso con tu frase mnemónica. El flujo está, le damos el último repaso.' },
-  { status: 'progress', title: 'Llaves de seguridad (WebAuthn)', desc: 'Entrar con una passkey o una llave física. Falta cerrar la verificación final.' },
-  { status: 'next', title: 'Vista previa de archivos', desc: 'Ver imágenes, texto y PDF descifrados en memoria, sin tener que descargarlos.' },
-  { status: 'next', title: 'Notificaciones', desc: 'Avisos de algo compartido contigo o de actividad en tu cuenta, aunque tengas la app cerrada.' },
+  { status: 'done', title: 'Operación y fiabilidad', desc: 'TLS automático, límites de peticiones, monitorización de errores, copias de seguridad verificadas, chequeos de salud y guía para alojarlo tú mismo.' },
+  { status: 'done', title: 'Aviso legal y privacidad', desc: 'Términos, política de privacidad (RGPD) y de cookies, sin rastreadores de terceros.' },
+  // ─── En marcha ───
+  { status: 'progress', title: 'Planes de almacenamiento', desc: 'Empieza gratis con 1 GB. Los planes mensuales para ampliar espacio están a punto; el self-host es siempre gratis.' },
+  // ─── Más adelante ───
   { status: 'next', title: 'Auditoría independiente', desc: 'Una revisión de seguridad y un pentest por gente de fuera, cuando podamos costearlo.' },
+  { status: 'next', title: 'Modo evidencia y cadena de custodia', desc: 'Demostrar que un archivo es íntegro y de qué fecha es, con sellado de tiempo, sin que nadie vea su contenido. Pensado para periodismo, denuncia y ámbito legal.' },
+  { status: 'next', title: 'App móvil instalable', desc: 'Instala Noctcom en tu móvil o tablet (Android e iOS) para subir y consultar tus archivos cifrados.' },
+  { status: 'next', title: 'App de escritorio', desc: 'Una sola aplicación que reúne tu bóveda y la gestión de tus discos, sin depender del navegador.' },
+  { status: 'next', title: 'Tema claro y oscuro', desc: 'Elige el aspecto que más te guste, con mejoras de accesibilidad.' },
 ];
 
 const GROUPS: { status: Status; label: string; icon: typeof Check; accent: string; iconBox: string; dot: string }[] = [
