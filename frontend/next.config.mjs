@@ -47,7 +47,7 @@ const nextConfig = {
               "media-src 'self' blob:",
               "frame-src blob:",
               "object-src blob:",
-              `connect-src 'self' ${isDev ? 'http://localhost:3000 ws://localhost:3000 ws://localhost:3001' : 'https://api.noctcom.com wss://api.noctcom.com'} https://*.backblazeb2.com https://*.googleapis.com https://*.firebaseio.com https://fcmregistrations.googleapis.com https://cloudflareinsights.com https://www.googletagmanager.com https://www.google-analytics.com https://analytics.google.com`,
+              `connect-src 'self' ${isDev ? 'http://localhost:3000 ws://localhost:3000 ws://localhost:3001' : 'https://api.noctcom.com wss://api.noctcom.com'} https://*.backblazeb2.com https://*.googleapis.com https://*.firebaseio.com https://fcmregistrations.googleapis.com https://app.glitchtip.com https://cloudflareinsights.com https://www.googletagmanager.com https://www.google-analytics.com https://analytics.google.com`,
               "frame-ancestors 'none'",
               "form-action 'self'",
               "base-uri 'self'",
@@ -75,4 +75,12 @@ const nextConfig = {
   },
 };
 
-export default nextConfig;
+// Envuelve el config con Sentry/GlitchTip. No subimos sourcemaps (no requiere
+// auth token de GlitchTip): solo queremos capturar errores, no des-minificar
+// stack traces. silent evita ruido en el build.
+import { withSentryConfig } from '@sentry/nextjs';
+
+export default withSentryConfig(nextConfig, {
+  silent: true,
+  sourcemaps: { disable: true },
+});

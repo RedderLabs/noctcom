@@ -1,3 +1,7 @@
+// Lo PRIMERO: arranca el error tracking (GlitchTip) para que instrumente
+// http/pg antes de que se carguen. Inactivo si no hay DSN.
+import { Sentry } from './instrument.js';
+
 import dns from 'node:dns';
 // En contenedores (Render/Frankfurt) la resolución suele preferir IPv6, pero el
 // egress IPv6 hacia Neon (us-east-1, publica AAAA) no rutea y la conexión a la
@@ -126,6 +130,10 @@ export async function buildServer() {
 
   await app.register(sensible);
   await app.register(websocket);
+
+  // Captura en GlitchTip las excepciones no controladas de los handlers.
+  // No-op si Sentry está inactivo (sin DSN).
+  Sentry.setupFastifyErrorHandler(app);
 
   // ─── Auth decorator ────────────────────────────────────────
   app.decorate('authenticate', async (req, reply) => {

@@ -36,6 +36,11 @@ const envSchema = z.object({
   // para prod (Render no tiene el archivo). En dev se usa el archivo
   // backend/firebase-service-account.json (gitignored) y esto queda vacío.
   FIREBASE_SERVICE_ACCOUNT_B64: z.string().min(1).optional().or(z.literal('')),
+
+  // Error tracking (GlitchTip, compatible con el SDK de Sentry). Vacío =
+  // inactivo. Lo consume instrument.ts directamente desde process.env (debe
+  // leerse antes que este módulo), aquí solo se declara para documentarlo.
+  SENTRY_DSN: z.string().optional().or(z.literal('')),
 });
 
 export const env = envSchema.parse(process.env);
