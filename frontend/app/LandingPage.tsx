@@ -161,9 +161,9 @@ export default function LandingPage() {
             <div className="absolute inset-0 bg-gradient-to-br from-violet-500/5 via-transparent to-violet-500/5 pointer-events-none" />
             <div className="relative flex flex-col md:flex-row gap-8 items-center">
               <div className="flex-1">
-                <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-md bg-emerald-500/10 border border-emerald-500/20 mb-4">
-                  <Server className="size-3.5 text-emerald-300" />
-                  <span className="text-xs text-emerald-300 font-medium">Self-Hosted</span>
+                <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-md bg-violet-500/10 border border-violet-500/20 mb-4">
+                  <Server className="size-3.5 text-violet-300" />
+                  <span className="text-xs text-violet-300 font-medium">Self-Hosted</span>
                 </div>
                 <h2 className="font-display text-2xl md:text-3xl font-light tracking-tight mb-3">
                   Tu servidor, tus reglas.
@@ -195,8 +195,8 @@ export default function LandingPage() {
               <div className="w-full md:w-80 shrink-0">
                 <div className="rounded-lg bg-bg-deep border border-border-faint p-4 font-mono text-xs leading-relaxed">
                   <p className="text-text-muted"># Despliegue rápido</p>
-                  <p className="text-emerald-300 mt-1">git clone https://github.com/</p>
-                  <p className="text-emerald-300">  RedderLabs/noctcom.git</p>
+                  <p className="text-violet-300 mt-1">git clone https://github.com/</p>
+                  <p className="text-violet-300">  RedderLabs/noctcom.git</p>
                   <p className="text-text-secondary mt-2">cd noctcom</p>
                   <p className="text-text-secondary">cp .env.example .env</p>
                   <p className="text-violet-300 mt-2">docker compose up -d</p>
@@ -224,8 +224,8 @@ export default function LandingPage() {
                 key={i}
                 className="p-5 rounded-xl border border-border-faint bg-bg-surface hover:border-border-subtle transition-all"
               >
-                <div className="size-9 rounded-lg bg-emerald-500/10 border border-emerald-500/20 grid place-items-center mb-4">
-                  <f.icon className="size-4 text-emerald-300" />
+                <div className="size-9 rounded-lg bg-violet-500/10 border border-violet-500/20 grid place-items-center mb-4">
+                  <f.icon className="size-4 text-violet-300" />
                 </div>
                 <h3 className="font-medium mb-1.5 tracking-tight">{f.title}</h3>
                 <p className="text-sm text-text-tertiary leading-relaxed">{f.body}</p>

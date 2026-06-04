@@ -299,11 +299,11 @@ export default function PricingPage() {
 
         {/* ─── Self-host ────────────────────────────────────── */}
         <section className="max-w-4xl mx-auto px-6 py-8">
-          <div className="relative overflow-hidden rounded-2xl border border-emerald-500/20 bg-bg-surface p-7 md:p-8">
-            <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 via-transparent to-transparent pointer-events-none" />
+          <div className="relative overflow-hidden rounded-2xl border border-violet-500/20 bg-bg-surface p-7 md:p-8">
+            <div className="absolute inset-0 bg-gradient-to-br from-violet-500/5 via-transparent to-transparent pointer-events-none" />
             <div className="relative flex flex-col md:flex-row items-start md:items-center gap-5">
-              <div className="size-11 rounded-xl bg-emerald-500/10 border border-emerald-500/20 grid place-items-center shrink-0">
-                <Server className="size-5 text-emerald-300" />
+              <div className="size-11 rounded-xl bg-violet-500/10 border border-violet-500/20 grid place-items-center shrink-0">
+                <Server className="size-5 text-violet-300" />
               </div>
               <div className="flex-1">
                 <h3 className="font-medium tracking-tight text-lg">¿Prefieres tu propio servidor? Es gratis.</h3>
