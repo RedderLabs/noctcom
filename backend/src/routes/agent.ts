@@ -65,7 +65,10 @@ const agentRoutes: FastifyPluginAsync = async (app) => {
 
   // ─── POST /pair/begin (auth) ─ código de un solo uso ──────
   // La web aporta el nombre del agente ya cifrado con la MK (zero-knowledge).
-  app.post('/pair/begin', { onRequest: [app.authenticate] }, async (req, reply) => {
+  app.post('/pair/begin', {
+    onRequest: [app.authenticate],
+    config: { rateLimit: { max: 10, timeWindow: '1 minute' } },
+  }, async (req, reply) => {
     const body = pairBeginSchema.parse(req.body);
     const code = generatePairingCode();
     const expires = new Date(Date.now() + 10 * 60 * 1000);

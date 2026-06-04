@@ -21,6 +21,7 @@ import { initRedis, redis } from './db/redis.js';
 import { initS3 } from './storage/s3.js';
 import { initMail } from './mail.js';
 import { initPush } from './push.js';
+import { startJanitor } from './janitor.js';
 import { createRedisRateLimitStore } from './rate-limit-store.js';
 
 import authRoutes from './routes/auth.js';
@@ -208,6 +209,8 @@ async function main() {
   const app = await buildServer();
   await app.listen({ host: '0.0.0.0', port: env.PORT });
   app.log.info(`Noctcom API listening on :${env.PORT}`);
+
+  startJanitor(app.log);
 
   async function shutdown(signal: string) {
     app.log.info(`${signal} received, shutting down`);

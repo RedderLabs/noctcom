@@ -362,7 +362,9 @@ const twoFactorRoutes: FastifyPluginAsync = async (app) => {
   // ─── POST /login/email/send ───────────────────────────────
   // El servidor no guarda el email en claro: el cliente lo reenvía aquí y
   // verificamos que su hash coincide con el de la cuenta antes de enviar.
-  app.post('/login/email/send', async (req, reply) => {
+  app.post('/login/email/send', {
+    config: { rateLimit: { max: 5, timeWindow: '1 minute' } },
+  }, async (req, reply) => {
     const schema = z.object({ pending2faToken: z.string(), email: z.string().email().max(254) });
     const body = schema.parse(req.body);
     const pending = verifyPending(body.pending2faToken);
@@ -395,7 +397,9 @@ const twoFactorRoutes: FastifyPluginAsync = async (app) => {
   });
 
   // ─── POST /login/email/verify ─────────────────────────────
-  app.post('/login/email/verify', async (req, reply) => {
+  app.post('/login/email/verify', {
+    config: { rateLimit: { max: 10, timeWindow: '1 minute' } },
+  }, async (req, reply) => {
     const schema = z.object({ pending2faToken: z.string(), code: z.string().length(6) });
     const body = schema.parse(req.body);
     const pending = verifyPending(body.pending2faToken);
@@ -545,7 +549,9 @@ const twoFactorRoutes: FastifyPluginAsync = async (app) => {
   // pero los archivos quedan con la MK vieja (el frontend lo avisa).
   // ═══════════════════════════════════════════════════════════
 
-  app.post('/recovery/init', async (req, reply) => {
+  app.post('/recovery/init', {
+    config: { rateLimit: { max: 5, timeWindow: '1 minute' } },
+  }, async (req, reply) => {
     const schema = z.object({ emailHash: bytesB64 });
     const body = schema.parse(req.body);
 
@@ -620,7 +626,9 @@ const twoFactorRoutes: FastifyPluginAsync = async (app) => {
   // nada a quien solo tenga el challenge. No consume el token (lo hace
   // finalize), así el cliente puede abrir, re-wrappear y finalizar en
   // una sola pasada de UI.
-  app.post('/recovery/unlock', async (req, reply) => {
+  app.post('/recovery/unlock', {
+    config: { rateLimit: { max: 10, timeWindow: '1 minute' } },
+  }, async (req, reply) => {
     const schema = z.object({ emailHash: bytesB64, challenge: bytesB64, signature: bytesB64 });
     const body = schema.parse(req.body);
 
@@ -651,7 +659,9 @@ const twoFactorRoutes: FastifyPluginAsync = async (app) => {
   // Recovery v2: además re-wrappea cada vault_key (abierta del seal en
   // /unlock) con la nueva MK, y puede conservar el par exchange enviando
   // la MISMA pública con la privada re-wrapped (preserva shares recibidos).
-  app.post('/recovery/finalize', async (req, reply) => {
+  app.post('/recovery/finalize', {
+    config: { rateLimit: { max: 10, timeWindow: '1 minute' } },
+  }, async (req, reply) => {
     const schema = z.object({
       emailHash: bytesB64,
       challenge: bytesB64,

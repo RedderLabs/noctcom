@@ -60,7 +60,12 @@ const uploadRoutes: FastifyPluginAsync = async (app) => {
   });
 
   // ─── POST /init ────────────────────────────────────────────
-  app.post('/init', { onRequest: [app.authenticate] }, async (req, reply) => {
+  // 120/min por IP: holgado para subir muchos archivos pequeños a la vez, pero
+  // corta un bucle que cree miles de versiones (chunks huérfanos) en segundos.
+  app.post('/init', {
+    onRequest: [app.authenticate],
+    config: { rateLimit: { max: 120, timeWindow: '1 minute' } },
+  }, async (req, reply) => {
     const body = initUploadSchema.parse(req.body);
     const userId = req.user.sub;
 
