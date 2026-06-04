@@ -28,9 +28,15 @@ pub fn validate_drive_letter(s: &str) -> Result<char> {
     let c = s
         .chars()
         .next()
-        .ok_or_else(|| anyhow!("letra de unidad vacía"))?;
+        .ok_or_else(|| anyhow!("{}", crate::i18n::pick(
+            "letra de unidad vacía",
+            "empty drive letter",
+        )))?;
     if !c.is_ascii_alphabetic() {
-        bail!("letra de unidad inválida: '{s}'");
+        bail!("{}", crate::i18n::pick(
+            &format!("letra de unidad inválida: '{s}'"),
+            &format!("invalid drive letter: '{s}'"),
+        ));
     }
     Ok(c.to_ascii_uppercase())
 }
@@ -52,7 +58,10 @@ fn validate_label(label: &str) -> Result<()> {
         && label.len() <= 12
         && label.chars().all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_');
     if !ok {
-        bail!("etiqueta inválida: solo alfanumérico, '-' y '_', máx. 12 caracteres");
+        bail!("{}", crate::i18n::pick(
+            "etiqueta inválida: solo alfanumérico, '-' y '_', máx. 12 caracteres",
+            "invalid label: only alphanumeric, '-' and '_', max. 12 characters",
+        ));
     }
     Ok(())
 }
@@ -82,20 +91,32 @@ pub fn format_volume(drive_letter: &str, label: &str) -> Result<VolumeInfo> {
 
     let system_drive = std::env::var("SystemDrive").unwrap_or_else(|_| "C:".to_string());
     if is_system_drive(letter, &system_drive) {
-        bail!("no se puede formatear el disco del sistema ({letter}:)");
+        bail!("{}", crate::i18n::pick(
+            &format!("no se puede formatear el disco del sistema ({letter}:)"),
+            &format!("cannot format the system drive ({letter}:)"),
+        ));
     }
 
     let root = format!("{letter}:\\");
     if std::fs::metadata(&root).is_err() {
-        bail!("el disco {letter}: no está disponible");
+        bail!("{}", crate::i18n::pick(
+            &format!("el disco {letter}: no está disponible"),
+            &format!("drive {letter}: is not available"),
+        ));
     }
 
     // Salvaguarda clave: solo discos vacíos. Si hay datos del usuario, paramos.
     if let Some(name) = first_blocking_entry(Path::new(&root))? {
-        bail!(
-            "el disco {letter}: no está vacío (contiene '{name}'); el formateo solo \
-             está permitido en discos vacíos para no destruir datos"
-        );
+        bail!("{}", crate::i18n::pick(
+            &format!(
+                "el disco {letter}: no está vacío (contiene '{name}'); el formateo solo \
+                 está permitido en discos vacíos para no destruir datos"
+            ),
+            &format!(
+                "drive {letter}: is not empty (contains '{name}'); formatting is only \
+                 allowed on empty drives to avoid destroying data"
+            ),
+        ));
     }
 
     // Quick format NTFS. `-Force` + `-Confirm:$false` evitan prompts; corremos
@@ -106,14 +127,17 @@ pub fn format_volume(drive_letter: &str, label: &str) -> Result<VolumeInfo> {
     let output = Command::new("powershell")
         .args(["-NonInteractive", "-NoProfile", "-Command", &ps])
         .output()
-        .map_err(|e| anyhow!("no se pudo lanzar PowerShell para formatear: {e}"))?;
+        .map_err(|e| anyhow!("{}", crate::i18n::pick(
+            &format!("no se pudo lanzar PowerShell para formatear: {e}"),
+            &format!("could not launch PowerShell to format: {e}"),
+        )))?;
 
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr);
-        bail!(
-            "el formateo falló (¿permisos de administrador?): {}",
-            stderr.trim()
-        );
+        bail!("{}", crate::i18n::pick(
+            &format!("el formateo falló (¿permisos de administrador?): {}", stderr.trim()),
+            &format!("formatting failed (administrator permissions?): {}", stderr.trim()),
+        ));
     }
 
     // Deja el disco listo como volumen de Noctcom (crea noctcom-blobs/).
@@ -122,7 +146,10 @@ pub fn format_volume(drive_letter: &str, label: &str) -> Result<VolumeInfo> {
 
 #[cfg(not(windows))]
 pub fn format_volume(_drive_letter: &str, _label: &str) -> Result<VolumeInfo> {
-    bail!("el formateo vía agente solo está disponible en Windows por ahora")
+    bail!("{}", crate::i18n::pick(
+        "el formateo vía agente solo está disponible en Windows por ahora",
+        "formatting via the agent is only available on Windows for now",
+    ))
 }
 
 #[cfg(test)]

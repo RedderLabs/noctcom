@@ -17,7 +17,7 @@ vi.mock('../db/pool.js', async () => {
   const f = await import('./fake-db.js');
   return { db: f.db, tx: f.tx };
 });
-vi.mock('../mail.js', () => ({ sendVerificationEmail: vi.fn(async () => {}) }));
+vi.mock('../mail.js', () => ({ sendVerificationEmail: vi.fn(async () => {}), normalizeLocale: () => 'es' }));
 vi.mock('../storage/s3.js', () => ({ deleteBlob: vi.fn(async () => {}) }));
 vi.mock('../storage/disk.js', () => ({ deleteFromDisk: vi.fn(async () => {}) }));
 vi.mock('../session.js', () => ({

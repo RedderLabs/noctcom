@@ -31,7 +31,7 @@ import {
 import { db, tx } from '../db/pool.js';
 import { env } from '../config.js';
 import { issueSession } from '../session.js';
-import { sendLoginCodeEmail } from '../mail.js';
+import { sendLoginCodeEmail, normalizeLocale } from '../mail.js';
 import { hashEmail } from '../crypto/index.js';
 
 const bytesB64 = z.string().regex(/^[A-Za-z0-9_-]+$/);
@@ -390,7 +390,7 @@ const twoFactorRoutes: FastifyPluginAsync = async (app) => {
        WHERE id = $3`,
       [codeHash, expires, pending.userId],
     );
-    sendLoginCodeEmail(body.email, code).catch((err) =>
+    sendLoginCodeEmail(body.email, code, normalizeLocale(req.headers['accept-language'])).catch((err) =>
       req.log.warn({ err }, 'failed to send login code email'),
     );
     return reply.send({ ok: true });

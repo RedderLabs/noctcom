@@ -19,6 +19,7 @@ import { PLANS, FREE_PLAN, planById, stripePriceId, planByStripePrice } from '..
 import {
   sendPlanActiveEmail, sendPlanCanceledScheduledEmail,
   sendPaymentFailedEmail, sendPlanEndedEmail,
+  normalizeLocale, type MailLocale,
 } from '../mail.js';
 
 const stripe = env.STRIPE_SECRET_KEY ? new Stripe(env.STRIPE_SECRET_KEY) : null;
@@ -190,12 +191,15 @@ const billingRoutes: FastifyPluginAsync = async (app) => {
   });
 
   // Email del cliente desde Stripe (no se almacena en Noctcom: zero-knowledge).
-  async function getCustomerEmail(customerId: string): Promise<string | null> {
+  // Email + idioma del cliente de Stripe. El idioma sale de preferred_locales
+  // (lo que el navegador envió en el Checkout); por defecto, español.
+  async function getCustomerInfo(customerId: string): Promise<{ email: string | null; locale: MailLocale }> {
     try {
       const c = await stripe!.customers.retrieve(customerId);
-      if ((c as { deleted?: boolean }).deleted) return null;
-      return (c as Stripe.Customer).email ?? null;
-    } catch { return null; }
+      if ((c as { deleted?: boolean }).deleted) return { email: null, locale: 'es' };
+      const cust = c as Stripe.Customer;
+      return { email: cust.email ?? null, locale: normalizeLocale(cust.preferred_locales ?? null) };
+    } catch { return { email: null, locale: 'es' }; }
   }
 
   // Envía un email sin que un fallo rompa el webhook (Stripe no debe reintentar
@@ -241,9 +245,9 @@ const billingRoutes: FastifyPluginAsync = async (app) => {
           await applySubscription(sub);
           // Email de bienvenida al plan (primera compra).
           const plan = planByStripePrice(sub.items.data[0]?.price.id ?? '') ?? FREE_PLAN;
-          const email = await getCustomerEmail(typeof sub.customer === 'string' ? sub.customer : sub.customer.id);
+          const { email, locale } = await getCustomerInfo(typeof sub.customer === 'string' ? sub.customer : sub.customer.id);
           if (email && plan.id !== FREE_PLAN.id) {
-            mailSafe(sendPlanActiveEmail(email, plan.label, plan.label));
+            mailSafe(sendPlanActiveEmail(email, plan.label, plan.label, locale));
           }
         }
         break;
@@ -263,14 +267,14 @@ const billingRoutes: FastifyPluginAsync = async (app) => {
         await applySubscription(sub);
 
         const newPlan = planByStripePrice(sub.items.data[0]?.price.id ?? '') ?? FREE_PLAN;
-        const email = await getCustomerEmail(customerId);
+        const { email, locale } = await getCustomerInfo(customerId);
         if (email) {
           if (!prevCancel && sub.cancel_at_period_end) {
             // Cancelación recién programada → avisa de cuándo vuelve a free.
-            mailSafe(sendPlanCanceledScheduledEmail(email, newPlan.label, periodEndOf(sub)));
+            mailSafe(sendPlanCanceledScheduledEmail(email, newPlan.label, periodEndOf(sub), locale));
           } else if (!sub.cancel_at_period_end && prevPlan !== newPlan.id && newPlan.id !== FREE_PLAN.id) {
             // Cambio de plan (p. ej. upgrade in-app) → confirma el nuevo plan.
-            mailSafe(sendPlanActiveEmail(email, newPlan.label, newPlan.label));
+            mailSafe(sendPlanActiveEmail(email, newPlan.label, newPlan.label, locale));
           }
         }
         break;
@@ -288,8 +292,8 @@ const billingRoutes: FastifyPluginAsync = async (app) => {
            WHERE stripe_customer_id = $2`,
           [FREE_PLAN.quotaBytes, customerId],
         );
-        const email = await getCustomerEmail(customerId);
-        if (email) mailSafe(sendPlanEndedEmail(email));
+        const { email, locale } = await getCustomerInfo(customerId);
+        if (email) mailSafe(sendPlanEndedEmail(email, locale));
         break;
       }
       case 'invoice.payment_failed': {
@@ -298,8 +302,8 @@ const billingRoutes: FastifyPluginAsync = async (app) => {
         if (customerId) {
           const r = await db.query('SELECT plan FROM users WHERE stripe_customer_id = $1', [customerId]);
           const planLabel = planById(r.rows[0]?.plan).label;
-          const email = await getCustomerEmail(customerId);
-          if (email) mailSafe(sendPaymentFailedEmail(email, planLabel));
+          const { email, locale } = await getCustomerInfo(customerId);
+          if (email) mailSafe(sendPaymentFailedEmail(email, planLabel, locale));
         }
         break;
       }

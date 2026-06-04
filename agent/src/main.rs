@@ -7,6 +7,7 @@
 mod config;
 mod disk;
 mod format;
+mod i18n;
 mod identity;
 mod protocol;
 mod update;
@@ -94,9 +95,15 @@ fn pair(code: &str, server: &str) -> Result<()> {
         Ok(r) => r,
         Err(ureq::Error::Status(status, r)) => {
             let body = r.into_string().unwrap_or_default();
-            anyhow::bail!("el servidor rechazó el emparejamiento (HTTP {status}): {body}");
+            anyhow::bail!("{}", i18n::pick(
+                &format!("el servidor rechazó el emparejamiento (HTTP {status}): {body}"),
+                &format!("the server rejected the pairing (HTTP {status}): {body}"),
+            ));
         }
-        Err(e) => return Err(anyhow!("error de red al emparejar: {e}")),
+        Err(e) => return Err(anyhow!("{}", i18n::pick(
+            &format!("error de red al emparejar: {e}"),
+            &format!("network error while pairing: {e}"),
+        ))),
     };
 
     let body: serde_json::Value = resp.into_json().context("respuesta no es JSON")?;
@@ -110,8 +117,14 @@ fn pair(code: &str, server: &str) -> Result<()> {
     state.server = Some(server);
     state.save()?;
 
-    println!("✓ Agente emparejado (id {agent_id}).");
-    println!("  Ejecuta `noctcom-connector run` para conectarlo.");
+    println!("{}", i18n::pick(
+        &format!("✓ Agente emparejado (id {agent_id})."),
+        &format!("✓ Agent paired (id {agent_id})."),
+    ));
+    println!("{}", i18n::pick(
+        "  Ejecuta `noctcom-connector run` para conectarlo.",
+        "  Run `noctcom-connector run` to connect it.",
+    ));
     Ok(())
 }
 
@@ -119,11 +132,17 @@ fn status() -> Result<()> {
     let state = State::load()?;
     println!("Noctcom Connector v{}", update::current_version());
     match state.agent_id {
-        Some(id) => println!(
-            "Emparejado.\n  agentId: {id}\n  servidor: {}",
-            state.server.unwrap_or_else(|| DEFAULT_SERVER.to_string())
-        ),
-        None => println!("No emparejado. Usa `noctcom-connector pair --code <CÓDIGO>`."),
+        Some(id) => {
+            let server = state.server.unwrap_or_else(|| DEFAULT_SERVER.to_string());
+            println!("{}", i18n::pick(
+                &format!("Emparejado.\n  agentId: {id}\n  servidor: {server}"),
+                &format!("Paired.\n  agentId: {id}\n  server: {server}"),
+            ));
+        }
+        None => println!("{}", i18n::pick(
+            "No emparejado. Usa `noctcom-connector pair --code <CÓDIGO>`.",
+            "Not paired. Use `noctcom-connector pair --code <CODE>`.",
+        )),
     }
     Ok(())
 }
@@ -139,7 +158,10 @@ async fn run(server_override: Option<String>) -> Result<()> {
     let state = State::load()?;
     let agent_id = state
         .agent_id
-        .ok_or_else(|| anyhow!("este agente no está emparejado; ejecuta `pair` primero"))?;
+        .ok_or_else(|| anyhow!("{}", i18n::pick(
+            "este agente no está emparejado; ejecuta `pair` primero",
+            "this agent is not paired; run `pair` first",
+        )))?;
     let server = server_override
         .or(state.server)
         .unwrap_or_else(|| DEFAULT_SERVER.to_string());
@@ -155,7 +177,10 @@ async fn run(server_override: Option<String>) -> Result<()> {
     }
 
     let ws_url = to_ws_url(&server, &agent_id);
-    println!("Conectando a {ws_url}…");
+    println!("{}", i18n::pick(
+        &format!("Conectando a {ws_url}…"),
+        &format!("Connecting to {ws_url}…"),
+    ));
     let (stream, _) = connect_async(ws_url.as_str())
         .await
         .context("no se pudo abrir el WebSocket")?;
@@ -169,16 +194,28 @@ async fn run(server_override: Option<String>) -> Result<()> {
         Instant::now() + Duration::from_secs(HEARTBEAT_SECS),
         Duration::from_secs(HEARTBEAT_SECS),
     );
-    println!("Conectado. Esperando reto de autenticación…");
+    println!("{}", i18n::pick(
+        "Conectado. Esperando reto de autenticación…",
+        "Connected. Waiting for authentication challenge…",
+    ));
 
     loop {
         tokio::select! {
             maybe = read.next() => {
-                let Some(item) = maybe else { println!("El servidor cerró la conexión."); break; };
+                let Some(item) = maybe else {
+                    println!("{}", i18n::pick(
+                        "El servidor cerró la conexión.",
+                        "The server closed the connection.",
+                    ));
+                    break;
+                };
                 match item.context("error de WebSocket")? {
                     Message::Text(txt) => process_incoming(identity.clone(), txt.to_string(), &tx),
                     Message::Ping(p) => { let _ = tx.send(Message::Pong(p)); }
-                    Message::Close(_) => { println!("Conexión cerrada."); break; }
+                    Message::Close(_) => {
+                        println!("{}", i18n::pick("Conexión cerrada.", "Connection closed."));
+                        break;
+                    }
                     _ => {}
                 }
             }
@@ -189,7 +226,10 @@ async fn run(server_override: Option<String>) -> Result<()> {
                 let msg = serde_json::to_string(&ClientMsg::Heartbeat)?;
                 write.send(Message::Text(msg)).await?;
             }
-            _ = tokio::signal::ctrl_c() => { println!("Cerrando…"); break; }
+            _ = tokio::signal::ctrl_c() => {
+                println!("{}", i18n::pick("Cerrando…", "Shutting down…"));
+                break;
+            }
         }
     }
     Ok(())
@@ -206,12 +246,18 @@ fn process_incoming(identity: Arc<Identity>, txt: String, tx: &mpsc::UnboundedSe
         ServerMsg::Challenge { nonce } => {
             let Ok(nonce_bytes) = util::unb64(&nonce) else { return };
             let signature = identity.sign_b64(&nonce_bytes);
-            println!("Reto recibido; firmando…");
+            println!("{}", i18n::pick(
+                "Reto recibido; firmando…",
+                "Challenge received; signing…",
+            ));
             if let Ok(reply) = serde_json::to_string(&ClientMsg::Auth { signature }) {
                 let _ = tx.send(Message::Text(reply));
             }
         }
-        ServerMsg::Ready => println!("✓ Autenticado. Canal operativo."),
+        ServerMsg::Ready => println!("{}", i18n::pick(
+            "✓ Autenticado. Canal operativo.",
+            "✓ Authenticated. Channel ready.",
+        )),
         ServerMsg::HeartbeatAck { .. } => {}
         ServerMsg::Cmd { id, cmd, args } => {
             let tx = tx.clone();
@@ -219,7 +265,10 @@ fn process_incoming(identity: Arc<Identity>, txt: String, tx: &mpsc::UnboundedSe
                 let reply = match handle_cmd(&cmd, &args).await {
                     Ok(data) => ClientMsg::Res { id, ok: true, data: Some(data), error: None },
                     Err(e) => {
-                        println!("Comando '{cmd}' falló: {e}");
+                        println!("{}", i18n::pick(
+                            &format!("Comando '{cmd}' falló: {e}"),
+                            &format!("Command '{cmd}' failed: {e}"),
+                        ));
                         ClientMsg::Res { id, ok: false, data: None, error: Some(e.to_string()) }
                     }
                 };
@@ -253,7 +302,10 @@ async fn handle_cmd(cmd: &str, args: &serde_json::Value) -> Result<serde_json::V
         }
         "register-volume" => {
             let path = arg_str(args, "path")?;
-            println!("Registrando volumen en '{path}' (no destructivo)…");
+            println!("{}", i18n::pick(
+                &format!("Registrando volumen en '{path}' (no destructivo)…"),
+                &format!("Registering volume at '{path}' (non-destructive)…"),
+            ));
             let info = tokio::task::spawn_blocking(move || volume::register(&path))
                 .await
                 .context("tarea de registro de volumen")??;
@@ -262,7 +314,10 @@ async fn handle_cmd(cmd: &str, args: &serde_json::Value) -> Result<serde_json::V
         "format-volume" => {
             let drive_letter = arg_str(args, "driveLetter")?;
             let label = arg_str(args, "label")?;
-            println!("Formateando volumen '{drive_letter}:' (DESTRUCTIVO)…");
+            println!("{}", i18n::pick(
+                &format!("Formateando volumen '{drive_letter}:' (DESTRUCTIVO)…"),
+                &format!("Formatting volume '{drive_letter}:' (DESTRUCTIVE)…"),
+            ));
             let info = tokio::task::spawn_blocking(move || format::format_volume(&drive_letter, &label))
                 .await
                 .context("tarea de formateo")??;

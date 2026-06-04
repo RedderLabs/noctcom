@@ -2,7 +2,7 @@ import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 import { randomBytes, createHash, timingSafeEqual } from 'node:crypto';
 import { db, tx } from '../db/pool.js';
-import { sendVerificationEmail } from '../mail.js';
+import { sendVerificationEmail, normalizeLocale } from '../mail.js';
 import { deleteBlob } from '../storage/s3.js';
 import { deleteFromDisk } from '../storage/disk.js';
 import { issueSession, hashIp, newRefreshToken } from '../session.js';
@@ -186,7 +186,7 @@ const authRoutes: FastifyPluginAsync = async (app) => {
         `UPDATE users SET verification_code_hash = $1, verification_code_expires = $2 WHERE id = $3`,
         [codeHash, expires, result.userId],
       );
-      sendVerificationEmail(body.email, code).catch((err) => {
+      sendVerificationEmail(body.email, code, normalizeLocale(req.headers['accept-language'])).catch((err) => {
         app.log.warn({ err }, 'failed to send verification email');
       });
     }
@@ -573,7 +573,7 @@ const authRoutes: FastifyPluginAsync = async (app) => {
       `UPDATE users SET verification_code_hash = $1, verification_code_expires = $2 WHERE id = $3`,
       [codeHash, expires, userId],
     );
-    await sendVerificationEmail(email, code);
+    await sendVerificationEmail(email, code, normalizeLocale(req.headers['accept-language']));
     return reply.send({ ok: true });
   });
 

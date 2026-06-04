@@ -63,11 +63,14 @@ fn fetch_latest(server: &str) -> Result<VersionResp> {
 pub fn check_and_notify(server: &str) {
     if let Ok(v) = fetch_latest(server) {
         if is_newer(&v.version, CURRENT_VERSION) {
-            println!(
-                "⚠ Hay una versión nueva del agente: {} (tienes {}).",
-                v.version, CURRENT_VERSION
-            );
-            println!("  Actualiza con:  noctcom-connector update");
+            println!("{}", crate::i18n::pick(
+                &format!("⚠ Hay una versión nueva del agente: {} (tienes {}).", v.version, CURRENT_VERSION),
+                &format!("⚠ A new agent version is available: {} (you have {}).", v.version, CURRENT_VERSION),
+            ));
+            println!("{}", crate::i18n::pick(
+                "  Actualiza con:  noctcom-connector update",
+                "  Update with:  noctcom-connector update",
+            ));
         }
     }
 }
@@ -84,7 +87,10 @@ pub fn cleanup_old() {
 pub fn run_update(server: &str) -> Result<()> {
     let info = fetch_latest(server)?;
     if !is_newer(&info.version, CURRENT_VERSION) {
-        println!("Ya estás en la última versión ({CURRENT_VERSION}).");
+        println!("{}", crate::i18n::pick(
+            &format!("Ya estás en la última versión ({CURRENT_VERSION})."),
+            &format!("You are already on the latest version ({CURRENT_VERSION})."),
+        ));
         return Ok(());
     }
     if !info.available {
@@ -103,7 +109,10 @@ pub fn run_update(server: &str) -> Result<()> {
             )
         });
 
-    println!("Descargando la versión {}…", info.version);
+    println!("{}", crate::i18n::pick(
+        &format!("Descargando la versión {}…", info.version),
+        &format!("Downloading version {}…", info.version),
+    ));
     let resp = ureq::get(&url).call().context("descargando el binario nuevo")?;
     let mut reader = resp.into_reader();
 
@@ -130,15 +139,18 @@ pub fn run_update(server: &str) -> Result<()> {
         return Err(anyhow!("no se pudo instalar el binario nuevo: {e}"));
     }
 
-    println!(
-        "✓ Actualizado a la versión {}. Reinicia el agente (`noctcom-connector run`) para aplicarla.",
-        info.version
-    );
+    println!("{}", crate::i18n::pick(
+        &format!("✓ Actualizado a la versión {}. Reinicia el agente (`noctcom-connector run`) para aplicarla.", info.version),
+        &format!("✓ Updated to version {}. Restart the agent (`noctcom-connector run`) to apply it.", info.version),
+    ));
     Ok(())
 }
 
 fn bail_no_binary() -> Result<()> {
-    Err(anyhow!("no hay binario publicado para tu plataforma todavía"))
+    Err(anyhow!("{}", crate::i18n::pick(
+        "no hay binario publicado para tu plataforma todavía",
+        "no binary has been published for your platform yet",
+    )))
 }
 
 fn absolutize(server: &str, url: &str) -> String {

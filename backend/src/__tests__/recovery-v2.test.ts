@@ -30,7 +30,7 @@ vi.mock('../db/pool.js', async () => {
   const f = await import('./fake-db.js');
   return { db: f.db, tx: f.tx };
 });
-vi.mock('../mail.js', () => ({ sendLoginCodeEmail: vi.fn(async () => {}) }));
+vi.mock('../mail.js', () => ({ sendLoginCodeEmail: vi.fn(async () => {}), normalizeLocale: () => 'es' }));
 vi.mock('../session.js', () => ({
   issueSession: vi.fn(async () => ({ accessToken: 'issued-access', refreshToken: 'issued-refresh' })),
 }));
