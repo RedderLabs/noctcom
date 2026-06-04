@@ -7,6 +7,7 @@ import {
   fromB64, toB64, wipe,
   type Bytes,
 } from './crypto';
+import { sealToRecovery } from './recovery';
 
 export type ExportPhase = 'downloading' | 'done';
 export type ImportPhase = 'parsing' | 'validating' | 'rewrapping' | 'uploading' | 'done';
@@ -165,6 +166,20 @@ export async function importVault(
   const { ciphertext: newVaultKeyWrapped, nonce: newVaultKeyNonce } = encrypt(vaultKey, newVaultWrapKey);
   wipe(newVaultWrapKey);
 
+  // Recovery v2: si la cuenta tiene recovery box key, sella la vault key
+  // importada a ella — así también esta bóveda sobrevive a una recuperación.
+  let vaultKeySealedRecovery: string | undefined;
+  try {
+    const status = await apiFetch<{ recoveryBoxPublicKey: string | null }>(
+      '/api/v1/2fa/recovery/status',
+    );
+    if (status.recoveryBoxPublicKey) {
+      vaultKeySealedRecovery = toB64(
+        sealToRecovery(vaultKey, fromB64(status.recoveryBoxPublicKey)),
+      );
+    }
+  } catch { /* sin kit v2 — la bóveda se importa igual */ }
+
   const importNodes = manifest.nodes.map((n) => ({
     originalId: n.id,
     parentOriginalId: n.parentId,
@@ -209,6 +224,7 @@ export async function importVault(
       nameNonce: manifest.vault.nameNonce,
       vaultKeyWrapped: toB64(newVaultKeyWrapped),
       vaultKeyNonce: toB64(newVaultKeyNonce),
+      vaultKeySealedRecovery,
       nodes: importNodes,
     }),
   });

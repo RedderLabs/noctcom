@@ -26,6 +26,8 @@ CREATE TABLE IF NOT EXISTS users (
     recovery_private_keys_wrapped BYTEA,
     recovery_private_keys_nonce   BYTEA,
     recovery_public_key  BYTEA,
+    recovery_box_public_key BYTEA,
+    exchange_private_key_sealed_recovery BYTEA,
     recovery_enabled     BOOLEAN NOT NULL DEFAULT FALSE,
     recovery_kdf_salt    BYTEA,
     recovery_email_encrypted BYTEA,
@@ -81,9 +83,17 @@ CREATE TABLE IF NOT EXISTS vaults (
     name_nonce           BYTEA NOT NULL,
     vault_key_wrapped    BYTEA NOT NULL,
     vault_key_nonce      BYTEA NOT NULL,
+    vault_key_sealed_recovery BYTEA,
     created_at           TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS vaults_owner_idx ON vaults(owner_id);
+
+-- Migración idempotente para BD existentes (Recovery v2)
+ALTER TABLE users
+    ADD COLUMN IF NOT EXISTS recovery_box_public_key BYTEA,
+    ADD COLUMN IF NOT EXISTS exchange_private_key_sealed_recovery BYTEA;
+ALTER TABLE vaults
+    ADD COLUMN IF NOT EXISTS vault_key_sealed_recovery BYTEA;
 
 -- ─── NODES ─────────────────────────────────────────────────────
 DO $$ BEGIN CREATE TYPE node_kind AS ENUM ('folder', 'file'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;

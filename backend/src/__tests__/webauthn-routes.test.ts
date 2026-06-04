@@ -24,7 +24,10 @@ vi.mock('../config.js', () => ({
     JWT_SECRET: 'test-secret-must-be-at-least-32-chars-long',
   },
 }));
-vi.mock('../db/pool.js', async () => ({ db: (await import('./fake-db.js')).db }));
+vi.mock('../db/pool.js', async () => {
+  const f = await import('./fake-db.js');
+  return { db: f.db, tx: f.tx };
+});
 vi.mock('../mail.js', () => ({ sendLoginCodeEmail: vi.fn(async () => {}) }));
 vi.mock('../session.js', () => ({
   issueSession: vi.fn(async () => ({ accessToken: 'issued-access', refreshToken: 'issued-refresh' })),

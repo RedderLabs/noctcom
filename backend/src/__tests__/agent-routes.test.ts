@@ -25,7 +25,10 @@ vi.mock('../config.js', () => ({
     AGENT_LATEST_VERSION: '9.9.9',
   },
 }));
-vi.mock('../db/pool.js', async () => ({ db: (await import('./fake-db.js')).db }));
+vi.mock('../db/pool.js', async () => {
+  const f = await import('./fake-db.js');
+  return { db: f.db, tx: f.tx };
+});
 vi.mock('../db/redis.js', () => ({ publishChange: vi.fn(() => {}) }));
 
 import Fastify, { type FastifyInstance } from 'fastify';

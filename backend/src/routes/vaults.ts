@@ -11,6 +11,8 @@ const createVaultSchema = z.object({
   nameNonce: bytesB64,
   vaultKeyWrapped: bytesB64,
   vaultKeyNonce: bytesB64,
+  // Recovery v2: vault_key sellada a la recovery box key del usuario
+  vaultKeySealedRecovery: bytesB64.optional(),
 });
 
 const vaultRoutes: FastifyPluginAsync = async (app) => {
@@ -36,12 +38,14 @@ const vaultRoutes: FastifyPluginAsync = async (app) => {
   app.post('/', { onRequest: [app.authenticate] }, async (req, reply) => {
     const body = createVaultSchema.parse(req.body);
     const r = await db.query(
-      `INSERT INTO vaults (owner_id, name_encrypted, name_nonce, vault_key_wrapped, vault_key_nonce)
-       VALUES ($1,$2,$3,$4,$5) RETURNING id, created_at`,
+      `INSERT INTO vaults (owner_id, name_encrypted, name_nonce, vault_key_wrapped, vault_key_nonce,
+                           vault_key_sealed_recovery)
+       VALUES ($1,$2,$3,$4,$5,$6) RETURNING id, created_at`,
       [
         req.user.sub,
         fromB64(body.nameEncrypted), fromB64(body.nameNonce),
         fromB64(body.vaultKeyWrapped), fromB64(body.vaultKeyNonce),
+        body.vaultKeySealedRecovery ? fromB64(body.vaultKeySealedRecovery) : null,
       ],
     );
     return reply.code(201).send({ id: r.rows[0].id, createdAt: r.rows[0].created_at });

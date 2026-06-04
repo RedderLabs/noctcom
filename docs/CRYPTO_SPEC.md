@@ -2,9 +2,9 @@
 
 > Documento técnico que describe, con precisión algorítmica, todas las operaciones criptográficas de Noctcom. Si encuentras una discrepancia entre este documento y el código, el código es la verdad y abre un issue.
 
-**Versión:** 1.0
-**Última revisión:** 24 de mayo de 2026
-**Implementación de referencia:** `backend/src/crypto/index.ts`, `frontend/lib/crypto.ts`
+**Versión:** 1.1 — añade Recovery v2 (kit de recuperación con sealed boxes)
+**Última revisión:** 4 de junio de 2026
+**Implementación de referencia:** `backend/src/crypto/index.ts`, `frontend/lib/crypto.ts`, `frontend/lib/recovery.ts`
 
 ---
 
@@ -90,35 +90,86 @@ Computation:
 
 **Contextos definidos (registry):**
 
-| Contexto | Uso | Versión |
-|----------|-----|---------|
-| `"noctcom.vault.wrap"` | Wrap de vault keys | v1 |
-| `"noctcom.totp.v1"` | Wrap del TOTP secret en BD | v1 |
-| `"noctcom.login.sign"` | Seed para keypair de login | v1 |
-| `"noctcom.recovery.derive"` | Derivar recovery key desde mnemonic | v1 |
-| `"noctcom.audit.encrypt"` | Cifrar entradas de audit log | v1 |
+| Contexto | Clave (key del BLAKE2b) | Uso | Versión |
+|----------|------------------------|-----|---------|
+| `"noctcom.vault.wrap"` | MK | Wrap de vault keys | v1 |
+| `"noctcom.totp.v1"` | MK | Wrap del TOTP secret en BD | v1 |
+| `"noctcom.login.sign"` | MK | Seed para keypair de login | v1 |
+| `"noctcom.audit.v1"` | MK | Cifrar entradas de audit log | v1 |
+| `"noctcom.recovery.v1"` | — (es la key; el message es la mnemónica) | Seed de recuperación desde mnemónica | v1 |
+| `"noctcom.recovery.box.v1"` | seed de recuperación | Seed del par X25519 de recuperación | v2 |
 
 **Regla de versionado:** si cambia el uso de un contexto, se sufija con `v2`, `v3`, etc. Nunca se reutiliza.
 
-### 3.3 Recovery key desde frase mnemónica
+### 3.3 Kit de recuperación desde frase mnemónica (Recovery v2)
+
+**Frase:** 12 palabras. Desde v2 se generan como BIP39-inglés genuino (128 bits
+de entropía + checksum SHA-256, wordlist de 2048 palabras, via `@scure/bip39`).
+Las frases v1 (wordlist reducida, sin checksum) siguen siendo válidas para
+derivar: la prueba de validez es siempre la firma del challenge, no el checksum.
+
+De la mnemónica se derivan **dos pares**:
 
 ```
 Input:
-  mnemonic ∈ string[12]  — palabras BIP39
-
-Output:
-  RK ∈ Bytes(32)
+  mnemonic ∈ string  — las 12 palabras unidas por espacios
 
 Computation:
-  seed = BIP39.mnemonicToSeed(mnemonic, passphrase = "")
-  RK = BLAKE2b(
-    message = utf8("noctcom.recovery.derive"),
-    key = seed[0:32],
+  seed_rec = BLAKE2b(
+    message = utf8(mnemonic),
+    key = utf8("noctcom.recovery.v1"),
     output_length = 32
   )
+
+  // Par de firma: prueba la posesión de la frase (challenge de recuperación)
+  (sk_rs, pk_rs) = Ed25519.seed_keypair(seed_rec)
+
+  // Par box: su pública sella material recuperable SIN tener la mnemónica
+  seed_box = BLAKE2b(
+    message = utf8("noctcom.recovery.box.v1"),
+    key = seed_rec,
+    output_length = 32
+  )
+  (sk_rb, pk_rb) = X25519.seed_keypair(seed_box)
 ```
 
-La RK puede desempaquetar las mismas privkeys que la MK. Durante signup, las privkeys se wrappean dos veces (con MK y con RK).
+**Persistencia en BD (todo ciphertext u información pública):**
+
+```
+users.recovery_public_key                    = pk_rs              // plaintext
+users.recovery_box_public_key                = pk_rb              // plaintext
+users.exchange_private_key_sealed_recovery   = Seal(sk_ex, pk_rb)
+vaults.vault_key_sealed_recovery             = Seal(vault_key, pk_rb)
+```
+
+Como `Seal` (crypto_box_seal) solo necesita la **pública**, el cliente puede
+sellar la vault key de una bóveda nueva (creación, import) en cualquier
+momento de la sesión, sin pedir la mnemónica. Solo `sk_rb` — derivable
+únicamente de la mnemónica — puede abrir los seals.
+
+**Flujo de recuperación (contraseña olvidada):**
+
+```
+1. init:     cliente → emailHash; servidor → challenge (token 10 min, un solo uso)
+2. unlock:   cliente firma el challenge con sk_rs; servidor verifica con pk_rs
+             y devuelve los seals (vault keys + sk_ex sellados). No consume el token.
+3. cliente:  deriva sk_rb de la mnemónica, abre los seals,
+             deriva la nueva MK de la nueva contraseña y re-wrappea:
+               vault_key  → AEAD.enc(HKDF(MK', "noctcom.vault.wrap"), …)
+               sk_ex      → AEAD.enc(MK', …)   // MISMA pk_ex: los shares recibidos sobreviven
+4. finalize: misma firma; servidor reemplaza las claves del usuario, actualiza
+             los wraps de las vault keys (transaccional, solo vaults del owner),
+             consume el token y revoca todas las sesiones.
+```
+
+Los seals **no cambian** en la recuperación (la mnemónica es la misma). Al
+**rotar la frase** (Ajustes → Kit de recuperación, exige step-up) se sube un
+kit completo nuevo: `pk_rs'`, `pk_rb'` y todos los seals re-sellados a `pk_rb'`.
+
+**Cuentas pre-v2** (sin `recovery_box_public_key`): la recuperación restaura el
+acceso (claves nuevas) pero las vault keys viejas son irrecuperables — el
+cliente lo avisa antes de continuar. El kit se completa una única vez en
+Ajustes re-introduciendo (o regenerando) la frase.
 
 ## 4. Keypairs del usuario
 

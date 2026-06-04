@@ -21,6 +21,11 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS verification_code_expires TIMESTAMPTZ
 -- ─── Recovery public key ───────────────────────────────────────
 ALTER TABLE users ADD COLUMN IF NOT EXISTS recovery_public_key BYTEA;
 
+-- ─── Recovery v2 (04_recovery_v2.sql) ──────────────────────────
+ALTER TABLE users  ADD COLUMN IF NOT EXISTS recovery_box_public_key BYTEA;
+ALTER TABLE users  ADD COLUMN IF NOT EXISTS exchange_private_key_sealed_recovery BYTEA;
+ALTER TABLE vaults ADD COLUMN IF NOT EXISTS vault_key_sealed_recovery BYTEA;
+
 -- ─── Starred nodes ─────────────────────────────────────────────
 ALTER TABLE nodes ADD COLUMN IF NOT EXISTS starred BOOLEAN NOT NULL DEFAULT FALSE;
 

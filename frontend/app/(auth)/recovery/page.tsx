@@ -3,19 +3,33 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Mail, KeyRound, ArrowRight, AlertTriangle, Shield, ArrowLeft } from 'lucide-react';
+import { Mail, KeyRound, ArrowRight, AlertTriangle, Shield, ArrowLeft, FileKey2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { apiFetch } from '@/lib/api';
 import {
-  initCrypto, deriveMasterKey, hashEmail, encrypt,
+  initCrypto, deriveMasterKey, hashEmail, encrypt, sign,
   randomBytes, deriveSubKey, DEFAULT_KDF,
-  fromB64, toB64, wipe,
+  fromB64, toB64, wipe, type Bytes,
 } from '@/lib/crypto';
+import {
+  deriveRecoverySeed, deriveRecoverySignKeypair,
+  deriveRecoveryBoxKeypair, openRecoverySeal,
+} from '@/lib/recovery';
 import { cn, sanitizeEmail } from '@/lib/utils';
 
 type Step = 'email' | 'mnemonic' | 'new_password' | 'done';
+
+// Respuesta de /recovery/unlock: el material sellado a la recovery box key.
+// Si recoveryBoxPublicKey es null la cuenta es pre-v2: se puede recuperar el
+// acceso pero las vault keys viejas son irrecuperables (lo avisamos).
+interface UnlockResponse {
+  recoveryBoxPublicKey: string | null;
+  exchangePublicKey: string;
+  exchangePrivateKeySealedRecovery: string | null;
+  vaults: { id: string; vaultKeySealedRecovery: string }[];
+}
 
 function StepIndicator({ current }: { current: Step }) {
   const steps: Step[] = ['email', 'mnemonic', 'new_password', 'done'];
@@ -44,6 +58,7 @@ export default function RecoveryPage() {
   const [newPasswordConfirm, setNewPasswordConfirm] = useState('');
   const [loading, setLoading] = useState(false);
   const [challenge, setChallenge] = useState('');
+  const [unlock, setUnlock] = useState<UnlockResponse | null>(null);
 
   async function handleEmailSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -68,6 +83,40 @@ export default function RecoveryPage() {
     }
   }
 
+  // Paso 2: la frase firma el challenge y /unlock devuelve el material
+  // sellado. Verifica la frase AQUÍ (mejor UX que fallar al final) y nos
+  // dice si la cuenta tiene kit v2 antes de pedir la nueva contraseña.
+  async function handleMnemonicSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      await initCrypto();
+      const emailHash = hashEmail(sanitizeEmail(email));
+
+      const seed = deriveRecoverySeed(words);
+      const signKp = deriveRecoverySignKeypair(seed);
+      const signature = sign(fromB64(challenge), signKp.privateKey);
+      wipe(seed, signKp.privateKey);
+
+      const res = await apiFetch<UnlockResponse>('/api/v1/2fa/recovery/unlock', {
+        method: 'POST',
+        body: JSON.stringify({
+          emailHash: toB64(emailHash),
+          challenge,
+          signature: toB64(signature),
+        }),
+        skipAuth: true,
+      });
+
+      setUnlock(res);
+      setStep('new_password');
+    } catch {
+      toast.error('La frase no corresponde a esta cuenta. Revisa las palabras y el orden.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
   async function handleRecovery(e: React.FormEvent) {
     e.preventDefault();
     if (newPassword !== newPasswordConfirm) {
@@ -86,18 +135,13 @@ export default function RecoveryPage() {
 
       const emailHash = hashEmail(sanitizeEmail(email));
 
-      // Derive recovery keypair from mnemonic (same as signup)
-      const mnemonicStr = words.join(' ');
-      const recoverySeed = sodium.crypto_generichash(
-        32, sodium.from_string(mnemonicStr), sodium.from_string('noctcom.recovery.v1'),
-      );
-      const recoveryKp = sodium.crypto_sign_seed_keypair(recoverySeed);
-
-      // Sign the challenge with recovery key
+      // Firma del challenge (misma frase, misma firma que en /unlock)
+      const seed = deriveRecoverySeed(words);
+      const signKp = deriveRecoverySignKeypair(seed);
       const challengeBytes = fromB64(challenge);
-      const signature = sodium.crypto_sign_detached(challengeBytes, recoveryKp.privateKey);
+      const signature = sign(challengeBytes, signKp.privateKey);
 
-      // Generate new keys with new password
+      // Nuevas claves con la nueva contraseña
       const salt = randomBytes(DEFAULT_KDF.saltBytes());
       const opsLimit = DEFAULT_KDF.opsLimit();
       const memLimit = DEFAULT_KDF.memLimit();
@@ -105,10 +149,50 @@ export default function RecoveryPage() {
 
       const signSeed = deriveSubKey(mk, 'noctcom.login.sign');
       const identityKp = sodium.crypto_sign_seed_keypair(signSeed);
-      const exchangeKp = sodium.crypto_box_keypair();
+
+      // Recovery v2: abrir los seals con la privada derivada de la mnemónica
+      // y re-wrappear con la nueva MK. El par exchange se CONSERVA (misma
+      // pública) para que los archivos compartidos contigo sigan abriéndose.
+      let exchangePublicKey: Bytes;
+      let exchangePrivateKey: Bytes;
+      const rewrappedVaults: { id: string; vaultKeyWrapped: string; vaultKeyNonce: string }[] = [];
+
+      if (unlock?.recoveryBoxPublicKey) {
+        const boxKp = deriveRecoveryBoxKeypair(seed);
+        const newVaultWrapKey = deriveSubKey(mk, 'noctcom.vault.wrap');
+
+        for (const v of unlock.vaults) {
+          const vaultKey = openRecoverySeal(fromB64(v.vaultKeySealedRecovery), boxKp);
+          const w = encrypt(vaultKey, newVaultWrapKey);
+          rewrappedVaults.push({
+            id: v.id,
+            vaultKeyWrapped: toB64(w.ciphertext),
+            vaultKeyNonce: toB64(w.nonce),
+          });
+          wipe(vaultKey);
+        }
+
+        if (unlock.exchangePrivateKeySealedRecovery) {
+          exchangePrivateKey = openRecoverySeal(
+            fromB64(unlock.exchangePrivateKeySealedRecovery), boxKp,
+          );
+          exchangePublicKey = fromB64(unlock.exchangePublicKey);
+        } else {
+          const kp = sodium.crypto_box_keypair();
+          exchangePublicKey = kp.publicKey;
+          exchangePrivateKey = kp.privateKey;
+        }
+
+        wipe(boxKp.privateKey, newVaultWrapKey);
+      } else {
+        // Cuenta pre-v2: no hay seals que abrir. Par exchange nuevo.
+        const kp = sodium.crypto_box_keypair();
+        exchangePublicKey = kp.publicKey;
+        exchangePrivateKey = kp.privateKey;
+      }
 
       const idWrapped = encrypt(identityKp.privateKey, mk);
-      const exWrapped = encrypt(exchangeKp.privateKey, mk);
+      const exWrapped = encrypt(exchangePrivateKey, mk);
       const opaqueRecord = randomBytes(64);
 
       await apiFetch('/api/v1/2fa/recovery/finalize', {
@@ -124,14 +208,15 @@ export default function RecoveryPage() {
           newIdentityPublicKey: toB64(identityKp.publicKey),
           newIdentityPrivateKeyWrapped: toB64(idWrapped.ciphertext),
           newIdentityPrivateKeyNonce: toB64(idWrapped.nonce),
-          newExchangePublicKey: toB64(exchangeKp.publicKey),
+          newExchangePublicKey: toB64(exchangePublicKey),
           newExchangePrivateKeyWrapped: toB64(exWrapped.ciphertext),
           newExchangePrivateKeyNonce: toB64(exWrapped.nonce),
+          vaults: rewrappedVaults,
         }),
         skipAuth: true,
       });
 
-      wipe(mk, recoverySeed, recoveryKp.privateKey, identityKp.privateKey, exchangeKp.privateKey);
+      wipe(mk, seed, signKp.privateKey, identityKp.privateKey, exchangePrivateKey);
       setStep('done');
     } catch (err: any) {
       toast.error(err.message ?? 'Error al recuperar la cuenta');
@@ -139,6 +224,8 @@ export default function RecoveryPage() {
       setLoading(false);
     }
   }
+
+  const hasKit = !!unlock?.recoveryBoxPublicKey;
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -155,7 +242,9 @@ export default function RecoveryPage() {
           {step === 'email' && 'Necesitarás tu frase de recuperación de 12 palabras'}
           {step === 'mnemonic' && 'En el orden exacto que la generaste'}
           {step === 'new_password' && 'Tu bóveda se re-cifrará con esta contraseña'}
-          {step === 'done' && 'Tus claves han sido regeneradas con la nueva contraseña'}
+          {step === 'done' && (hasKit
+            ? 'Tus claves y tus archivos siguen contigo'
+            : 'Tus claves han sido regeneradas con la nueva contraseña')}
         </p>
       </div>
 
@@ -164,8 +253,8 @@ export default function RecoveryPage() {
           <div className="flex gap-2 p-3 rounded-lg bg-amber-500/5 border border-amber-500/20">
             <AlertTriangle className="size-4 text-amber-300 mt-0.5 shrink-0" />
             <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed">
-              Recuperar tu cuenta revoca todas las sesiones activas y re-genera tus claves.
-              Los archivos compartidos con otros usuarios dejarán de ser accesibles para ellos.
+              Recuperar tu cuenta revoca todas las sesiones activas. Si tu cuenta tiene el
+              kit de recuperación completo, tus archivos y compartidos se conservan.
             </p>
           </div>
 
@@ -187,10 +276,7 @@ export default function RecoveryPage() {
       )}
 
       {step === 'mnemonic' && (
-        <form
-          onSubmit={(e) => { e.preventDefault(); setStep('new_password'); }}
-          className="space-y-5"
-        >
+        <form onSubmit={handleMnemonicSubmit} className="space-y-5">
           <div className="grid grid-cols-3 gap-2">
             {words.map((w, i) => (
               <div key={i} className="relative">
@@ -245,9 +331,10 @@ export default function RecoveryPage() {
               size="lg"
               className="flex-1"
               disabled={words.some((w) => !w)}
-              rightIcon={<ArrowRight className="size-4" />}
+              loading={loading}
+              rightIcon={!loading ? <ArrowRight className="size-4" /> : undefined}
             >
-              Continuar
+              Verificar frase
             </Button>
           </div>
         </form>
@@ -255,6 +342,27 @@ export default function RecoveryPage() {
 
       {step === 'new_password' && (
         <form onSubmit={handleRecovery} className="space-y-4">
+          {hasKit ? (
+            <div className="flex gap-2 p-3 rounded-lg bg-emerald-500/5 border border-emerald-500/20">
+              <FileKey2 className="size-4 text-emerald-300 mt-0.5 shrink-0" />
+              <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed">
+                <strong className="text-emerald-200">Kit de recuperación verificado.</strong>{' '}
+                Tus bóvedas{unlock!.vaults.length > 1 ? ` (${unlock!.vaults.length})` : ''} se
+                re-cifrarán con la nueva contraseña: archivos y compartidos siguen accesibles.
+              </p>
+            </div>
+          ) : (
+            <div className="flex gap-2 p-3 rounded-lg bg-amber-500/5 border border-amber-500/20">
+              <AlertTriangle className="size-4 text-amber-300 mt-0.5 shrink-0" />
+              <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed">
+                <strong className="text-amber-200">Esta cuenta no tiene el kit de recuperación completo.</strong>{' '}
+                Recuperarás el acceso, pero los archivos cifrados con tu contraseña anterior
+                no podrán descifrarse. Tras entrar, activa el kit en Ajustes → Seguridad
+                para que no vuelva a pasar.
+              </p>
+            </div>
+          )}
+
           <Input
             label="Nueva contraseña maestra"
             type="password"
@@ -301,8 +409,9 @@ export default function RecoveryPage() {
             </svg>
           </div>
           <p className="text-sm text-[var(--color-text-secondary)]">
-            Tu cuenta ha sido restaurada y tus claves re-generadas con la nueva contraseña.
-            Todas las sesiones anteriores han sido revocadas.
+            {hasKit
+              ? 'Tu cuenta ha sido restaurada: tus bóvedas se re-cifraron con la nueva contraseña y tus archivos siguen accesibles. Todas las sesiones anteriores han sido revocadas.'
+              : 'Tu cuenta ha sido restaurada y tus claves re-generadas con la nueva contraseña. Todas las sesiones anteriores han sido revocadas.'}
           </p>
           <Button variant="primary" size="lg" className="w-full" onClick={() => router.push('/login')}>
             Iniciar sesión

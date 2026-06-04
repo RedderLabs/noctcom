@@ -11,7 +11,10 @@ import { randomUUID } from 'node:crypto';
 vi.mock('../config.js', () => ({
   env: { NODE_ENV: 'test', FRONTEND_URL: 'https://noctcom.com', PUBLIC_URL: 'https://api.noctcom.com', JWT_SECRET: 'test-secret-must-be-at-least-32-chars-long' },
 }));
-vi.mock('../db/pool.js', async () => ({ db: (await import('./fake-db.js')).db }));
+vi.mock('../db/pool.js', async () => {
+  const f = await import('./fake-db.js');
+  return { db: f.db, tx: f.tx };
+});
 
 import Fastify, { type FastifyInstance } from 'fastify';
 import sensible from '@fastify/sensible';

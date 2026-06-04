@@ -11,26 +11,15 @@ import { useAuth } from '@/lib/auth-store';
 import { apiFetch, setTokens } from '@/lib/api';
 import {
   initCrypto, deriveMasterKey, hashEmail, fromB64, toB64,
-  encrypt, encryptString, randomBytes, randomKey, DEFAULT_KDF, deriveSubKey,
+  encrypt, encryptString, randomBytes, randomKey, DEFAULT_KDF, deriveSubKey, wipe,
 } from '@/lib/crypto';
 import { cn, sanitizeUsername, sanitizeEmail, sanitizeErrorMessage } from '@/lib/utils';
+import {
+  generateRecoveryMnemonic, deriveRecoverySeed,
+  deriveRecoverySignKeypair, deriveRecoveryBoxKeypair, sealToRecovery,
+} from '@/lib/recovery';
 
 type Step = 'form' | 'mnemonic' | 'confirm';
-
-const WORDLIST = [
-  'abandon', 'ability', 'able', 'about', 'above', 'absent', 'absorb', 'abstract',
-  'absurd', 'abuse', 'access', 'accident', 'account', 'accuse', 'achieve', 'acid',
-  'acoustic', 'acquire', 'across', 'act', 'action', 'actor', 'actress', 'actual',
-];
-
-function generateMnemonic(): string[] {
-  const words: string[] = [];
-  const rand = randomBytes(12);
-  for (let i = 0; i < 12; i++) {
-    words.push(WORDLIST[rand[i]! % WORDLIST.length]!);
-  }
-  return words;
-}
 
 function StepIndicator({ current }: { current: Step }) {
   const steps: Step[] = ['form', 'mnemonic', 'confirm'];
@@ -116,7 +105,7 @@ export default function SignupPage() {
     setEmail(cleanEmail);
     setSubmitCooldown(true);
     setTimeout(() => setSubmitCooldown(false), 2000);
-    setMnemonic(generateMnemonic());
+    setMnemonic(generateRecoveryMnemonic());
     setStep('mnemonic');
   }
 
@@ -172,11 +161,15 @@ export default function SignupPage() {
       const devicePrivWrapped = encrypt(deviceKp.privateKey, mk);
       const opaqueRecord = randomBytes(64);
 
-      // Recovery keypair derived from mnemonic
-      const recoverySeed = sodium.crypto_generichash(
-        32, sodium.from_string(mnemonic.join(' ')), sodium.from_string('noctcom.recovery.v1'),
-      );
-      const recoveryKp = sodium.crypto_sign_seed_keypair(recoverySeed);
+      // Recovery v2: de la mnemónica salen el par de firma (challenge) y el
+      // par box (X25519). Con la box pública sellamos la vault key y la
+      // sk_exchange: si un día se recupera la cuenta con la frase, los
+      // archivos y los shares recibidos siguen siendo accesibles.
+      const recoverySeed = deriveRecoverySeed(mnemonic);
+      const recoveryKp = deriveRecoverySignKeypair(recoverySeed);
+      const recoveryBoxKp = deriveRecoveryBoxKeypair(recoverySeed);
+      const vaultKeySealedRecovery = sealToRecovery(vaultKey, recoveryBoxKp.publicKey);
+      const exchangeSkSealedRecovery = sealToRecovery(exchangeKp.privateKey, recoveryBoxKp.publicKey);
 
       const payload = {
         username,
@@ -193,11 +186,14 @@ export default function SignupPage() {
         exchangePrivateKeyWrapped: toB64(exWrapped.ciphertext),
         exchangePrivateKeyNonce: toB64(exWrapped.nonce),
         recoveryPublicKey: toB64(recoveryKp.publicKey),
+        recoveryBoxPublicKey: toB64(recoveryBoxKp.publicKey),
+        exchangePrivateKeySealedRecovery: toB64(exchangeSkSealedRecovery),
         initialVault: {
           nameEncrypted: toB64(vaultName.ciphertext),
           nameNonce: toB64(vaultName.nonce),
           vaultKeyWrapped: toB64(vaultKeyWrapped.ciphertext),
           vaultKeyNonce: toB64(vaultKeyWrapped.nonce),
+          vaultKeySealedRecovery: toB64(vaultKeySealedRecovery),
         },
         deviceNameEncrypted: toB64(deviceName.ciphertext),
         deviceNameNonce: toB64(deviceName.nonce),
@@ -215,6 +211,8 @@ export default function SignupPage() {
         body: JSON.stringify(payload),
         skipAuth: true,
       });
+
+      wipe(recoverySeed, recoveryKp.privateKey, recoveryBoxKp.privateKey);
 
       setTokens(res.accessToken, res.refreshToken);
       localStorage.setItem('noctcom.devicePrivKey', toB64(devicePrivWrapped.ciphertext));

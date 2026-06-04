@@ -196,6 +196,8 @@ const vaultExportRoutes: FastifyPluginAsync = async (app) => {
     nameNonce: bytesB64,
     vaultKeyWrapped: bytesB64,
     vaultKeyNonce: bytesB64,
+    // Recovery v2: vault_key sellada a la recovery box key del usuario
+    vaultKeySealedRecovery: bytesB64.optional(),
     nodes: z.array(importNodeSchema),
   });
 
@@ -223,10 +225,12 @@ const vaultExportRoutes: FastifyPluginAsync = async (app) => {
 
       const result = await tx(async (client) => {
         const vaultRes = await client.query(
-          `INSERT INTO vaults (owner_id, name_encrypted, name_nonce, vault_key_wrapped, vault_key_nonce)
-           VALUES ($1,$2,$3,$4,$5) RETURNING id`,
+          `INSERT INTO vaults (owner_id, name_encrypted, name_nonce, vault_key_wrapped, vault_key_nonce,
+                               vault_key_sealed_recovery)
+           VALUES ($1,$2,$3,$4,$5,$6) RETURNING id`,
           [userId, fromB64(body.nameEncrypted), fromB64(body.nameNonce),
-           fromB64(body.vaultKeyWrapped), fromB64(body.vaultKeyNonce)],
+           fromB64(body.vaultKeyWrapped), fromB64(body.vaultKeyNonce),
+           body.vaultKeySealedRecovery ? fromB64(body.vaultKeySealedRecovery) : null],
         );
         const vaultId = vaultRes.rows[0].id;
 

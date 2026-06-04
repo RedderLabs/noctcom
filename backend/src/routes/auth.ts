@@ -19,6 +19,7 @@ const pubKey32 = b64Exactly(32);
 const nonce24 = b64Exactly(24);
 const wrappedKey = b64Exactly(32 + 16); // X25519 private: 32 key + 16 MAC
 const wrappedSignKey = b64Exactly(64 + 16); // Ed25519 private: 64 key + 16 MAC
+const sealedKey32 = b64Exactly(32 + 48); // crypto_box_seal de 32 bytes: +32 pk efímera +16 MAC
 
 const signupSchema = z.object({
   username: z.string().min(3).max(64).regex(/^[a-zA-Z0-9_.-]+$/),
@@ -43,9 +44,13 @@ const signupSchema = z.object({
     nameNonce: nonce24,
     vaultKeyWrapped: wrappedKey,
     vaultKeyNonce: nonce24,
+    vaultKeySealedRecovery: sealedKey32.optional(), // Recovery v2
   }),
 
   recoveryPublicKey: pubKey32.optional(),
+  // Recovery v2: X25519 pública derivada de la mnemónica + sk_exchange sellada a ella
+  recoveryBoxPublicKey: pubKey32.optional(),
+  exchangePrivateKeySealedRecovery: sealedKey32.optional(),
 
   deviceNameEncrypted: bytesB64.max(512),
   deviceNameNonce: nonce24,
@@ -103,8 +108,9 @@ const authRoutes: FastifyPluginAsync = async (app) => {
           opaque_record,
           identity_public_key, identity_private_key_wrapped, identity_private_key_nonce,
           exchange_public_key, exchange_private_key_wrapped, exchange_private_key_nonce,
-          recovery_public_key, recovery_enabled, is_admin
-         ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
+          recovery_public_key, recovery_enabled, is_admin,
+          recovery_box_public_key, exchange_private_key_sealed_recovery
+         ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
          RETURNING id`,
         [
           body.username,
@@ -122,6 +128,8 @@ const authRoutes: FastifyPluginAsync = async (app) => {
           body.recoveryPublicKey ? fromB64(body.recoveryPublicKey) : null,
           !!body.recoveryPublicKey,
           isFirstUser,
+          body.recoveryBoxPublicKey ? fromB64(body.recoveryBoxPublicKey) : null,
+          body.exchangePrivateKeySealedRecovery ? fromB64(body.exchangePrivateKeySealedRecovery) : null,
         ],
       );
       const userId = u.rows[0].id as string;
@@ -139,14 +147,17 @@ const authRoutes: FastifyPluginAsync = async (app) => {
       const deviceId = d.rows[0].id as string;
 
       const v = await client.query(
-        `INSERT INTO vaults (owner_id, name_encrypted, name_nonce, vault_key_wrapped, vault_key_nonce)
-         VALUES ($1,$2,$3,$4,$5) RETURNING id`,
+        `INSERT INTO vaults (owner_id, name_encrypted, name_nonce, vault_key_wrapped, vault_key_nonce,
+                             vault_key_sealed_recovery)
+         VALUES ($1,$2,$3,$4,$5,$6) RETURNING id`,
         [
           userId,
           fromB64(body.initialVault.nameEncrypted),
           fromB64(body.initialVault.nameNonce),
           fromB64(body.initialVault.vaultKeyWrapped),
           fromB64(body.initialVault.vaultKeyNonce),
+          body.initialVault.vaultKeySealedRecovery
+            ? fromB64(body.initialVault.vaultKeySealedRecovery) : null,
         ],
       );
 

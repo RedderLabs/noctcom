@@ -5,6 +5,7 @@ import {
   Shield, KeyRound, Monitor, Lock, HardDrive,
   AlertTriangle, Fingerprint, Smartphone, Usb, Plus, Power, Trash2, Disc,
   Download, Upload, Loader2, Mail, Server, Copy, Check, FolderPlus, Eraser,
+  FileKey2, RefreshCw,
 } from 'lucide-react';
 import { FormatDiskModal } from '@/components/vault/FormatDiskModal';
 import { AgentFormatModal } from '@/components/vault/AgentFormatModal';
@@ -14,7 +15,11 @@ import { useAuth } from '@/lib/auth-store';
 import { useVault } from '@/lib/vault-store';
 import { apiFetch } from '@/lib/api';
 import { getStepUpToken } from '@/lib/step-up';
-import { fromB64, decryptString, encryptString, toB64 } from '@/lib/crypto';
+import { fromB64, decryptString, encryptString, toB64, initCrypto, wipe } from '@/lib/crypto';
+import {
+  generateRecoveryMnemonic, deriveRecoverySeed,
+  deriveRecoverySignKeypair, deriveRecoveryBoxKeypair, sealToRecovery,
+} from '@/lib/recovery';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
@@ -277,6 +282,9 @@ export default function SettingsPage() {
 
       {/* 2FA por email (OTP) */}
       <EmailOtp2FASection />
+
+      {/* Kit de recuperación (Recovery v2) */}
+      <RecoveryKitSection />
 
       {/* Devices */}
       <section className="mb-8">
@@ -1001,6 +1009,294 @@ function EmailOtp2FASection() {
           >
             {enabled ? 'Desactivar' : 'Activar'}
           </Button>
+        )}
+      </div>
+    </section>
+  );
+}
+
+// ─── Kit de recuperación (Recovery v2) ───────────────────────────
+// La frase mnemónica deriva un par X25519 cuya pública sella las vault
+// keys y la sk_exchange en el servidor. Con el kit completo, recuperar la
+// cuenta con la frase conserva archivos y compartidos. Las cuentas creadas
+// antes de v2 deben re-introducir (o regenerar) su frase una vez.
+
+interface RecoveryStatus {
+  recoveryEnabled: boolean;
+  recoveryPublicKey: string | null;
+  recoveryBoxPublicKey: string | null;
+  exchangeSealed: boolean;
+  vaultsTotal: number;
+  vaultsSealed: number;
+}
+
+function RecoveryKitSection() {
+  const [status, setStatus] = useState<RecoveryStatus | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [working, setWorking] = useState(false);
+  const [mode, setMode] = useState<'idle' | 'enter' | 'generate'>('idle');
+  const [words, setWords] = useState<string[]>(Array(12).fill(''));
+  const [newMnemonic, setNewMnemonic] = useState<string[]>([]);
+  const [savedConfirmed, setSavedConfirmed] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const fetchStatus = useCallback(async () => {
+    try {
+      const r = await apiFetch<RecoveryStatus>('/api/v1/2fa/recovery/status');
+      setStatus(r);
+    } catch {
+      /* sin sesión */
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchStatus(); }, [fetchStatus]);
+
+  const complete = !!status && !!status.recoveryBoxPublicKey
+    && status.exchangeSealed && status.vaultsSealed >= status.vaultsTotal;
+
+  // Sella las vault keys (en memoria tras el login) y la sk_exchange a la
+  // box pública derivada de la frase, y sube el kit. Exige step-up (firma
+  // con la identity key — transparente para el usuario con sesión viva).
+  async function uploadKit(mnemonicWords: string[], rotate: boolean) {
+    await initCrypto();
+    const auth = useAuth.getState();
+    if (!auth.exchangePrivateKey) {
+      toast.error('Sesión bloqueada — vuelve a iniciar sesión');
+      return;
+    }
+    const vaultKeys = Object.values(auth.vaultKeys);
+    if (vaultKeys.length === 0) {
+      toast.error('No hay bóvedas cargadas — abre tu bóveda y vuelve a intentarlo');
+      return;
+    }
+
+    const seed = deriveRecoverySeed(mnemonicWords);
+    const signKp = deriveRecoverySignKeypair(seed);
+
+    if (!rotate) {
+      // La frase introducida debe ser LA de la cuenta: misma pública de firma.
+      if (!status?.recoveryPublicKey || toB64(signKp.publicKey) !== status.recoveryPublicKey) {
+        wipe(seed, signKp.privateKey);
+        toast.error('Esa frase no corresponde a esta cuenta');
+        return;
+      }
+    }
+
+    const boxKp = deriveRecoveryBoxKeypair(seed);
+    const vaults = vaultKeys.map((v) => ({
+      id: v.vaultId,
+      vaultKeySealedRecovery: toB64(sealToRecovery(v.key, boxKp.publicKey)),
+    }));
+    const exchangeSealed = toB64(sealToRecovery(auth.exchangePrivateKey, boxKp.publicKey));
+
+    const stepUpToken = await getStepUpToken();
+    await apiFetch('/api/v1/2fa/recovery/upgrade', {
+      method: 'POST',
+      headers: { 'x-step-up-token': stepUpToken },
+      body: JSON.stringify({
+        recoveryPublicKey: rotate ? toB64(signKp.publicKey) : undefined,
+        recoveryBoxPublicKey: toB64(boxKp.publicKey),
+        exchangePrivateKeySealedRecovery: exchangeSealed,
+        vaults,
+      }),
+    });
+
+    wipe(seed, signKp.privateKey, boxKp.privateKey);
+  }
+
+  async function handleEnterSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setWorking(true);
+    try {
+      await uploadKit(words, false);
+      toast.success('Kit de recuperación activado');
+      setMode('idle');
+      setWords(Array(12).fill(''));
+      fetchStatus();
+    } catch (err: any) {
+      toast.error(err.message ?? 'No se pudo activar el kit');
+    } finally {
+      setWorking(false);
+    }
+  }
+
+  async function handleGenerateConfirm() {
+    if (!savedConfirmed) return;
+    setWorking(true);
+    try {
+      await uploadKit(newMnemonic, true);
+      toast.success('Frase nueva activada — la anterior ya no sirve');
+      setMode('idle');
+      setNewMnemonic([]);
+      setSavedConfirmed(false);
+      fetchStatus();
+    } catch (err: any) {
+      toast.error(err.message ?? 'No se pudo regenerar la frase');
+    } finally {
+      setWorking(false);
+    }
+  }
+
+  return (
+    <section className="mb-8">
+      <div className="flex items-center gap-2 mb-4">
+        <FileKey2 className="size-4 text-violet-300" />
+        <h2 className="text-sm font-semibold uppercase tracking-wider text-[var(--color-text-secondary)]">
+          Kit de recuperación
+        </h2>
+      </div>
+
+      <div className="p-4 rounded-xl border border-[var(--color-border-faint)] bg-[var(--color-bg-surface)] space-y-4">
+        <div className="flex items-center gap-4">
+          <div className={cn(
+            'size-10 rounded-lg grid place-items-center shrink-0 border',
+            complete
+              ? 'bg-emerald-500/10 border-emerald-500/20'
+              : 'bg-amber-500/10 border-amber-500/20',
+          )}>
+            {loading
+              ? <Loader2 className="size-4 animate-spin text-[var(--color-text-tertiary)]" />
+              : complete
+                ? <Check className="size-4 text-emerald-300" />
+                : <AlertTriangle className="size-4 text-amber-300" />}
+          </div>
+          <div className="flex-1 min-w-0">
+            <h3 className="text-sm font-medium">
+              {loading ? 'Comprobando…' : complete ? 'Kit completo' : 'Kit incompleto'}
+            </h3>
+            <p className="text-xs text-[var(--color-text-tertiary)] mt-0.5">
+              {loading
+                ? 'Consultando el estado de tu kit de recuperación.'
+                : complete
+                  ? `Si recuperas la cuenta con tu frase, tus ${status!.vaultsTotal > 1 ? `${status!.vaultsTotal} bóvedas` : 'archivos'} y compartidos se conservan.`
+                  : 'Con tu frase recuperarías el acceso, pero no los archivos. Re-introduce tu frase (o genera una nueva) para completarlo.'}
+            </p>
+          </div>
+          {!loading && mode === 'idle' && (
+            <div className="flex gap-2 shrink-0">
+              {!complete && (
+                <Button size="sm" variant="primary" onClick={() => setMode('enter')}>
+                  Ya tengo mi frase
+                </Button>
+              )}
+              <Button
+                size="sm"
+                variant={complete ? 'outline' : 'ghost'}
+                leftIcon={<RefreshCw className="size-3.5" />}
+                onClick={() => {
+                  setNewMnemonic(generateRecoveryMnemonic());
+                  setSavedConfirmed(false);
+                  setMode('generate');
+                }}
+              >
+                {complete ? 'Regenerar frase' : 'Frase nueva'}
+              </Button>
+            </div>
+          )}
+        </div>
+
+        {mode === 'enter' && (
+          <form onSubmit={handleEnterSubmit} className="space-y-3 pt-3 border-t border-[var(--color-border-faint)]">
+            <p className="text-xs text-[var(--color-text-secondary)]">
+              Introduce tu frase de recuperación de 12 palabras. Se verifica localmente:
+              nunca sale de tu navegador.
+            </p>
+            <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+              {words.map((w, i) => (
+                <div key={i} className="relative">
+                  <span className="absolute left-2 top-2 text-[10px] font-mono text-[var(--color-text-tertiary)]">{i + 1}</span>
+                  <input
+                    type="text"
+                    value={w}
+                    onChange={(e) => {
+                      const next = [...words];
+                      next[i] = e.target.value.trim().toLowerCase();
+                      setWords(next);
+                    }}
+                    onPaste={(e) => {
+                      const text = e.clipboardData.getData('text').trim();
+                      const parts = text.split(/[\s,]+/).filter(Boolean);
+                      if (parts.length > 1) {
+                        e.preventDefault();
+                        const next = [...words];
+                        for (let j = 0; j < 12; j++) next[j] = (parts[j] ?? '').toLowerCase();
+                        setWords(next);
+                      }
+                    }}
+                    className="w-full h-9 pl-6 pr-2 text-xs font-mono bg-[var(--color-bg-surface-2)] border border-[var(--color-border-subtle)] rounded-md focus:outline-none focus:border-violet-500/60 text-[var(--color-text-primary)]"
+                    autoComplete="off"
+                    autoCorrect="off"
+                    autoCapitalize="off"
+                    spellCheck={false}
+                  />
+                </div>
+              ))}
+            </div>
+            <div className="flex gap-2 justify-end">
+              <Button type="button" size="sm" variant="ghost" onClick={() => { setMode('idle'); setWords(Array(12).fill('')); }}>
+                Cancelar
+              </Button>
+              <Button type="submit" size="sm" variant="primary" loading={working} disabled={words.some((w) => !w)}>
+                Verificar y activar
+              </Button>
+            </div>
+          </form>
+        )}
+
+        {mode === 'generate' && (
+          <div className="space-y-3 pt-3 border-t border-[var(--color-border-faint)]">
+            <div className="flex gap-2 p-3 rounded-lg bg-amber-500/5 border border-amber-500/20">
+              <AlertTriangle className="size-4 text-amber-300 mt-0.5 shrink-0" />
+              <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed">
+                Esta frase <strong className="text-amber-200">sustituye a la anterior</strong>, que
+                dejará de funcionar. Guárdala en un lugar seguro: es tu única vía si olvidas la contraseña.
+              </p>
+            </div>
+            <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+              {newMnemonic.map((word, i) => (
+                <div key={i} className="flex items-center gap-2 px-2.5 py-2 rounded-lg bg-[var(--color-bg-surface-2)] border border-[var(--color-border-faint)]">
+                  <span className="text-[10px] font-mono text-[var(--color-text-secondary)] w-4 text-right">{i + 1}</span>
+                  <span className="text-sm font-mono text-violet-200">{word}</span>
+                </div>
+              ))}
+            </div>
+            <Button
+              size="sm"
+              variant="secondary"
+              className="w-full"
+              leftIcon={copied ? <Check className="size-4" /> : <Copy className="size-4" />}
+              onClick={() => {
+                navigator.clipboard.writeText(newMnemonic.join(' '));
+                setCopied(true);
+                setTimeout(() => setCopied(false), 2000);
+                setTimeout(() => { navigator.clipboard.writeText('').catch(() => {}); }, 60_000);
+                toast.success('Copiada al portapapeles (se borrará en 60s)');
+              }}
+            >
+              {copied ? 'Copiada' : 'Copiar frase'}
+            </Button>
+            <label className="flex items-start gap-2 text-xs cursor-pointer p-2 rounded-lg hover:bg-[var(--color-bg-surface-2)] transition-colors">
+              <input
+                type="checkbox"
+                checked={savedConfirmed}
+                onChange={(e) => setSavedConfirmed(e.target.checked)}
+                className="mt-0.5 size-3.5 accent-violet-500"
+              />
+              <span className="text-[var(--color-text-secondary)]">
+                He guardado la frase nueva en un lugar seguro y entiendo que la anterior dejará de funcionar.
+              </span>
+            </label>
+            <div className="flex gap-2 justify-end">
+              <Button size="sm" variant="ghost" onClick={() => { setMode('idle'); setNewMnemonic([]); setSavedConfirmed(false); }}>
+                Cancelar
+              </Button>
+              <Button size="sm" variant="primary" loading={working} disabled={!savedConfirmed} onClick={handleGenerateConfirm}>
+                Activar frase nueva
+              </Button>
+            </div>
+          </div>
         )}
       </div>
     </section>

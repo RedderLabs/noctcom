@@ -28,7 +28,7 @@ import {
   verifyRegistrationResponse,
   verifyAuthenticationResponse,
 } from '@simplewebauthn/server';
-import { db } from '../db/pool.js';
+import { db, tx } from '../db/pool.js';
 import { env } from '../config.js';
 import { issueSession } from '../session.js';
 import { sendLoginCodeEmail } from '../mail.js';
@@ -530,11 +530,19 @@ const twoFactorRoutes: FastifyPluginAsync = async (app) => {
   });
 
   // ═══════════════════════════════════════════════════════════
-  // Recuperación con frase mnemónica
-  // El cliente prueba conocer la recovery seed (12 palabras) firmando
-  // un challenge. El servidor devuelve las privkeys wrapped con la
-  // recovery key, que el cliente desempaqueta y luego re-wrappea con
-  // una nueva MK derivada de una nueva contraseña.
+  // Recuperación con frase mnemónica (Recovery v2)
+  //
+  // De la mnemónica se derivan DOS pares:
+  //   · Ed25519 (sign): firma el challenge → prueba la identidad.
+  //   · X25519 (box):   su pública vive en users.recovery_box_public_key;
+  //     el cliente sella con ella las vault keys y sk_exchange en cualquier
+  //     momento (crypto_box_seal no necesita la privada para sellar).
+  //
+  // Flujo: init (challenge) → unlock (firma → devuelve seals) → el cliente
+  // abre los seals con la privada derivada de la mnemónica, re-wrappea con
+  // la nueva MK → finalize (nuevas claves + vault keys re-wrapped).
+  // Cuentas pre-v2 (sin box key): finalize sin vaults — la cuenta vuelve
+  // pero los archivos quedan con la MK vieja (el frontend lo avisa).
   // ═══════════════════════════════════════════════════════════
 
   app.post('/recovery/init', async (req, reply) => {
@@ -569,8 +577,80 @@ const twoFactorRoutes: FastifyPluginAsync = async (app) => {
     });
   });
 
+  // Verifica firma de recovery + token vigente. Compartido por unlock y
+  // finalize (la misma firma vale para ambos; el token solo se consume
+  // en finalize). Devuelve la fila del usuario y el id del token, o null
+  // si algo no cuadra (la respuesta ya se habrá enviado).
+  async function verifyRecoveryProof(
+    reply: any,
+    emailHash: string,
+    challenge: string,
+    signature: string,
+  ): Promise<{ user: any; tokenId: string } | null> {
+    const u = await db.query(
+      `SELECT id, recovery_public_key, recovery_enabled, recovery_box_public_key,
+              exchange_public_key, exchange_private_key_sealed_recovery
+       FROM users WHERE email_hash = $1`,
+      [fromB64(emailHash)],
+    );
+    if (u.rowCount === 0) { reply.unauthorized(); return null; }
+    if (!u.rows[0].recovery_enabled || !u.rows[0].recovery_public_key) {
+      reply.unauthorized('recovery not enabled'); return null;
+    }
+
+    const ok = sodium.crypto_sign_verify_detached(
+      fromB64(signature), fromB64(challenge), u.rows[0].recovery_public_key,
+    );
+    if (!ok) { reply.unauthorized('invalid recovery signature'); return null; }
+
+    const tokenHash = createHash('blake2b512').update(fromB64(challenge)).digest().subarray(0, 32);
+    const t = await db.query(
+      `SELECT id FROM password_reset_tokens
+       WHERE user_id = $1 AND token_hash = $2 AND used_at IS NULL AND expires_at > now()`,
+      [u.rows[0].id, tokenHash],
+    );
+    if (t.rowCount === 0) { reply.unauthorized('expired or used recovery token'); return null; }
+
+    return { user: u.rows[0], tokenId: t.rows[0].id };
+  }
+
+  // POST /recovery/unlock: tras probar la mnemónica (firma del challenge),
+  // devuelve el material sellado a la recovery box key. Todo es ciphertext
+  // que solo la privada derivada de la mnemónica puede abrir — no filtra
+  // nada a quien solo tenga el challenge. No consume el token (lo hace
+  // finalize), así el cliente puede abrir, re-wrappear y finalizar en
+  // una sola pasada de UI.
+  app.post('/recovery/unlock', async (req, reply) => {
+    const schema = z.object({ emailHash: bytesB64, challenge: bytesB64, signature: bytesB64 });
+    const body = schema.parse(req.body);
+
+    const proof = await verifyRecoveryProof(reply, body.emailHash, body.challenge, body.signature);
+    if (!proof) return;
+    const row = proof.user;
+
+    const vaults = await db.query(
+      `SELECT id, vault_key_sealed_recovery FROM vaults
+       WHERE owner_id = $1 AND vault_key_sealed_recovery IS NOT NULL`,
+      [row.id],
+    );
+
+    return reply.send({
+      recoveryBoxPublicKey: row.recovery_box_public_key ? toB64(row.recovery_box_public_key) : null,
+      exchangePublicKey: toB64(row.exchange_public_key),
+      exchangePrivateKeySealedRecovery: row.exchange_private_key_sealed_recovery
+        ? toB64(row.exchange_private_key_sealed_recovery) : null,
+      vaults: vaults.rows.map((v) => ({
+        id: v.id,
+        vaultKeySealedRecovery: toB64(v.vault_key_sealed_recovery),
+      })),
+    });
+  });
+
   // POST /recovery/finalize: el cliente prueba la frase mnemónica firmando
   // con la recovery key. Luego envía nuevas keys wrapped con nueva MK.
+  // Recovery v2: además re-wrappea cada vault_key (abierta del seal en
+  // /unlock) con la nueva MK, y puede conservar el par exchange enviando
+  // la MISMA pública con la privada re-wrapped (preserva shares recibidos).
   app.post('/recovery/finalize', async (req, reply) => {
     const schema = z.object({
       emailHash: bytesB64,
@@ -586,60 +666,156 @@ const twoFactorRoutes: FastifyPluginAsync = async (app) => {
       newExchangePublicKey: bytesB64,
       newExchangePrivateKeyWrapped: bytesB64,
       newExchangePrivateKeyNonce: bytesB64,
+      // Recovery v2: vault keys re-wrapped con la nueva MK (mismo vault_key,
+      // nuevo wrap). Los seals de recuperación NO cambian: la mnemónica es la misma.
+      vaults: z.array(z.object({
+        id: z.string().uuid(),
+        vaultKeyWrapped: bytesB64,
+        vaultKeyNonce: bytesB64,
+      })).max(200).optional(),
     });
     const body = schema.parse(req.body);
 
-    const u = await db.query(
-      `SELECT id, recovery_public_key, recovery_enabled FROM users WHERE email_hash = $1`,
-      [fromB64(body.emailHash)],
-    );
-    if (u.rowCount === 0) return reply.unauthorized();
-    if (!u.rows[0].recovery_enabled || !u.rows[0].recovery_public_key) {
-      return reply.unauthorized('recovery not enabled');
+    const proof = await verifyRecoveryProof(reply, body.emailHash, body.challenge, body.signature);
+    if (!proof) return;
+
+    try {
+      await tx(async (client) => {
+        await client.query(
+          `UPDATE users SET
+            opaque_record = $1,
+            kdf_salt = $2,
+            kdf_ops_limit = $3,
+            kdf_mem_limit = $4,
+            identity_public_key = $5,
+            identity_private_key_wrapped = $6,
+            identity_private_key_nonce = $7,
+            exchange_public_key = $8,
+            exchange_private_key_wrapped = $9,
+            exchange_private_key_nonce = $10
+           WHERE id = $11`,
+          [
+            fromB64(body.newOpaqueRecord), fromB64(body.newKdfSalt),
+            body.newKdfOpsLimit, body.newKdfMemLimit,
+            fromB64(body.newIdentityPublicKey),
+            fromB64(body.newIdentityPrivateKeyWrapped), fromB64(body.newIdentityPrivateKeyNonce),
+            fromB64(body.newExchangePublicKey),
+            fromB64(body.newExchangePrivateKeyWrapped), fromB64(body.newExchangePrivateKeyNonce),
+            proof.user.id,
+          ],
+        );
+
+        for (const v of body.vaults ?? []) {
+          const r = await client.query(
+            `UPDATE vaults SET vault_key_wrapped = $1, vault_key_nonce = $2
+             WHERE id = $3 AND owner_id = $4`,
+            [fromB64(v.vaultKeyWrapped), fromB64(v.vaultKeyNonce), v.id, proof.user.id],
+          );
+          if (r.rowCount === 0) throw new Error('vault-not-owned');
+        }
+      });
+    } catch (e: any) {
+      if (e?.message === 'vault-not-owned') return reply.badRequest('vault does not belong to user');
+      throw e;
     }
 
-    const ok = sodium.crypto_sign_verify_detached(
-      fromB64(body.signature),
-      fromB64(body.challenge),
-      u.rows[0].recovery_public_key,
-    );
-    if (!ok) return reply.unauthorized('invalid recovery signature');
+    await db.query(`UPDATE password_reset_tokens SET used_at = now() WHERE id = $1`, [proof.tokenId]);
+    await db.query(`UPDATE sessions SET revoked_at = now() WHERE user_id = $1 AND revoked_at IS NULL`, [proof.user.id]);
 
-    // Verificar que el token existe y no expiró
-    const tokenHash = createHash('blake2b512').update(fromB64(body.challenge)).digest().subarray(0, 32);
-    const t = await db.query(
-      `SELECT id FROM password_reset_tokens
-       WHERE user_id = $1 AND token_hash = $2 AND used_at IS NULL AND expires_at > now()`,
-      [u.rows[0].id, tokenHash],
-    );
-    if (t.rowCount === 0) return reply.unauthorized('expired or used recovery token');
+    return reply.send({ ok: true });
+  });
 
-    await db.query(
-      `UPDATE users SET
-        opaque_record = $1,
-        kdf_salt = $2,
-        kdf_ops_limit = $3,
-        kdf_mem_limit = $4,
-        identity_public_key = $5,
-        identity_private_key_wrapped = $6,
-        identity_private_key_nonce = $7,
-        exchange_public_key = $8,
-        exchange_private_key_wrapped = $9,
-        exchange_private_key_nonce = $10
-       WHERE id = $11`,
-      [
-        fromB64(body.newOpaqueRecord), fromB64(body.newKdfSalt),
-        body.newKdfOpsLimit, body.newKdfMemLimit,
-        fromB64(body.newIdentityPublicKey),
-        fromB64(body.newIdentityPrivateKeyWrapped), fromB64(body.newIdentityPrivateKeyNonce),
-        fromB64(body.newExchangePublicKey),
-        fromB64(body.newExchangePrivateKeyWrapped), fromB64(body.newExchangePrivateKeyNonce),
-        u.rows[0].id,
-      ],
+  // ─── GET /recovery/status ─────────────────────────────────────
+  // Estado del kit de recuperación del usuario autenticado. El frontend
+  // lo usa en Ajustes (mostrar si falta el upgrade a v2) y al crear o
+  // importar vaults (obtener la box key para sellar la nueva vault key).
+  app.get('/recovery/status', { onRequest: [app.authenticate] }, async (req, reply) => {
+    const u = await db.query(
+      `SELECT recovery_enabled, recovery_public_key, recovery_box_public_key,
+              exchange_private_key_sealed_recovery
+       FROM users WHERE id = $1`,
+      [req.user.sub],
+    );
+    if (u.rowCount === 0) return reply.notFound();
+    const row = u.rows[0];
+
+    const v = await db.query(
+      `SELECT count(*)::int AS total, count(vault_key_sealed_recovery)::int AS sealed
+       FROM vaults WHERE owner_id = $1`,
+      [req.user.sub],
     );
 
-    await db.query(`UPDATE password_reset_tokens SET used_at = now() WHERE id = $1`, [t.rows[0].id]);
-    await db.query(`UPDATE sessions SET revoked_at = now() WHERE user_id = $1 AND revoked_at IS NULL`, [u.rows[0].id]);
+    return reply.send({
+      recoveryEnabled: row.recovery_enabled,
+      recoveryPublicKey: row.recovery_public_key ? toB64(row.recovery_public_key) : null,
+      recoveryBoxPublicKey: row.recovery_box_public_key ? toB64(row.recovery_box_public_key) : null,
+      exchangeSealed: !!row.exchange_private_key_sealed_recovery,
+      vaultsTotal: v.rows[0].total,
+      vaultsSealed: v.rows[0].sealed,
+    });
+  });
+
+  // ─── POST /recovery/upgrade ───────────────────────────────────
+  // Sube (o regenera) el kit de recuperación v2 de una cuenta existente:
+  // la box pública + sk_exchange sellada + vault keys selladas. Con
+  // recoveryPublicKey además rota la frase (mnemónica nueva). Exige
+  // step-up: cambiar el kit de recuperación equivale a poder tomar la
+  // cuenta más adelante — una sesión secuestrada no debe poder hacerlo.
+  app.post('/recovery/upgrade', { onRequest: [app.authenticate] }, async (req, reply) => {
+    const stepUp = req.headers['x-step-up-token'];
+    if (typeof stepUp !== 'string') {
+      return reply.code(401).send({ error: 'step-up-required', message: 'se requiere re-autenticación' });
+    }
+    try {
+      const d = app.jwt.verify(stepUp) as { sub: string; scope?: string };
+      if (d.scope !== 'step-up' || d.sub !== req.user.sub) {
+        return reply.code(401).send({ error: 'step-up-required', message: 'token de step-up inválido' });
+      }
+    } catch {
+      return reply.code(401).send({ error: 'step-up-required', message: 'token de step-up expirado' });
+    }
+
+    const schema = z.object({
+      recoveryPublicKey: bytesB64.optional(), // solo al regenerar la mnemónica
+      recoveryBoxPublicKey: bytesB64,
+      exchangePrivateKeySealedRecovery: bytesB64,
+      vaults: z.array(z.object({
+        id: z.string().uuid(),
+        vaultKeySealedRecovery: bytesB64,
+      })).max(200),
+    });
+    const body = schema.parse(req.body);
+
+    try {
+      await tx(async (client) => {
+        await client.query(
+          `UPDATE users SET
+             recovery_public_key = COALESCE($1, recovery_public_key),
+             recovery_enabled = TRUE,
+             recovery_box_public_key = $2,
+             exchange_private_key_sealed_recovery = $3
+           WHERE id = $4`,
+          [
+            body.recoveryPublicKey ? fromB64(body.recoveryPublicKey) : null,
+            fromB64(body.recoveryBoxPublicKey),
+            fromB64(body.exchangePrivateKeySealedRecovery),
+            req.user.sub,
+          ],
+        );
+
+        for (const v of body.vaults) {
+          const r = await client.query(
+            `UPDATE vaults SET vault_key_sealed_recovery = $1
+             WHERE id = $2 AND owner_id = $3`,
+            [fromB64(v.vaultKeySealedRecovery), v.id, req.user.sub],
+          );
+          if (r.rowCount === 0) throw new Error('vault-not-owned');
+        }
+      });
+    } catch (e: any) {
+      if (e?.message === 'vault-not-owned') return reply.badRequest('vault does not belong to user');
+      throw e;
+    }
 
     return reply.send({ ok: true });
   });

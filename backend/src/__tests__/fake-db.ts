@@ -19,6 +19,38 @@ export interface FakeUser {
   identity_public_key: Buffer | null;
   two_factor_email_enabled: boolean;
   email_verified: boolean;
+  // Recovery (v1 + v2)
+  recovery_enabled: boolean;
+  recovery_public_key: Buffer | null;
+  recovery_box_public_key: Buffer | null;
+  recovery_kdf_salt: Buffer | null;
+  exchange_public_key: Buffer | null;
+  exchange_private_key_sealed_recovery: Buffer | null;
+  // Campos que escribe recovery/finalize (para asserts)
+  opaque_record: Buffer | null;
+  kdf_salt: Buffer | null;
+  kdf_ops_limit: number | null;
+  kdf_mem_limit: number | null;
+  identity_private_key_wrapped: Buffer | null;
+  identity_private_key_nonce: Buffer | null;
+  exchange_private_key_wrapped: Buffer | null;
+  exchange_private_key_nonce: Buffer | null;
+}
+
+export interface FakeVault {
+  id: string;
+  owner_id: string;
+  vault_key_wrapped: Buffer;
+  vault_key_nonce: Buffer;
+  vault_key_sealed_recovery: Buffer | null;
+}
+
+interface ResetTokenRow {
+  id: string;
+  user_id: string;
+  token_hash: Buffer;
+  expires_at: Date;
+  used_at: Date | null;
 }
 
 interface ChallengeRow {
@@ -53,6 +85,9 @@ class Store {
   pairingTokens: any[] = [];
   volumes: any[] = [];
   chunks: any[] = [];
+  vaults: FakeVault[] = [];
+  resetTokens: ResetTokenRow[] = [];
+  revokedSessionsFor: string[] = [];
   private seq = 0;
 
   reset(): void {
@@ -63,6 +98,9 @@ class Store {
     this.pairingTokens = [];
     this.volumes = [];
     this.chunks = [];
+    this.vaults = [];
+    this.resetTokens = [];
+    this.revokedSessionsFor = [];
     this.seq = 0;
   }
 
@@ -202,6 +240,141 @@ async function query(text: string, params: any[] = []): Promise<QueryResult> {
         created_at: c.created_at,
       }));
     return { rows, rowCount: rows.length };
+  }
+
+  // ─── recovery (two_factor.ts) ─────────────────────────────
+  // /recovery/init: salt + enabled por email_hash.
+  if (sql.startsWith('SELECT id, recovery_kdf_salt, recovery_enabled FROM users')) {
+    const eh = asBuf(params[0]);
+    const u = [...store.users.values()].find((x) => x.email_hash.equals(eh));
+    return u
+      ? { rows: [{ id: u.id, recovery_kdf_salt: u.recovery_kdf_salt, recovery_enabled: u.recovery_enabled }], rowCount: 1 }
+      : { rows: [], rowCount: 0 };
+  }
+
+  // verifyRecoveryProof(): fila completa de recovery por email_hash.
+  if (sql.startsWith('SELECT id, recovery_public_key, recovery_enabled, recovery_box_public_key')) {
+    const eh = asBuf(params[0]);
+    const u = [...store.users.values()].find((x) => x.email_hash.equals(eh));
+    if (!u) return { rows: [], rowCount: 0 };
+    return {
+      rows: [{
+        id: u.id,
+        recovery_public_key: u.recovery_public_key,
+        recovery_enabled: u.recovery_enabled,
+        recovery_box_public_key: u.recovery_box_public_key,
+        exchange_public_key: u.exchange_public_key,
+        exchange_private_key_sealed_recovery: u.exchange_private_key_sealed_recovery,
+      }],
+      rowCount: 1,
+    };
+  }
+
+  if (sql.startsWith('INSERT INTO password_reset_tokens')) {
+    store.resetTokens.push({
+      id: randomUUID(),
+      user_id: params[0],
+      token_hash: asBuf(params[1]),
+      expires_at: params[2] as Date,
+      used_at: null,
+    });
+    return { rows: [], rowCount: 1 };
+  }
+
+  if (sql.startsWith('SELECT id FROM password_reset_tokens')) {
+    const [userId, tokenHash] = params;
+    const hash = asBuf(tokenHash);
+    const now = Date.now();
+    const t = store.resetTokens.find(
+      (x) => x.user_id === userId && x.token_hash.equals(hash) && x.used_at === null && x.expires_at.getTime() > now,
+    );
+    return t ? { rows: [{ id: t.id }], rowCount: 1 } : { rows: [], rowCount: 0 };
+  }
+
+  if (sql.startsWith('UPDATE password_reset_tokens SET used_at')) {
+    const t = store.resetTokens.find((x) => x.id === params[0]);
+    if (t) t.used_at = new Date();
+    return { rows: [], rowCount: t ? 1 : 0 };
+  }
+
+  if (sql.startsWith('UPDATE sessions SET revoked_at')) {
+    store.revokedSessionsFor.push(params[0]);
+    return { rows: [], rowCount: 1 };
+  }
+
+  // /recovery/unlock: vault keys selladas del owner.
+  if (sql.startsWith('SELECT id, vault_key_sealed_recovery FROM vaults')) {
+    const rows = store.vaults
+      .filter((v) => v.owner_id === params[0] && v.vault_key_sealed_recovery !== null)
+      .map((v) => ({ id: v.id, vault_key_sealed_recovery: v.vault_key_sealed_recovery }));
+    return { rows, rowCount: rows.length };
+  }
+
+  // /recovery/finalize: reemplaza claves del usuario.
+  if (sql.startsWith('UPDATE users SET opaque_record = $1')) {
+    const u = store.users.get(params[10]);
+    if (!u) return { rows: [], rowCount: 0 };
+    u.opaque_record = asBuf(params[0]);
+    u.kdf_salt = asBuf(params[1]);
+    u.kdf_ops_limit = Number(params[2]);
+    u.kdf_mem_limit = Number(params[3]);
+    u.identity_public_key = asBuf(params[4]);
+    u.identity_private_key_wrapped = asBuf(params[5]);
+    u.identity_private_key_nonce = asBuf(params[6]);
+    u.exchange_public_key = asBuf(params[7]);
+    u.exchange_private_key_wrapped = asBuf(params[8]);
+    u.exchange_private_key_nonce = asBuf(params[9]);
+    return { rows: [], rowCount: 1 };
+  }
+
+  // /recovery/finalize: re-wrap de la vault key (solo del owner).
+  if (sql.startsWith('UPDATE vaults SET vault_key_wrapped = $1, vault_key_nonce = $2')) {
+    const v = store.vaults.find((x) => x.id === params[2] && x.owner_id === params[3]);
+    if (!v) return { rows: [], rowCount: 0 };
+    v.vault_key_wrapped = asBuf(params[0]);
+    v.vault_key_nonce = asBuf(params[1]);
+    return { rows: [], rowCount: 1 };
+  }
+
+  // /recovery/status (usuario autenticado).
+  if (sql.startsWith('SELECT recovery_enabled, recovery_public_key, recovery_box_public_key')) {
+    const u = store.users.get(params[0]);
+    if (!u) return { rows: [], rowCount: 0 };
+    return {
+      rows: [{
+        recovery_enabled: u.recovery_enabled,
+        recovery_public_key: u.recovery_public_key,
+        recovery_box_public_key: u.recovery_box_public_key,
+        exchange_private_key_sealed_recovery: u.exchange_private_key_sealed_recovery,
+      }],
+      rowCount: 1,
+    };
+  }
+
+  if (sql.includes('count(vault_key_sealed_recovery)::int AS sealed')) {
+    const mine = store.vaults.filter((v) => v.owner_id === params[0]);
+    return {
+      rows: [{ total: mine.length, sealed: mine.filter((v) => v.vault_key_sealed_recovery !== null).length }],
+      rowCount: 1,
+    };
+  }
+
+  // /recovery/upgrade: sube (o rota) el kit.
+  if (sql.startsWith('UPDATE users SET recovery_public_key = COALESCE($1')) {
+    const u = store.users.get(params[3]);
+    if (!u) return { rows: [], rowCount: 0 };
+    if (params[0] !== null) u.recovery_public_key = asBuf(params[0]);
+    u.recovery_enabled = true;
+    u.recovery_box_public_key = asBuf(params[1]);
+    u.exchange_private_key_sealed_recovery = asBuf(params[2]);
+    return { rows: [], rowCount: 1 };
+  }
+
+  if (sql.startsWith('UPDATE vaults SET vault_key_sealed_recovery = $1')) {
+    const v = store.vaults.find((x) => x.id === params[1] && x.owner_id === params[2]);
+    if (!v) return { rows: [], rowCount: 0 };
+    v.vault_key_sealed_recovery = asBuf(params[0]);
+    return { rows: [], rowCount: 1 };
   }
 
   // ─── users ────────────────────────────────────────────────
@@ -349,6 +522,13 @@ async function query(text: string, params: any[] = []): Promise<QueryResult> {
 
 export const db = { query };
 
+// tx(): las rutas la usan para agrupar updates; aquí no hay transacciones
+// reales — el "client" es el mismo query del fake. Si el callback lanza,
+// el estado mutado NO se revierte (suficiente para los asserts de error,
+// que comprueban el código HTTP, no el rollback).
+export const tx = async <T>(fn: (client: { query: typeof query }) => Promise<T>): Promise<T> =>
+  fn({ query });
+
 // ─── Helpers de seeding para los tests ──────────────────────
 export function resetDb(): void {
   store.reset();
@@ -362,7 +542,33 @@ export function seedUser(u: Partial<FakeUser> & { id: string }): FakeUser {
     identity_public_key: u.identity_public_key ?? null,
     two_factor_email_enabled: u.two_factor_email_enabled ?? false,
     email_verified: u.email_verified ?? false,
+    recovery_enabled: u.recovery_enabled ?? false,
+    recovery_public_key: u.recovery_public_key ?? null,
+    recovery_box_public_key: u.recovery_box_public_key ?? null,
+    recovery_kdf_salt: u.recovery_kdf_salt ?? null,
+    exchange_public_key: u.exchange_public_key ?? null,
+    exchange_private_key_sealed_recovery: u.exchange_private_key_sealed_recovery ?? null,
+    opaque_record: u.opaque_record ?? null,
+    kdf_salt: u.kdf_salt ?? null,
+    kdf_ops_limit: u.kdf_ops_limit ?? null,
+    kdf_mem_limit: u.kdf_mem_limit ?? null,
+    identity_private_key_wrapped: u.identity_private_key_wrapped ?? null,
+    identity_private_key_nonce: u.identity_private_key_nonce ?? null,
+    exchange_private_key_wrapped: u.exchange_private_key_wrapped ?? null,
+    exchange_private_key_nonce: u.exchange_private_key_nonce ?? null,
   };
   store.users.set(user.id, user);
   return user;
+}
+
+export function seedVault(v: Partial<FakeVault> & { id: string; owner_id: string }): FakeVault {
+  const vault: FakeVault = {
+    id: v.id,
+    owner_id: v.owner_id,
+    vault_key_wrapped: v.vault_key_wrapped ?? Buffer.alloc(48),
+    vault_key_nonce: v.vault_key_nonce ?? Buffer.alloc(24),
+    vault_key_sealed_recovery: v.vault_key_sealed_recovery ?? null,
+  };
+  store.vaults.push(vault);
+  return vault;
 }
