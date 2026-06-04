@@ -27,6 +27,14 @@ const envSchema = z.object({
   MAX_UPLOAD_BYTES: z.coerce.number().default(5 * 1024 * 1024 * 1024),
   USER_QUOTA_BYTES: z.coerce.number().default(1 * 1024 * 1024 * 1024),
 
+  // Tope GLOBAL de almacenamiento cloud (suma de todos los usuarios). Protege el
+  // bolsillo: si Backblaze/MinIO se acerca al gasto que aceptas, deja de admitir
+  // subidas nuevas (HTTP 507) en vez de seguir creciendo. 0 = sin tope (default,
+  // p. ej. self-host). Ponlo en Render para acotar el coste de B2.
+  GLOBAL_STORAGE_CAP_BYTES: z.coerce.number().default(0),
+  // % del tope a partir del cual el janitor avisa (log + GlitchTip). Default 80%.
+  GLOBAL_STORAGE_ALERT_PCT: z.coerce.number().default(80),
+
   // Última versión publicada del agente "Noctcom Connector". Se incrementa al
   // subir un binario nuevo a B2 (scripts/upload-agent-release.ts) para que los
   // agentes ya instalados detecten que hay actualización.

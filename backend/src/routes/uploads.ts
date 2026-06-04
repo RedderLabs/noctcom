@@ -91,6 +91,22 @@ const uploadRoutes: FastifyPluginAsync = async (app) => {
       return reply.forbidden('storage quota exceeded');
     }
 
+    // Tope GLOBAL (protección de gasto en B2/MinIO): si está configurado y la
+    // suma de TODO el almacenamiento cloud superaría el límite, no admitimos más
+    // subidas (507). Acota el coste cuando entra mucha gente. 0 = desactivado.
+    if (env.GLOBAL_STORAGE_CAP_BYTES > 0) {
+      const g = await db.query(
+        `SELECT COALESCE(SUM(storage_used_bytes), 0)::bigint AS total FROM users`,
+      );
+      const globalUsed = BigInt(g.rows[0].total);
+      if (globalUsed + BigInt(body.totalSize) > BigInt(env.GLOBAL_STORAGE_CAP_BYTES)) {
+        return reply.code(507).send({
+          error: 'global-capacity-reached',
+          message: 'La capacidad de la instancia está temporalmente completa. Inténtalo más tarde.',
+        });
+      }
+    }
+
     const result = await tx(async (client) => {
       let nodeId = body.nodeId;
 
