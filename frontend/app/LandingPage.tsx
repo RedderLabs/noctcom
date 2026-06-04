@@ -248,6 +248,9 @@ export default function LandingPage() {
             <Link href="/roadmap" className="hover:text-text-secondary transition-colors">
               Hoja de ruta
             </Link>
+            <Link href={'/precios' as any} className="hover:text-text-secondary transition-colors">
+              Precios
+            </Link>
             <Link href={'/terminos' as any} className="hover:text-text-secondary transition-colors">
               Términos
             </Link>

@@ -491,6 +491,7 @@ const authRoutes: FastifyPluginAsync = async (app) => {
     const r = await db.query(
       `SELECT u.id, u.username, u.storage_quota_bytes, u.storage_used_bytes,
               u.identity_public_key, u.exchange_public_key, u.is_admin,
+              u.plan, u.subscription_status, u.current_period_end,
               COALESCE((
                 SELECT SUM(total_bytes) FROM storage_volumes
                  WHERE active = true AND (user_id = u.id OR user_id IS NULL)
@@ -509,6 +510,11 @@ const authRoutes: FastifyPluginAsync = async (app) => {
       isAdmin: u.is_admin,
       storageQuotaBytes: quota,
       storageUsedBytes: Number(u.storage_used_bytes),
+      planBytes: Number(u.storage_quota_bytes), // cuota del plan (sin discos)
+      diskBytes: Number(u.disk_bytes),
+      plan: u.plan ?? 'free',
+      subscriptionStatus: u.subscription_status ?? null,
+      currentPeriodEnd: u.current_period_end ?? null,
       identityPublicKey: toB64(u.identity_public_key),
       exchangePublicKey: toB64(u.exchange_public_key),
     });

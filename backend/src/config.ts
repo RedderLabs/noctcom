@@ -41,6 +41,15 @@ const envSchema = z.object({
   // inactivo. Lo consume instrument.ts directamente desde process.env (debe
   // leerse antes que este módulo), aquí solo se declara para documentarlo.
   SENTRY_DSN: z.string().optional().or(z.literal('')),
+
+  // Billing (Stripe). Vacío = billing inactivo (el endpoint responde 503 y la
+  // UI no ofrece upgrade). Los price IDs los lee plans.ts desde process.env.
+  STRIPE_SECRET_KEY: z.string().optional().or(z.literal('')),
+  STRIPE_WEBHOOK_SECRET: z.string().optional().or(z.literal('')),
+  STRIPE_PRICE_STARTER: z.string().optional().or(z.literal('')),
+  STRIPE_PRICE_PLUS: z.string().optional().or(z.literal('')),
+  STRIPE_PRICE_PRO: z.string().optional().or(z.literal('')),
+  STRIPE_PRICE_MAX: z.string().optional().or(z.literal('')),
 });
 
 export const env = envSchema.parse(process.env);

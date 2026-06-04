@@ -42,6 +42,7 @@ import deviceRoutes from './routes/devices.js';
 import adminRoutes from './routes/admin.js';
 import vaultExportRoutes from './routes/vault-export.js';
 import agentRoutes from './routes/agent.js';
+import billingRoutes from './routes/billing.js';
 
 export async function buildServer() {
   const app = Fastify({
@@ -203,6 +204,7 @@ export async function buildServer() {
   await app.register(adminRoutes,  { prefix: '/api/v1/admin' });
   await app.register(vaultExportRoutes, { prefix: '/api/v1/vaults' });
   await app.register(agentRoutes,  { prefix: '/api/v1/agent' });
+  await app.register(billingRoutes, { prefix: '/api/v1/billing' });
 
   return app;
 }

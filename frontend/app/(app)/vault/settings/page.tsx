@@ -5,8 +5,9 @@ import {
   Shield, KeyRound, Monitor, Lock, HardDrive,
   AlertTriangle, Fingerprint, Smartphone, Usb, Plus, Power, Trash2, Disc,
   Download, Upload, Loader2, Mail, Server, Copy, Check, FolderPlus, Eraser,
-  FileKey2, RefreshCw, Bell, BellOff,
+  FileKey2, RefreshCw, Bell, BellOff, Gauge, CreditCard,
 } from 'lucide-react';
+import Link from 'next/link';
 import { FormatDiskModal } from '@/components/vault/FormatDiskModal';
 import { AgentFormatModal } from '@/components/vault/AgentFormatModal';
 import { toast } from 'sonner';
@@ -23,6 +24,7 @@ import {
 } from '@/lib/recovery';
 import { getPushStatus, isPushChosen, enablePush, disablePush, type PushStatus } from '@/lib/firebase';
 import { changeMasterPassword } from '@/lib/change-password';
+import { fetchBillingStatus, openBillingPortal, formatBytes, type BillingStatus } from '@/lib/billing';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
@@ -225,6 +227,9 @@ export default function SettingsPage() {
           Seguridad, dispositivos y preferencias de tu bóveda
         </p>
       </div>
+
+      {/* Plan y uso (billing) */}
+      <PlanUsageSection />
 
       {/* Cambiar contraseña maestra */}
       <ChangePasswordSection />
@@ -1253,6 +1258,91 @@ function RecoveryKitSection() {
             </div>
           </div>
         )}
+      </div>
+    </section>
+  );
+}
+
+// ─── Plan y uso (billing) ────────────────────────────────────────
+// Muestra el plan actual, el uso vs cuota y enlaza a /precios (mejorar) o al
+// portal de Stripe (gestionar). Si el billing no está activo, solo informa del
+// uso. El cobro va por cuota de bytes, nunca por contenido (ZK).
+
+function PlanUsageSection() {
+  const { storageUsed, storageQuota } = useVault();
+  const [status, setStatus] = useState<BillingStatus | null>(null);
+  const [working, setWorking] = useState(false);
+
+  useEffect(() => {
+    fetchBillingStatus().then(setStatus).catch(() => {});
+  }, []);
+
+  const pct = storageQuota > 0 ? Math.min(100, Math.round((storageUsed / storageQuota) * 100)) : 0;
+  const near = pct >= 90;
+  const isPaid = !!status && status.plan !== 'free';
+
+  async function manage() {
+    setWorking(true);
+    try {
+      await openBillingPortal();
+    } catch (err: any) {
+      toast.error(err?.message ?? 'No se pudo abrir el portal');
+      setWorking(false);
+    }
+  }
+
+  return (
+    <section className="mb-8">
+      <div className="flex items-center gap-2 mb-4">
+        <Gauge className="size-4 text-violet-300" />
+        <h2 className="text-sm font-semibold uppercase tracking-wider text-text-secondary">
+          Plan y uso
+        </h2>
+      </div>
+
+      <div className="p-4 rounded-xl border border-border-faint bg-bg-surface space-y-4">
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <div>
+            <h3 className="text-sm font-medium">
+              Plan {status?.planLabel ?? '—'}
+              {isPaid && status?.subscriptionStatus && status.subscriptionStatus !== 'active' && (
+                <span className="ml-2 text-[10px] font-mono uppercase text-amber-300">{status.subscriptionStatus}</span>
+              )}
+            </h3>
+            <p className="text-xs text-text-tertiary mt-0.5">
+              {formatBytes(storageUsed)} de {formatBytes(storageQuota)} usados
+            </p>
+          </div>
+          <div className="flex gap-2">
+            {status?.billingEnabled && (
+              <Link href={'/precios' as any}>
+                <Button size="sm" variant={isPaid ? 'ghost' : 'primary'}>
+                  {isPaid ? 'Cambiar plan' : 'Mejorar plan'}
+                </Button>
+              </Link>
+            )}
+            {isPaid && status?.hasCustomer && (
+              <Button size="sm" variant="outline" loading={working} leftIcon={<CreditCard className="size-3.5" />} onClick={manage}>
+                Gestionar
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {/* Barra de uso */}
+        <div>
+          <div className="h-2 rounded-full bg-bg-surface-2 overflow-hidden">
+            <div
+              className={cn('h-full rounded-full transition-all', near ? 'bg-amber-500' : 'bg-violet-500')}
+              style={{ width: `${pct}%` }}
+            />
+          </div>
+          {near && (
+            <p className="text-xs text-amber-300 mt-2">
+              Estás cerca del límite de tu plan. {status?.billingEnabled ? 'Amplía espacio cuando lo necesites.' : ''}
+            </p>
+          )}
+        </div>
       </div>
     </section>
   );
