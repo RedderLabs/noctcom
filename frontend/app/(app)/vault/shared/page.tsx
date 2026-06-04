@@ -82,13 +82,13 @@ export default function SharedPage() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="font-display text-2xl font-semibold tracking-tight">Compartidos</h1>
-          <p className="text-sm text-[var(--color-text-tertiary)] mt-1">
+          <p className="text-sm text-text-tertiary mt-1">
             Archivos compartidos mediante enlaces cifrados E2E
           </p>
         </div>
       </div>
 
-      <div className="flex gap-1 mb-6 p-1 bg-[var(--color-bg-surface)] rounded-lg border border-[var(--color-border-faint)] w-fit">
+      <div className="flex gap-1 mb-6 p-1 bg-bg-surface rounded-lg border border-border-faint w-fit">
         {tabs.map((t) => (
           <button
             key={t.value}
@@ -97,7 +97,7 @@ export default function SharedPage() {
               'px-4 py-2 rounded-md text-sm transition-colors',
               tab === t.value
                 ? 'bg-violet-500/20 text-violet-200'
-                : 'text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)]',
+                : 'text-text-tertiary hover:text-text-secondary',
             )}
           >
             {t.label}
@@ -109,7 +109,7 @@ export default function SharedPage() {
       {loading && (
         <div className="py-24 text-center">
           <Loader2 className="size-8 text-violet-400 animate-spin mx-auto mb-4" />
-          <p className="text-sm text-[var(--color-text-tertiary)]">Cargando compartidos…</p>
+          <p className="text-sm text-text-tertiary">Cargando compartidos…</p>
         </div>
       )}
 
@@ -120,7 +120,7 @@ export default function SharedPage() {
             return (
               <div
                 key={item.id}
-                className="flex items-center gap-4 p-4 rounded-xl border border-[var(--color-border-faint)] bg-[var(--color-bg-surface)] hover:border-[var(--color-border-subtle)] transition-all group"
+                className="flex items-center gap-4 p-4 rounded-xl border border-border-faint bg-bg-surface hover:border-border-subtle transition-all group"
               >
                 <div className={cn(
                   'size-11 rounded-lg grid place-items-center shrink-0',
@@ -134,21 +134,21 @@ export default function SharedPage() {
                     {isOutgoing ? `Compartido con ${item.sharedWithUsername ?? '—'}` : `De ${item.sharedByUsername ?? '—'}`}
                   </h3>
                   <div className="flex items-center gap-3 mt-1">
-                    <span className="text-[10px] text-[var(--color-text-tertiary)] font-mono uppercase tracking-wider flex items-center gap-1">
+                    <span className="text-[10px] text-text-tertiary font-mono uppercase tracking-wider flex items-center gap-1">
                       {isOutgoing ? (
                         <><Users className="size-3" /> {item.sharedWithUsername}</>
                       ) : (
                         <><ExternalLink className="size-3" /> {item.sharedByUsername}</>
                       )}
                     </span>
-                    <span className="text-[10px] text-[var(--color-text-muted)]">·</span>
-                    <span className="text-[10px] text-[var(--color-text-muted)] flex items-center gap-1">
+                    <span className="text-[10px] text-text-muted">·</span>
+                    <span className="text-[10px] text-text-muted flex items-center gap-1">
                       <Clock className="size-3" /> {formatDate(item.createdAt)}
                     </span>
                     {item.ciphertextSize ? (
                       <>
-                        <span className="text-[10px] text-[var(--color-text-muted)]">·</span>
-                        <span className="text-[10px] text-[var(--color-text-muted)] font-mono">{formatSize(item.ciphertextSize)}</span>
+                        <span className="text-[10px] text-text-muted">·</span>
+                        <span className="text-[10px] text-text-muted font-mono">{formatSize(item.ciphertextSize)}</span>
                       </>
                     ) : null}
                   </div>
@@ -164,7 +164,7 @@ export default function SharedPage() {
                     {item.permission === 'write' ? 'Editar' : 'Solo ver'}
                   </span>
                   {item.expiresAt && (
-                    <span className="text-[10px] text-[var(--color-text-muted)] font-mono">
+                    <span className="text-[10px] text-text-muted font-mono">
                       Expira {formatDate(item.expiresAt)}
                     </span>
                   )}
@@ -187,11 +187,11 @@ export default function SharedPage() {
 
       {!loading && filtered.length === 0 && (
         <div className="py-24 text-center">
-          <div className="size-16 rounded-full bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] grid place-items-center mx-auto mb-4">
-            <Share2 className="size-6 text-[var(--color-text-tertiary)]" />
+          <div className="size-16 rounded-full bg-bg-surface border border-border-subtle grid place-items-center mx-auto mb-4">
+            <Share2 className="size-6 text-text-tertiary" />
           </div>
           <h3 className="font-display text-lg mb-1">Sin archivos compartidos</h3>
-          <p className="text-sm text-[var(--color-text-tertiary)]">
+          <p className="text-sm text-text-tertiary">
             Los archivos que compartas aparecerán aquí
           </p>
         </div>
@@ -202,7 +202,7 @@ export default function SharedPage() {
           <Shield className="size-5 text-violet-300 mt-0.5 shrink-0" />
           <div>
             <h4 className="text-sm font-medium text-violet-200 mb-1">Compartir con cifrado E2E</h4>
-            <p className="text-xs text-[var(--color-text-tertiary)] leading-relaxed">
+            <p className="text-xs text-text-tertiary leading-relaxed">
               Los archivos compartidos se cifran con una clave derivada única. El receptor necesita
               el enlace completo con el fragmento de clave para descifrar. Noctcom nunca accede al contenido.
             </p>

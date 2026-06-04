@@ -68,7 +68,7 @@ export default function RecentPage() {
     <div className="px-8 py-6 max-w-4xl mx-auto">
       <div className="mb-6">
         <h1 className="font-display text-2xl font-semibold tracking-tight">Recientes</h1>
-        <p className="text-sm text-[var(--color-text-tertiary)] mt-1">
+        <p className="text-sm text-text-tertiary mt-1">
           Archivos modificados recientemente
         </p>
       </div>
@@ -76,7 +76,7 @@ export default function RecentPage() {
       {loading && (
         <div className="py-24 text-center">
           <Loader2 className="size-8 text-violet-400 animate-spin mx-auto mb-4" />
-          <p className="text-sm text-[var(--color-text-tertiary)]">Cargando recientes…</p>
+          <p className="text-sm text-text-tertiary">Cargando recientes…</p>
         </div>
       )}
 
@@ -88,19 +88,19 @@ export default function RecentPage() {
               <div
                 key={file.id}
                 onClick={() => setPreviewNode(file)}
-                className="flex items-center gap-4 px-4 py-3 rounded-lg hover:bg-[var(--color-bg-surface)] transition-colors group cursor-pointer"
+                className="flex items-center gap-4 px-4 py-3 rounded-lg hover:bg-bg-surface transition-colors group cursor-pointer"
               >
-                <div className="size-10 rounded-lg bg-[var(--color-bg-surface-2)] border border-[var(--color-border-faint)] grid place-items-center shrink-0">
-                  <Icon className="size-4 text-[var(--color-text-secondary)]" />
+                <div className="size-10 rounded-lg bg-bg-surface-2 border border-border-faint grid place-items-center shrink-0">
+                  <Icon className="size-4 text-text-secondary" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <h3 className="text-sm font-medium truncate">{file.name}</h3>
-                  <span className="text-[10px] text-[var(--color-text-tertiary)] font-mono uppercase tracking-wider">
+                  <span className="text-[10px] text-text-tertiary font-mono uppercase tracking-wider">
                     {formatSize(file.size)}
                   </span>
                 </div>
                 {file.starred && <Star className="size-3.5 fill-amber-400 text-amber-400 shrink-0" />}
-                <span className="text-xs text-[var(--color-text-muted)] flex items-center gap-1 min-w-[100px] justify-end">
+                <span className="text-xs text-text-muted flex items-center gap-1 min-w-[100px] justify-end">
                   <Clock className="size-3" />
                   {timeAgo(file.updatedAt)}
                 </span>
@@ -121,11 +121,11 @@ export default function RecentPage() {
 
       {!loading && items.length === 0 && (
         <div className="py-24 text-center">
-          <div className="size-16 rounded-full bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] grid place-items-center mx-auto mb-4">
-            <Clock className="size-6 text-[var(--color-text-tertiary)]" />
+          <div className="size-16 rounded-full bg-bg-surface border border-border-subtle grid place-items-center mx-auto mb-4">
+            <Clock className="size-6 text-text-tertiary" />
           </div>
           <h3 className="font-display text-lg mb-1">Sin actividad reciente</h3>
-          <p className="text-sm text-[var(--color-text-tertiary)]">Los archivos que subas aparecerán aquí</p>
+          <p className="text-sm text-text-tertiary">Los archivos que subas aparecerán aquí</p>
         </div>
       )}
 

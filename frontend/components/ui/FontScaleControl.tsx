@@ -25,7 +25,7 @@ export function FontScaleControl({ collapsed }: { collapsed?: boolean }) {
       defaultValue="1"
       onChange={handleChange}
       title="Tamaño de texto"
-      className="h-7 px-1.5 rounded-md text-xs font-mono bg-[var(--color-bg-surface)] border border-[var(--color-border-faint)] text-[var(--color-text-secondary)] cursor-pointer focus:outline-none focus:border-violet-500/60"
+      className="h-7 px-1.5 rounded-md text-xs font-mono bg-bg-surface border border-border-faint text-text-secondary cursor-pointer focus:outline-none focus:border-violet-500/60"
     >
       <option value="0.9">A⁻</option>
       <option value="1">A</option>

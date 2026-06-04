@@ -52,13 +52,13 @@ export function NewFolderModal({ open, onClose, onCreated }: Props) {
     <Dialog.Root open={open} onOpenChange={(v) => { if (!v) { reset(); onClose(); } }}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm animate-fade-in" />
-        <Dialog.Content className="fixed left-1/2 top-1/2 z-50 -translate-x-1/2 -translate-y-1/2 w-full max-w-md rounded-xl bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] shadow-[var(--shadow-modal)] animate-fade-in">
-          <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--color-border-faint)]">
+        <Dialog.Content className="fixed left-1/2 top-1/2 z-50 -translate-x-1/2 -translate-y-1/2 w-full max-w-md rounded-xl bg-bg-surface border border-border-subtle shadow-modal animate-fade-in">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-border-faint">
             <Dialog.Title className="font-display text-lg font-medium tracking-tight">
               Nueva carpeta
             </Dialog.Title>
             <Dialog.Close asChild>
-              <button className="p-1.5 rounded-md hover:bg-[var(--color-bg-surface-2)] text-[var(--color-text-tertiary)]">
+              <button className="p-1.5 rounded-md hover:bg-bg-surface-2 text-text-tertiary">
                 <X className="size-4" />
               </button>
             </Dialog.Close>
@@ -75,7 +75,7 @@ export function NewFolderModal({ open, onClose, onCreated }: Props) {
             />
 
             <div>
-              <span className="block text-xs font-medium text-[var(--color-text-secondary)] mb-2 tracking-wide uppercase">
+              <span className="block text-xs font-medium text-text-secondary mb-2 tracking-wide uppercase">
                 Icono
               </span>
               <div className="grid grid-cols-10 gap-1">
@@ -90,11 +90,11 @@ export function NewFolderModal({ open, onClose, onCreated }: Props) {
                         'size-9 rounded-lg grid place-items-center transition-all',
                         icon === key
                           ? `${selectedColor.bg} ${selectedColor.border} border`
-                          : 'hover:bg-[var(--color-bg-surface-2)] border border-transparent',
+                          : 'hover:bg-bg-surface-2 border border-transparent',
                       )}
                       title={FOLDER_ICONS[key].label}
                     >
-                      <Icon className={cn('size-4', icon === key ? selectedColor.text : 'text-[var(--color-text-tertiary)]')} />
+                      <Icon className={cn('size-4', icon === key ? selectedColor.text : 'text-text-tertiary')} />
                     </button>
                   );
                 })}
@@ -102,7 +102,7 @@ export function NewFolderModal({ open, onClose, onCreated }: Props) {
             </div>
 
             <div>
-              <span className="block text-xs font-medium text-[var(--color-text-secondary)] mb-2 tracking-wide uppercase">
+              <span className="block text-xs font-medium text-text-secondary mb-2 tracking-wide uppercase">
                 Color
               </span>
               <div className="flex gap-2">
@@ -115,7 +115,7 @@ export function NewFolderModal({ open, onClose, onCreated }: Props) {
                       'size-8 rounded-full transition-all',
                       c.bg,
                       color === c.key
-                        ? `ring-2 ring-offset-2 ring-offset-[var(--color-bg-surface)] ${c.border.replace('border-', 'ring-')}`
+                        ? `ring-2 ring-offset-2 ring-offset-bg-surface ${c.border.replace('border-', 'ring-')}`
                         : 'hover:scale-110',
                     )}
                     title={c.key}

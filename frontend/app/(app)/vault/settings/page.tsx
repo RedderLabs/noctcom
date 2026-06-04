@@ -25,7 +25,7 @@ import { useRouter } from 'next/navigation';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 
 const SOON = (
-  <span className="text-[10px] font-mono uppercase tracking-wider text-[var(--color-text-muted)] px-2 py-1 rounded bg-[var(--color-bg-surface-2)] border border-[var(--color-border-faint)] whitespace-nowrap">
+  <span className="text-[10px] font-mono uppercase tracking-wider text-text-muted px-2 py-1 rounded bg-bg-surface-2 border border-border-faint whitespace-nowrap">
     Próximamente
   </span>
 );
@@ -245,7 +245,7 @@ export default function SettingsPage() {
     <div className="px-8 py-6 max-w-3xl mx-auto">
       <div className="mb-8">
         <h1 className="font-display text-2xl font-semibold tracking-tight">Configuración</h1>
-        <p className="text-sm text-[var(--color-text-tertiary)] mt-1">
+        <p className="text-sm text-text-tertiary mt-1">
           Seguridad, dispositivos y preferencias de tu bóveda
         </p>
       </div>
@@ -254,7 +254,7 @@ export default function SettingsPage() {
       <section className="mb-8">
         <div className="flex items-center gap-2 mb-4">
           <Shield className="size-4 text-violet-300" />
-          <h2 className="text-sm font-semibold uppercase tracking-wider text-[var(--color-text-secondary)]">
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-text-secondary">
             Seguridad
           </h2>
         </div>
@@ -262,14 +262,14 @@ export default function SettingsPage() {
           {sections[0].items.map((item) => (
             <div
               key={item.label}
-              className="flex items-center gap-4 p-4 rounded-xl border border-[var(--color-border-faint)] bg-[var(--color-bg-surface)] hover:border-[var(--color-border-subtle)] transition-all"
+              className="flex items-center gap-4 p-4 rounded-xl border border-border-faint bg-bg-surface hover:border-border-subtle transition-all"
             >
               <div className="size-10 rounded-lg bg-violet-500/10 border border-violet-500/20 grid place-items-center shrink-0">
                 <item.icon className="size-4 text-violet-300" />
               </div>
               <div className="flex-1 min-w-0">
                 <h3 className="text-sm font-medium">{item.label}</h3>
-                <p className="text-xs text-[var(--color-text-tertiary)] mt-0.5">{item.description}</p>
+                <p className="text-xs text-text-tertiary mt-0.5">{item.description}</p>
               </div>
               {item.action}
             </div>
@@ -291,7 +291,7 @@ export default function SettingsPage() {
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <Monitor className="size-4 text-cyan-300" />
-            <h2 className="text-sm font-semibold uppercase tracking-wider text-[var(--color-text-secondary)]">
+            <h2 className="text-sm font-semibold uppercase tracking-wider text-text-secondary">
               Dispositivos activos
             </h2>
           </div>
@@ -309,7 +309,7 @@ export default function SettingsPage() {
         </div>
         <div className="space-y-1">
           {loadingDevices && (
-            <p className="text-xs text-[var(--color-text-muted)] px-1 animate-pulse">
+            <p className="text-xs text-text-muted px-1 animate-pulse">
               Cargando dispositivos…
             </p>
           )}
@@ -320,21 +320,21 @@ export default function SettingsPage() {
               <div
                 key={device.id}
                 className={cn(
-                  'flex items-center gap-4 p-4 rounded-xl border bg-[var(--color-bg-surface)] transition-all',
+                  'flex items-center gap-4 p-4 rounded-xl border bg-bg-surface transition-all',
                   device.isCurrent
                     ? 'border-emerald-500/20'
-                    : 'border-[var(--color-border-faint)] hover:border-[var(--color-border-subtle)]',
+                    : 'border-border-faint hover:border-border-subtle',
                 )}
               >
                 <div className={cn(
                   'size-10 rounded-lg grid place-items-center shrink-0 border',
                   device.isCurrent
                     ? 'bg-emerald-500/10 border-emerald-500/20'
-                    : 'bg-[var(--color-bg-surface-2)] border-[var(--color-border-faint)]',
+                    : 'bg-bg-surface-2 border-border-faint',
                 )}>
                   {isMobile
-                    ? <Smartphone className={cn('size-4', device.isCurrent ? 'text-emerald-300' : 'text-[var(--color-text-tertiary)]')} />
-                    : <Monitor className={cn('size-4', device.isCurrent ? 'text-emerald-300' : 'text-[var(--color-text-tertiary)]')} />
+                    ? <Smartphone className={cn('size-4', device.isCurrent ? 'text-emerald-300' : 'text-text-tertiary')} />
+                    : <Monitor className={cn('size-4', device.isCurrent ? 'text-emerald-300' : 'text-text-tertiary')} />
                   }
                 </div>
                 <div className="flex-1 min-w-0">
@@ -346,10 +346,10 @@ export default function SettingsPage() {
                       </span>
                     )}
                   </div>
-                  <p className="text-xs text-[var(--color-text-tertiary)] mt-0.5">
+                  <p className="text-xs text-text-tertiary mt-0.5">
                     {device.os}
                   </p>
-                  <span className="text-[10px] text-[var(--color-text-muted)] font-mono uppercase tracking-wider">
+                  <span className="text-[10px] text-text-muted font-mono uppercase tracking-wider">
                     {device.isCurrent ? 'Sesión actual' : timeAgo(device.lastSeenAt)}
                   </span>
                 </div>
@@ -369,7 +369,7 @@ export default function SettingsPage() {
           })}
 
           {!loadingDevices && devices.length <= 1 && (
-            <p className="text-xs text-[var(--color-text-muted)] mt-2 px-1">
+            <p className="text-xs text-text-muted mt-2 px-1">
               No hay otros dispositivos con sesión activa.
             </p>
           )}
@@ -380,24 +380,24 @@ export default function SettingsPage() {
       <section className="mb-8">
         <div className="flex items-center gap-2 mb-4">
           <HardDrive className="size-4 text-amber-300" />
-          <h2 className="text-sm font-semibold uppercase tracking-wider text-[var(--color-text-secondary)]">
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-text-secondary">
             Almacenamiento
           </h2>
         </div>
-        <div className="p-5 rounded-xl border border-[var(--color-border-faint)] bg-[var(--color-bg-surface)]">
+        <div className="p-5 rounded-xl border border-border-faint bg-bg-surface">
           <div className="flex items-end justify-between mb-3">
             <div>
               <span className="text-2xl font-mono font-medium">{fmtSize(storageUsed)}</span>
-              <span className="text-sm text-[var(--color-text-tertiary)] ml-1">de {fmtSize(storageQuota)}</span>
+              <span className="text-sm text-text-tertiary ml-1">de {fmtSize(storageQuota)}</span>
             </div>
           </div>
-          <div className="h-2 bg-[var(--color-bg-surface-2)] rounded-full overflow-hidden mb-4">
+          <div className="h-2 bg-bg-surface-2 rounded-full overflow-hidden mb-4">
             <div
               className="h-full bg-gradient-to-r from-violet-600 to-violet-400 rounded-full transition-all duration-500"
               style={{ width: `${storageQuota > 0 ? Math.min(100, (storageUsed / storageQuota) * 100) : 0}%` }}
             />
           </div>
-          <p className="text-xs text-[var(--color-text-muted)]">
+          <p className="text-xs text-text-muted">
             {storageUsed === 0
               ? 'El desglose por tipo de archivo se mostrará cuando subas archivos.'
               : `${((storageUsed / storageQuota) * 100).toFixed(1)}% utilizado`}
@@ -415,7 +415,7 @@ export default function SettingsPage() {
       <section className="mb-8">
         <div className="flex items-center gap-2 mb-4">
           <Usb className="size-4 text-blue-300" />
-          <h2 className="text-sm font-semibold uppercase tracking-wider text-[var(--color-text-secondary)]">
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-text-secondary">
             Discos de almacenamiento
           </h2>
         </div>
@@ -423,12 +423,12 @@ export default function SettingsPage() {
         {/* Discos servidos por el agente (cloud): los reales de tu máquina */}
         {onlineAgents.map((a) => (
           <div key={a.id} className="mb-4">
-            <p className="text-xs text-[var(--color-text-secondary)] mb-2 px-1 flex items-center gap-1.5">
+            <p className="text-xs text-text-secondary mb-2 px-1 flex items-center gap-1.5">
               <Server className="size-3.5 text-emerald-300" />
               Discos de <strong className="font-medium">{a.name}</strong>
             </p>
             {(agentDisks[a.id] ?? []).length === 0 ? (
-              <p className="text-xs text-[var(--color-text-muted)] px-1">El agente no detectó discos.</p>
+              <p className="text-xs text-text-muted px-1">El agente no detectó discos.</p>
             ) : (
               <div className="space-y-1">
                 {(agentDisks[a.id] ?? []).map((d) => (
@@ -439,7 +439,7 @@ export default function SettingsPage() {
           </div>
         ))}
         {onlineAgents.length > 0 && (
-          <p className="text-[10px] text-[var(--color-text-muted)] px-1 mb-4">
+          <p className="text-[10px] text-text-muted px-1 mb-4">
             «Usar este disco» crea una carpeta <span className="font-mono">noctcom-blobs</span> en él para guardar tus
             archivos cifrados; no formatea ni borra nada. El formateo de discos llega en la próxima versión del agente.
           </p>
@@ -452,15 +452,15 @@ export default function SettingsPage() {
               <div
                 key={vol.id}
                 className={cn(
-                  'flex items-center gap-4 p-4 rounded-xl border bg-[var(--color-bg-surface)] transition-all',
-                  vol.active ? 'border-blue-500/20' : 'border-[var(--color-border-faint)]',
+                  'flex items-center gap-4 p-4 rounded-xl border bg-bg-surface transition-all',
+                  vol.active ? 'border-blue-500/20' : 'border-border-faint',
                 )}
               >
                 <div className={cn(
                   'size-10 rounded-lg grid place-items-center shrink-0 border',
-                  vol.active ? 'bg-blue-500/10 border-blue-500/20' : 'bg-[var(--color-bg-surface-2)] border-[var(--color-border-faint)]',
+                  vol.active ? 'bg-blue-500/10 border-blue-500/20' : 'bg-bg-surface-2 border-border-faint',
                 )}>
-                  <HardDrive className={cn('size-4', vol.active ? 'text-blue-300' : 'text-[var(--color-text-tertiary)]')} />
+                  <HardDrive className={cn('size-4', vol.active ? 'text-blue-300' : 'text-text-tertiary')} />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
@@ -471,34 +471,34 @@ export default function SettingsPage() {
                       </span>
                     )}
                   </div>
-                  <p className="text-xs text-[var(--color-text-tertiary)] mt-0.5 font-mono">{vol.path}</p>
+                  <p className="text-xs text-text-tertiary mt-0.5 font-mono">{vol.path}</p>
                   {vol.totalBytes > 0 && (
-                    <div className="mt-2 p-2 rounded-lg bg-[var(--color-bg-surface-2)] border border-[var(--color-border-faint)]">
+                    <div className="mt-2 p-2 rounded-lg bg-bg-surface-2 border border-border-faint">
                       <div className="flex items-center gap-2 mb-1.5">
-                        <div className="flex-1 h-1.5 bg-[var(--color-bg-surface-3)] rounded-full overflow-hidden">
+                        <div className="flex-1 h-1.5 bg-bg-surface-3 rounded-full overflow-hidden">
                           <div
                             className={cn(
                               'h-full rounded-full transition-all',
-                              vol.active ? 'bg-blue-500' : 'bg-[var(--color-text-tertiary)]',
+                              vol.active ? 'bg-blue-500' : 'bg-text-tertiary',
                             )}
                             style={{ width: `${Math.min(100, (vol.usedBytes / vol.totalBytes) * 100)}%` }}
                           />
                         </div>
-                        <span className="text-[10px] text-[var(--color-text-muted)] font-mono shrink-0">
+                        <span className="text-[10px] text-text-muted font-mono shrink-0">
                           {((vol.usedBytes / vol.totalBytes) * 100).toFixed(0)}%
                         </span>
                       </div>
                       <div className="grid grid-cols-3 gap-1 text-center">
                         <div>
-                          <p className="text-[10px] text-[var(--color-text-muted)] uppercase">Total</p>
+                          <p className="text-[10px] text-text-muted uppercase">Total</p>
                           <p className="text-xs font-mono font-medium">{fmtSize(vol.totalBytes)}</p>
                         </div>
                         <div>
-                          <p className="text-[10px] text-[var(--color-text-muted)] uppercase">Usado</p>
+                          <p className="text-[10px] text-text-muted uppercase">Usado</p>
                           <p className="text-xs font-mono font-medium text-amber-400">{fmtSize(vol.usedBytes)}</p>
                         </div>
                         <div>
-                          <p className="text-[10px] text-[var(--color-text-muted)] uppercase">Libre</p>
+                          <p className="text-[10px] text-text-muted uppercase">Libre</p>
                           <p className="text-xs font-mono font-medium text-emerald-400">{fmtSize(vol.freeBytes)}</p>
                         </div>
                       </div>
@@ -545,17 +545,17 @@ export default function SettingsPage() {
             vienen del agente; los del servidor de la web son ajenos y no se muestran. */}
         {isSelfHost && disks.filter((d) => !d.active).length > 0 && (
           <>
-            <p className="text-xs text-[var(--color-text-muted)] mb-2 px-1">Discos detectados:</p>
+            <p className="text-xs text-text-muted mb-2 px-1">Discos detectados:</p>
             <div className="space-y-1">
               {disks.filter((d) => !d.active).map((disk) => (
                 <div
                   key={disk.id}
-                  className="flex items-center gap-4 p-4 rounded-xl border border-dashed border-[var(--color-border-faint)] bg-[var(--color-bg-surface)] hover:border-[var(--color-border-subtle)] transition-all"
+                  className="flex items-center gap-4 p-4 rounded-xl border border-dashed border-border-faint bg-bg-surface hover:border-border-subtle transition-all"
                 >
-                  <div className="size-10 rounded-lg grid place-items-center shrink-0 bg-[var(--color-bg-surface-2)] border border-[var(--color-border-faint)]">
+                  <div className="size-10 rounded-lg grid place-items-center shrink-0 bg-bg-surface-2 border border-border-faint">
                     {disk.removable
-                      ? <Usb className="size-4 text-[var(--color-text-tertiary)]" />
-                      : <HardDrive className="size-4 text-[var(--color-text-tertiary)]" />
+                      ? <Usb className="size-4 text-text-tertiary" />
+                      : <HardDrive className="size-4 text-text-tertiary" />
                     }
                   </div>
                   <div className="flex-1 min-w-0">
@@ -567,39 +567,39 @@ export default function SettingsPage() {
                         </span>
                       )}
                     </div>
-                    <p className="text-xs text-[var(--color-text-tertiary)] mt-0.5 font-mono">{disk.path}</p>
-                    <div className="mt-2 p-2 rounded-lg bg-[var(--color-bg-surface-2)] border border-[var(--color-border-faint)]">
+                    <p className="text-xs text-text-tertiary mt-0.5 font-mono">{disk.path}</p>
+                    <div className="mt-2 p-2 rounded-lg bg-bg-surface-2 border border-border-faint">
                       <div className="flex items-center gap-2 mb-1.5">
-                        <div className="flex-1 h-1.5 bg-[var(--color-bg-surface-3)] rounded-full overflow-hidden">
+                        <div className="flex-1 h-1.5 bg-bg-surface-3 rounded-full overflow-hidden">
                           <div
-                            className="h-full bg-[var(--color-text-tertiary)] rounded-full"
+                            className="h-full bg-text-tertiary rounded-full"
                             style={{ width: `${disk.totalBytes > 0 ? Math.min(100, ((disk.totalBytes - disk.freeBytes) / disk.totalBytes) * 100) : 0}%` }}
                           />
                         </div>
-                        <span className="text-[10px] text-[var(--color-text-muted)] font-mono shrink-0">
+                        <span className="text-[10px] text-text-muted font-mono shrink-0">
                           {disk.totalBytes > 0 ? ((1 - disk.freeBytes / disk.totalBytes) * 100).toFixed(0) : 0}%
                         </span>
                       </div>
                       <div className="grid grid-cols-3 gap-1 text-center">
                         <div>
-                          <p className="text-[10px] text-[var(--color-text-muted)] uppercase">Total</p>
+                          <p className="text-[10px] text-text-muted uppercase">Total</p>
                           <p className="text-xs font-mono font-medium">{fmtSize(disk.totalBytes)}</p>
                         </div>
                         <div>
-                          <p className="text-[10px] text-[var(--color-text-muted)] uppercase">Usado</p>
+                          <p className="text-[10px] text-text-muted uppercase">Usado</p>
                           <p className="text-xs font-mono font-medium text-amber-400">{fmtSize(disk.totalBytes - disk.freeBytes)}</p>
                         </div>
                         <div>
-                          <p className="text-[10px] text-[var(--color-text-muted)] uppercase">Libre</p>
+                          <p className="text-[10px] text-text-muted uppercase">Libre</p>
                           <p className="text-xs font-mono font-medium text-emerald-400">{fmtSize(disk.freeBytes)}</p>
                         </div>
                       </div>
-                      <div className="flex items-center justify-center gap-2 mt-1.5 pt-1.5 border-t border-[var(--color-border-faint)]">
-                        <span className={cn('text-[10px] font-mono uppercase', disk.needsFormat ? 'text-amber-400' : 'text-[var(--color-text-muted)]')}>
+                      <div className="flex items-center justify-center gap-2 mt-1.5 pt-1.5 border-t border-border-faint">
+                        <span className={cn('text-[10px] font-mono uppercase', disk.needsFormat ? 'text-amber-400' : 'text-text-muted')}>
                           {disk.filesystem || 'sin formato'}
                         </span>
                         {disk.needsFormat && <span className="text-[10px] text-amber-400 font-medium">(incompatible)</span>}
-                        {!disk.removable && <span className="text-[10px] text-[var(--color-text-muted)]">· Interno</span>}
+                        {!disk.removable && <span className="text-[10px] text-text-muted">· Interno</span>}
                       </div>
                     </div>
                   </div>
@@ -650,9 +650,9 @@ export default function SettingsPage() {
         )}
 
         {isSelfHost && disks.length === 0 && volumes.length === 0 && (
-          <div className="p-3 rounded-lg bg-[var(--color-bg-surface)] border border-[var(--color-border-faint)] flex items-start gap-2">
+          <div className="p-3 rounded-lg bg-bg-surface border border-border-faint flex items-start gap-2">
             <AlertTriangle className="size-4 text-amber-300 mt-0.5 shrink-0" />
-            <p className="text-xs text-[var(--color-text-tertiary)] leading-relaxed">
+            <p className="text-xs text-text-tertiary leading-relaxed">
               No se detectaron discos en el servidor. Conecta un disco (USB/SATA) a la máquina
               donde corre Noctcom y aparecerá aquí para añadirlo como volumen.
             </p>
@@ -683,7 +683,7 @@ export default function SettingsPage() {
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-sm font-medium text-red-300">Eliminar cuenta</h3>
-              <p className="text-xs text-[var(--color-text-tertiary)] mt-0.5">
+              <p className="text-xs text-text-tertiary mt-0.5">
                 Elimina permanentemente tu cuenta y todos tus archivos. Esta acción es irreversible.
               </p>
             </div>
@@ -812,20 +812,20 @@ function ExportImportSection() {
     <section>
       <div className="flex items-center gap-2 mb-4">
         <Download className="size-4 text-violet-300" />
-        <h2 className="text-sm font-semibold uppercase tracking-wider text-[var(--color-text-secondary)]">
+        <h2 className="text-sm font-semibold uppercase tracking-wider text-text-secondary">
           Exportar / Importar bóveda
         </h2>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
         {/* Export */}
-        <div className="p-5 rounded-xl border border-[var(--color-border-faint)] bg-[var(--color-bg-surface)]">
+        <div className="p-5 rounded-xl border border-border-faint bg-bg-surface">
           <div className="flex items-center gap-2 mb-2">
             <Download className="size-4 text-emerald-300" />
             <h3 className="text-sm font-medium">Exportar</h3>
           </div>
-          <p className="text-xs text-[var(--color-text-tertiary)] mb-4">
-            Descarga toda tu bóveda como un archivo <code className="text-[10px] bg-[var(--color-bg-surface-2)] px-1 py-0.5 rounded">.noctcom</code> cifrado.
+          <p className="text-xs text-text-tertiary mb-4">
+            Descarga toda tu bóveda como un archivo <code className="text-[10px] bg-bg-surface-2 px-1 py-0.5 rounded">.noctcom</code> cifrado.
             Puedes importarlo en cualquier instancia de Noctcom.
           </p>
           <Button
@@ -840,24 +840,24 @@ function ExportImportSection() {
         </div>
 
         {/* Import */}
-        <div className="p-5 rounded-xl border border-[var(--color-border-faint)] bg-[var(--color-bg-surface)]">
+        <div className="p-5 rounded-xl border border-border-faint bg-bg-surface">
           <div className="flex items-center gap-2 mb-2">
             <Upload className="size-4 text-violet-300" />
             <h3 className="text-sm font-medium">Importar</h3>
           </div>
-          <p className="text-xs text-[var(--color-text-tertiary)] mb-4">
-            Importa un archivo <code className="text-[10px] bg-[var(--color-bg-surface-2)] px-1 py-0.5 rounded">.noctcom</code> exportado desde otra instancia.
+          <p className="text-xs text-text-tertiary mb-4">
+            Importa un archivo <code className="text-[10px] bg-bg-surface-2 px-1 py-0.5 rounded">.noctcom</code> exportado desde otra instancia.
           </p>
 
           <div className="space-y-3">
             <label className="block">
-              <span className="text-xs text-[var(--color-text-tertiary)]">Archivo .noctcom</span>
+              <span className="text-xs text-text-tertiary">Archivo .noctcom</span>
               <input
                 type="file"
                 accept=".noctcom"
                 onChange={handleFileSelect}
                 disabled={importing}
-                className="mt-1 block w-full text-xs text-[var(--color-text-secondary)]
+                className="mt-1 block w-full text-xs text-text-secondary
                            file:mr-3 file:px-3 file:py-1.5 file:rounded-md file:border-0
                            file:text-xs file:font-medium file:bg-violet-500/10 file:text-violet-300
                            hover:file:bg-violet-500/20 file:cursor-pointer file:transition-colors"
@@ -867,15 +867,15 @@ function ExportImportSection() {
             {importFile && !passwordValidated && (
               <>
                 <label className="block">
-                  <span className="text-xs text-[var(--color-text-tertiary)]">Contraseña de la cuenta origen</span>
+                  <span className="text-xs text-text-tertiary">Contraseña de la cuenta origen</span>
                   <input
                     type="password"
                     value={importPassword}
                     onChange={(e) => setImportPassword(e.target.value)}
                     placeholder="Contraseña usada al exportar"
-                    className="mt-1 w-full px-3 py-2 rounded-lg border border-[var(--color-border-faint)]
-                               bg-[var(--color-bg-deep)] text-sm text-[var(--color-text-primary)]
-                               placeholder:text-[var(--color-text-muted)]
+                    className="mt-1 w-full px-3 py-2 rounded-lg border border-border-faint
+                               bg-bg-deep text-sm text-text-primary
+                               placeholder:text-text-muted
                                focus:outline-none focus:border-violet-500/50"
                     onKeyDown={(e) => e.key === 'Enter' && handleValidatePassword()}
                   />
@@ -914,11 +914,11 @@ function ExportImportSection() {
 
             {importing && importPhase && (
               <div className="space-y-1.5">
-                <div className="flex justify-between text-[10px] text-[var(--color-text-tertiary)]">
+                <div className="flex justify-between text-[10px] text-text-tertiary">
                   <span>{phaseLabel[importPhase] ?? importPhase}</span>
                   <span>{importPct}%</span>
                 </div>
-                <div className="h-1.5 rounded-full bg-[var(--color-bg-deep)] overflow-hidden">
+                <div className="h-1.5 rounded-full bg-bg-deep overflow-hidden">
                   <div
                     className="h-full rounded-full bg-violet-500 transition-all duration-300"
                     style={{ width: `${importPct}%` }}
@@ -980,25 +980,25 @@ function EmailOtp2FASection() {
     <section className="mb-8">
       <div className="flex items-center gap-2 mb-4">
         <Mail className="size-4 text-violet-300" />
-        <h2 className="text-sm font-semibold uppercase tracking-wider text-[var(--color-text-secondary)]">
+        <h2 className="text-sm font-semibold uppercase tracking-wider text-text-secondary">
           Código por email
         </h2>
       </div>
 
-      <div className="flex items-center gap-4 p-4 rounded-xl border border-[var(--color-border-faint)] bg-[var(--color-bg-surface)]">
+      <div className="flex items-center gap-4 p-4 rounded-xl border border-border-faint bg-bg-surface">
         <div className="size-10 rounded-lg bg-violet-500/10 border border-violet-500/20 grid place-items-center shrink-0">
           <Mail className="size-4 text-violet-300" />
         </div>
         <div className="flex-1 min-w-0">
           <h3 className="text-sm font-medium">Verificación por email en el login</h3>
-          <p className="text-xs text-[var(--color-text-tertiary)] mt-0.5">
+          <p className="text-xs text-text-tertiary mt-0.5">
             {emailVerified
               ? 'Te pediremos un código de 6 dígitos enviado a tu email al iniciar sesión.'
               : 'Verifica tu email primero para poder activar esta opción.'}
           </p>
         </div>
         {loading ? (
-          <Loader2 className="size-4 animate-spin text-[var(--color-text-tertiary)]" />
+          <Loader2 className="size-4 animate-spin text-text-tertiary" />
         ) : (
           <Button
             size="sm"
@@ -1143,12 +1143,12 @@ function RecoveryKitSection() {
     <section className="mb-8">
       <div className="flex items-center gap-2 mb-4">
         <FileKey2 className="size-4 text-violet-300" />
-        <h2 className="text-sm font-semibold uppercase tracking-wider text-[var(--color-text-secondary)]">
+        <h2 className="text-sm font-semibold uppercase tracking-wider text-text-secondary">
           Kit de recuperación
         </h2>
       </div>
 
-      <div className="p-4 rounded-xl border border-[var(--color-border-faint)] bg-[var(--color-bg-surface)] space-y-4">
+      <div className="p-4 rounded-xl border border-border-faint bg-bg-surface space-y-4">
         <div className="flex items-center gap-4">
           <div className={cn(
             'size-10 rounded-lg grid place-items-center shrink-0 border',
@@ -1157,7 +1157,7 @@ function RecoveryKitSection() {
               : 'bg-amber-500/10 border-amber-500/20',
           )}>
             {loading
-              ? <Loader2 className="size-4 animate-spin text-[var(--color-text-tertiary)]" />
+              ? <Loader2 className="size-4 animate-spin text-text-tertiary" />
               : complete
                 ? <Check className="size-4 text-emerald-300" />
                 : <AlertTriangle className="size-4 text-amber-300" />}
@@ -1166,7 +1166,7 @@ function RecoveryKitSection() {
             <h3 className="text-sm font-medium">
               {loading ? 'Comprobando…' : complete ? 'Kit completo' : 'Kit incompleto'}
             </h3>
-            <p className="text-xs text-[var(--color-text-tertiary)] mt-0.5">
+            <p className="text-xs text-text-tertiary mt-0.5">
               {loading
                 ? 'Consultando el estado de tu kit de recuperación.'
                 : complete
@@ -1198,15 +1198,15 @@ function RecoveryKitSection() {
         </div>
 
         {mode === 'enter' && (
-          <form onSubmit={handleEnterSubmit} className="space-y-3 pt-3 border-t border-[var(--color-border-faint)]">
-            <p className="text-xs text-[var(--color-text-secondary)]">
+          <form onSubmit={handleEnterSubmit} className="space-y-3 pt-3 border-t border-border-faint">
+            <p className="text-xs text-text-secondary">
               Introduce tu frase de recuperación de 12 palabras. Se verifica localmente:
               nunca sale de tu navegador.
             </p>
             <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
               {words.map((w, i) => (
                 <div key={i} className="relative">
-                  <span className="absolute left-2 top-2 text-[10px] font-mono text-[var(--color-text-tertiary)]">{i + 1}</span>
+                  <span className="absolute left-2 top-2 text-[10px] font-mono text-text-tertiary">{i + 1}</span>
                   <input
                     type="text"
                     value={w}
@@ -1225,7 +1225,7 @@ function RecoveryKitSection() {
                         setWords(next);
                       }
                     }}
-                    className="w-full h-9 pl-6 pr-2 text-xs font-mono bg-[var(--color-bg-surface-2)] border border-[var(--color-border-subtle)] rounded-md focus:outline-none focus:border-violet-500/60 text-[var(--color-text-primary)]"
+                    className="w-full h-9 pl-6 pr-2 text-xs font-mono bg-bg-surface-2 border border-border-subtle rounded-md focus:outline-none focus:border-violet-500/60 text-text-primary"
                     autoComplete="off"
                     autoCorrect="off"
                     autoCapitalize="off"
@@ -1246,18 +1246,18 @@ function RecoveryKitSection() {
         )}
 
         {mode === 'generate' && (
-          <div className="space-y-3 pt-3 border-t border-[var(--color-border-faint)]">
+          <div className="space-y-3 pt-3 border-t border-border-faint">
             <div className="flex gap-2 p-3 rounded-lg bg-amber-500/5 border border-amber-500/20">
               <AlertTriangle className="size-4 text-amber-300 mt-0.5 shrink-0" />
-              <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed">
+              <p className="text-xs text-text-secondary leading-relaxed">
                 Esta frase <strong className="text-amber-200">sustituye a la anterior</strong>, que
                 dejará de funcionar. Guárdala en un lugar seguro: es tu única vía si olvidas la contraseña.
               </p>
             </div>
             <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
               {newMnemonic.map((word, i) => (
-                <div key={i} className="flex items-center gap-2 px-2.5 py-2 rounded-lg bg-[var(--color-bg-surface-2)] border border-[var(--color-border-faint)]">
-                  <span className="text-[10px] font-mono text-[var(--color-text-secondary)] w-4 text-right">{i + 1}</span>
+                <div key={i} className="flex items-center gap-2 px-2.5 py-2 rounded-lg bg-bg-surface-2 border border-border-faint">
+                  <span className="text-[10px] font-mono text-text-secondary w-4 text-right">{i + 1}</span>
                   <span className="text-sm font-mono text-violet-200">{word}</span>
                 </div>
               ))}
@@ -1277,14 +1277,14 @@ function RecoveryKitSection() {
             >
               {copied ? 'Copiada' : 'Copiar frase'}
             </Button>
-            <label className="flex items-start gap-2 text-xs cursor-pointer p-2 rounded-lg hover:bg-[var(--color-bg-surface-2)] transition-colors">
+            <label className="flex items-start gap-2 text-xs cursor-pointer p-2 rounded-lg hover:bg-bg-surface-2 transition-colors">
               <input
                 type="checkbox"
                 checked={savedConfirmed}
                 onChange={(e) => setSavedConfirmed(e.target.checked)}
                 className="mt-0.5 size-3.5 accent-violet-500"
               />
-              <span className="text-[var(--color-text-secondary)]">
+              <span className="text-text-secondary">
                 He guardado la frase nueva en un lugar seguro y entiendo que la anterior dejará de funcionar.
               </span>
             </label>
@@ -1387,7 +1387,7 @@ function PasskeysSection() {
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <Fingerprint className="size-4 text-violet-300" />
-          <h2 className="text-sm font-semibold uppercase tracking-wider text-[var(--color-text-secondary)]">
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-text-secondary">
             Passkeys (WebAuthn)
           </h2>
         </div>
@@ -1397,33 +1397,33 @@ function PasskeysSection() {
         </Button>
       </div>
 
-      <p className="text-xs text-[var(--color-text-tertiary)] mb-4">
+      <p className="text-xs text-text-tertiary mb-4">
         Usa tu huella, Face ID o una llave de seguridad física como segundo factor.
         La clave privada nunca sale de tu dispositivo.
       </p>
 
       <div className="space-y-1">
         {loading ? (
-          <div className="flex items-center gap-2 p-4 text-sm text-[var(--color-text-tertiary)]">
+          <div className="flex items-center gap-2 p-4 text-sm text-text-tertiary">
             <Loader2 className="size-4 animate-spin" />
             Cargando passkeys…
           </div>
         ) : passkeys.length === 0 ? (
-          <div className="p-4 rounded-xl border border-dashed border-[var(--color-border-faint)] text-sm text-[var(--color-text-tertiary)]">
+          <div className="p-4 rounded-xl border border-dashed border-border-faint text-sm text-text-tertiary">
             No tienes ninguna passkey registrada todavía.
           </div>
         ) : (
           passkeys.map((pk) => (
             <div
               key={pk.id}
-              className="flex items-center gap-4 p-4 rounded-xl border border-[var(--color-border-faint)] bg-[var(--color-bg-surface)]"
+              className="flex items-center gap-4 p-4 rounded-xl border border-border-faint bg-bg-surface"
             >
               <div className="size-10 rounded-lg bg-violet-500/10 border border-violet-500/20 grid place-items-center shrink-0">
                 <KeyRound className="size-4 text-violet-300" />
               </div>
               <div className="flex-1 min-w-0">
                 <h3 className="text-sm font-medium truncate">{pk.nickname || 'Passkey'}</h3>
-                <p className="text-xs text-[var(--color-text-tertiary)] mt-0.5">
+                <p className="text-xs text-text-tertiary mt-0.5">
                   {pk.device_type === 'multiDevice' ? 'Sincronizada' : 'Este dispositivo'}
                   {' · '}
                   {pk.last_used_at ? `usada ${timeAgo(pk.last_used_at)}` : 'sin usar'}
@@ -1431,7 +1431,7 @@ function PasskeysSection() {
               </div>
               <button
                 onClick={() => handleRevoke(pk.id)}
-                className="p-2 rounded-lg text-[var(--color-text-tertiary)] hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                className="p-2 rounded-lg text-text-tertiary hover:text-red-400 hover:bg-red-500/10 transition-colors"
                 title="Revocar passkey"
               >
                 <Trash2 className="size-4" />
@@ -1533,18 +1533,18 @@ function AgentDiskCard({ disk, agentId, onChanged }: {
 
   return (
     <div className={cn(
-      'flex items-center gap-4 p-4 rounded-xl border bg-[var(--color-bg-surface)]',
-      disk.active ? 'border-emerald-500/30' : 'border-[var(--color-border-faint)]',
+      'flex items-center gap-4 p-4 rounded-xl border bg-bg-surface',
+      disk.active ? 'border-emerald-500/30' : 'border-border-faint',
     )}>
-      <div className="size-10 rounded-lg grid place-items-center shrink-0 bg-[var(--color-bg-surface-2)] border border-[var(--color-border-faint)]">
+      <div className="size-10 rounded-lg grid place-items-center shrink-0 bg-bg-surface-2 border border-border-faint">
         {disk.removable
-          ? <Usb className="size-4 text-[var(--color-text-tertiary)]" />
-          : <HardDrive className="size-4 text-[var(--color-text-tertiary)]" />}
+          ? <Usb className="size-4 text-text-tertiary" />
+          : <HardDrive className="size-4 text-text-tertiary" />}
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
           <h3 className="text-sm font-medium truncate">{disk.label || disk.device}</h3>
-          <span className="text-[10px] font-mono text-[var(--color-text-tertiary)] shrink-0">{disk.device}</span>
+          <span className="text-[10px] font-mono text-text-tertiary shrink-0">{disk.device}</span>
           {disk.removable && (
             <span className="text-[10px] font-mono uppercase tracking-wider text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded">
               USB
@@ -1556,33 +1556,33 @@ function AgentDiskCard({ disk, agentId, onChanged }: {
             </span>
           )}
         </div>
-        <div className="mt-2 p-2 rounded-lg bg-[var(--color-bg-surface-2)] border border-[var(--color-border-faint)]">
+        <div className="mt-2 p-2 rounded-lg bg-bg-surface-2 border border-border-faint">
           <div className="flex items-center gap-2 mb-1.5">
-            <div className="flex-1 h-1.5 bg-[var(--color-bg-surface-3)] rounded-full overflow-hidden">
+            <div className="flex-1 h-1.5 bg-bg-surface-3 rounded-full overflow-hidden">
               <div className="h-full bg-blue-500 rounded-full" style={{ width: `${usedPct}%` }} />
             </div>
-            <span className="text-[10px] text-[var(--color-text-muted)] font-mono shrink-0">{usedPct.toFixed(0)}%</span>
+            <span className="text-[10px] text-text-muted font-mono shrink-0">{usedPct.toFixed(0)}%</span>
           </div>
           <div className="grid grid-cols-3 gap-1 text-center">
             <div>
-              <p className="text-[10px] text-[var(--color-text-muted)] uppercase">Total</p>
+              <p className="text-[10px] text-text-muted uppercase">Total</p>
               <p className="text-xs font-mono font-medium">{fmtSize(disk.totalBytes)}</p>
             </div>
             <div>
-              <p className="text-[10px] text-[var(--color-text-muted)] uppercase">Usado</p>
+              <p className="text-[10px] text-text-muted uppercase">Usado</p>
               <p className="text-xs font-mono font-medium text-amber-400">{fmtSize(disk.usedBytes)}</p>
             </div>
             <div>
-              <p className="text-[10px] text-[var(--color-text-muted)] uppercase">Libre</p>
+              <p className="text-[10px] text-text-muted uppercase">Libre</p>
               <p className="text-xs font-mono font-medium text-emerald-400">{fmtSize(disk.freeBytes)}</p>
             </div>
           </div>
-          <div className="flex items-center justify-center gap-2 mt-1.5 pt-1.5 border-t border-[var(--color-border-faint)]">
-            <span className={cn('text-[10px] font-mono uppercase', disk.needsFormat ? 'text-amber-400' : 'text-[var(--color-text-muted)]')}>
+          <div className="flex items-center justify-center gap-2 mt-1.5 pt-1.5 border-t border-border-faint">
+            <span className={cn('text-[10px] font-mono uppercase', disk.needsFormat ? 'text-amber-400' : 'text-text-muted')}>
               {disk.filesystem || 'sin formato'}
             </span>
             {disk.needsFormat && <span className="text-[10px] text-amber-400 font-medium">(incompatible)</span>}
-            {!disk.removable && <span className="text-[10px] text-[var(--color-text-muted)]">· Interno</span>}
+            {!disk.removable && <span className="text-[10px] text-text-muted">· Interno</span>}
           </div>
         </div>
       </div>
@@ -1694,7 +1694,7 @@ function ConnectorAgentsSection() {
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <Server className="size-4 text-emerald-300" />
-          <h2 className="text-sm font-semibold uppercase tracking-wider text-[var(--color-text-secondary)]">
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-text-secondary">
             Noctcom Connector
           </h2>
         </div>
@@ -1704,17 +1704,17 @@ function ConnectorAgentsSection() {
         </Button>
       </div>
 
-      <p className="text-xs text-[var(--color-text-tertiary)] mb-4">
+      <p className="text-xs text-text-tertiary mb-4">
         Instala el agente en tu equipo para gestionar sus discos desde aquí. Abre una
         conexión saliente cifrada (sin puertos abiertos) y tus claves nunca salen de tu máquina.
       </p>
 
       {/* Paso 1: descargar el binario */}
-      <div className="mb-4 p-4 rounded-xl border border-[var(--color-border-faint)] bg-[var(--color-bg-surface)]">
+      <div className="mb-4 p-4 rounded-xl border border-border-faint bg-bg-surface">
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div className="min-w-0">
             <h3 className="text-sm font-medium">1 · Descarga e instala el agente</h3>
-            <p className="text-xs text-[var(--color-text-tertiary)] mt-0.5">
+            <p className="text-xs text-text-tertiary mt-0.5">
               {os === 'windows'
                 ? 'Detectamos Windows. Descarga el ejecutable y ábrelo.'
                 : os === 'macos' || os === 'linux'
@@ -1731,7 +1731,7 @@ function ConnectorAgentsSection() {
           </a>
         </div>
         {(os === 'macos' || os === 'linux') && (
-          <p className="text-[10px] text-[var(--color-text-muted)] mt-2">
+          <p className="text-[10px] text-text-muted mt-2">
             Builds para macOS y Linux: próximamente.
           </p>
         )}
@@ -1739,12 +1739,12 @@ function ConnectorAgentsSection() {
 
       {pairCode && (
         <div className="mb-4 p-4 rounded-xl border border-emerald-500/30 bg-emerald-500/5">
-          <p className="text-xs text-[var(--color-text-secondary)]">
+          <p className="text-xs text-text-secondary">
             2 · Abre una terminal <strong>en la carpeta donde se descargó</strong> (normalmente
             Descargas) y ejecuta:
           </p>
           <div className="flex items-center gap-2 mt-2">
-            <code className="flex-1 text-xs font-mono bg-[var(--color-bg-surface-2)] px-3 py-2 rounded-lg break-all">
+            <code className="flex-1 text-xs font-mono bg-bg-surface-2 px-3 py-2 rounded-lg break-all">
               .\noctcom-connector.exe pair --code {pairCode}
             </code>
             <button
@@ -1752,18 +1752,18 @@ function ConnectorAgentsSection() {
                 navigator.clipboard?.writeText(`.\\noctcom-connector.exe pair --code ${pairCode}`);
                 toast.success('Comando copiado');
               }}
-              className="p-2 rounded-lg text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-surface-2)] transition-colors"
+              className="p-2 rounded-lg text-text-tertiary hover:text-text-primary hover:bg-bg-surface-2 transition-colors"
               title="Copiar"
             >
               <Copy className="size-4" />
             </button>
           </div>
-          <p className="text-[10px] text-[var(--color-text-muted)] mt-2">
+          <p className="text-[10px] text-text-muted mt-2">
             Luego déjalo conectado con{' '}
-            <span className="font-mono text-[var(--color-text-tertiary)]">.\noctcom-connector.exe run</span>.
+            <span className="font-mono text-text-tertiary">.\noctcom-connector.exe run</span>.
             El código caduca en 10 minutos y es de un solo uso.
             <br />
-            <span className="text-[var(--color-text-tertiary)]">
+            <span className="text-text-tertiary">
               Truco: en el Explorador, entra en la carpeta de descargas, escribe <span className="font-mono">cmd</span> en
               la barra de direcciones y pulsa Enter para abrir la terminal ahí.
             </span>
@@ -1778,19 +1778,19 @@ function ConnectorAgentsSection() {
 
       <div className="space-y-1">
         {loading ? (
-          <div className="flex items-center gap-2 p-4 text-sm text-[var(--color-text-tertiary)]">
+          <div className="flex items-center gap-2 p-4 text-sm text-text-tertiary">
             <Loader2 className="size-4 animate-spin" />
             Cargando agentes…
           </div>
         ) : agents.length === 0 ? (
-          <p className="text-xs text-[var(--color-text-muted)] px-1">
+          <p className="text-xs text-text-muted px-1">
             No tienes ningún agente vinculado todavía.
           </p>
         ) : (
           agents.map((a) => (
             <div
               key={a.id}
-              className="rounded-xl border border-[var(--color-border-faint)] bg-[var(--color-bg-surface)] overflow-hidden"
+              className="rounded-xl border border-border-faint bg-bg-surface overflow-hidden"
             >
               <div className="flex items-center gap-4 p-4">
                 <div className="size-10 rounded-lg bg-emerald-500/10 border border-emerald-500/20 grid place-items-center shrink-0">
@@ -1798,7 +1798,7 @@ function ConnectorAgentsSection() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <h3 className="text-sm font-medium truncate">{a.name}</h3>
-                  <p className="text-xs text-[var(--color-text-tertiary)] mt-0.5">
+                  <p className="text-xs text-text-tertiary mt-0.5">
                     {a.platform ?? 'desconocido'} ·{' '}
                     {a.online ? (
                       <span className="text-emerald-400">en línea</span>
@@ -1809,7 +1809,7 @@ function ConnectorAgentsSection() {
                 </div>
                 <button
                   onClick={() => handleRevoke(a.id)}
-                  className="p-2 rounded-lg text-[var(--color-text-tertiary)] hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                  className="p-2 rounded-lg text-text-tertiary hover:text-red-400 hover:bg-red-500/10 transition-colors"
                   title="Desvincular agente"
                 >
                   <Trash2 className="size-4" />

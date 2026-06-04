@@ -90,8 +90,8 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   // no hay parpadeo de contenido protegido sin sesión.
   if (!mounted || !hasSession) {
     return (
-      <div className="h-screen grid place-items-center bg-[var(--color-bg-base)]">
-        <div className="size-6 rounded-full border-2 border-[var(--color-border-subtle)] border-t-violet-500 animate-spin" />
+      <div className="h-screen grid place-items-center bg-bg-base">
+        <div className="size-6 rounded-full border-2 border-border-subtle border-t-violet-500 animate-spin" />
       </div>
     );
   }
@@ -114,25 +114,25 @@ export default function AppLayout({ children }: { children: ReactNode }) {
       {/* ─── Sidebar / Drawer ─────────────────────────────── */}
       <aside className={cn(
         sidebarW,
-        'shrink-0 h-screen fixed left-0 top-0 border-r border-[var(--color-border-faint)] bg-[var(--color-bg-deep)]/95 md:bg-[var(--color-bg-deep)]/40 backdrop-blur-md flex flex-col z-40 transition-all duration-200',
+        'shrink-0 h-screen fixed left-0 top-0 border-r border-border-faint bg-bg-deep/95 md:bg-bg-deep/40 backdrop-blur-md flex flex-col z-40 transition-all duration-200',
         isMobile && !mobileOpen && '-translate-x-full',
         isMobile && mobileOpen && 'translate-x-0 shadow-[8px_0_40px_-12px_rgba(0,0,0,0.8)]',
       )}>
         {/* Brand + toggle */}
-        <div className={cn('h-16 flex items-center border-b border-[var(--color-border-faint)]', collapsed ? 'justify-center px-2' : 'px-5 justify-between')}>
+        <div className={cn('h-16 flex items-center border-b border-border-faint', collapsed ? 'justify-center px-2' : 'px-5 justify-between')}>
           <Link href="/vault" onClick={() => setMobileOpen(false)} className="flex items-center gap-2.5 group">
             <Image src="/logo.png" alt="" width={32} height={32} priority className="rounded-lg shrink-0" />
             {!collapsed && (
               <div className="flex flex-col">
                 <span className="font-display text-sm tracking-tight leading-tight">Noctcom</span>
-                <span className="text-[10px] text-[var(--color-text-tertiary)] uppercase tracking-widest">Vault</span>
+                <span className="text-[10px] text-text-tertiary uppercase tracking-widest">Vault</span>
               </div>
             )}
           </Link>
           {!collapsed && (
             <button
               onClick={() => (isMobile ? setMobileOpen(false) : toggleSidebar())}
-              className="p-1.5 rounded-md hover:bg-[var(--color-bg-surface)] text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] transition-colors"
+              className="p-1.5 rounded-md hover:bg-bg-surface text-text-muted hover:text-text-secondary transition-colors"
               title={isMobile ? 'Cerrar menú' : 'Colapsar sidebar'}
             >
               <PanelLeftClose className="size-4" />
@@ -145,7 +145,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           <div className="flex justify-center py-2">
             <button
               onClick={toggleSidebar}
-              className="p-1.5 rounded-md hover:bg-[var(--color-bg-surface)] text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] transition-colors"
+              className="p-1.5 rounded-md hover:bg-bg-surface text-text-muted hover:text-text-secondary transition-colors"
               title="Expandir sidebar"
             >
               <PanelLeftOpen className="size-4" />
@@ -179,7 +179,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
               title={collapsed ? item.label : undefined}
               className={cn(
                 'flex items-center h-9 rounded-md text-sm transition-colors',
-                'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-surface)]',
+                'text-text-secondary hover:text-text-primary hover:bg-bg-surface',
                 collapsed ? 'justify-center px-0' : 'gap-3 px-3',
               )}
             >
@@ -190,12 +190,12 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         </nav>
 
         {/* Accesibilidad */}
-        <div className={cn('py-2 border-t border-[var(--color-border-faint)]', collapsed ? 'px-1.5' : 'px-4')}>
+        <div className={cn('py-2 border-t border-border-faint', collapsed ? 'px-1.5' : 'px-4')}>
           <FontScaleControl collapsed={collapsed} />
         </div>
 
         {/* Manual */}
-        <div className={cn('border-t border-[var(--color-border-faint)]', collapsed ? 'px-2 py-1' : 'px-3 py-1')}>
+        <div className={cn('border-t border-border-faint', collapsed ? 'px-2 py-1' : 'px-3 py-1')}>
           <Link
             href={'/vault/manual' as any}
             onClick={() => setMobileOpen(false)}
@@ -215,32 +215,32 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
         {/* Cuota */}
         {!collapsed && (
-          <div className="px-4 py-3 border-t border-[var(--color-border-faint)]">
-            <div className="flex items-center gap-2 text-xs text-[var(--color-text-tertiary)] mb-2">
+          <div className="px-4 py-3 border-t border-border-faint">
+            <div className="flex items-center gap-2 text-xs text-text-tertiary mb-2">
               <HardDrive className="size-3.5" />
               <span>Almacenamiento</span>
             </div>
-            <div className="h-1.5 bg-[var(--color-bg-surface-2)] rounded-full overflow-hidden mb-1.5">
+            <div className="h-1.5 bg-bg-surface-2 rounded-full overflow-hidden mb-1.5">
               <div
                 className="h-full bg-gradient-to-r from-violet-500 to-violet-400 rounded-full transition-all duration-500"
                 style={{ width: `${storageQuota > 0 ? Math.min(100, (storageUsed / storageQuota) * 100) : 0}%` }}
               />
             </div>
-            <p className="text-[10px] text-[var(--color-text-tertiary)]">
-              <span className="text-[var(--color-text-secondary)] font-mono">{formatStorageSize(storageUsed)}</span> de {formatStorageSize(storageQuota)}
+            <p className="text-[10px] text-text-tertiary">
+              <span className="text-text-secondary font-mono">{formatStorageSize(storageUsed)}</span> de {formatStorageSize(storageQuota)}
             </p>
           </div>
         )}
         {collapsed && (
-          <div className="py-2 border-t border-[var(--color-border-faint)] flex justify-center" title={`${formatStorageSize(storageUsed)} / ${formatStorageSize(storageQuota)}`}>
-            <HardDrive className="size-4 text-[var(--color-text-tertiary)]" />
+          <div className="py-2 border-t border-border-faint flex justify-center" title={`${formatStorageSize(storageUsed)} / ${formatStorageSize(storageQuota)}`}>
+            <HardDrive className="size-4 text-text-tertiary" />
           </div>
         )}
 
         {/* Usuario */}
-        <div className={cn('border-t border-[var(--color-border-faint)]', collapsed ? 'p-2' : 'p-3')}>
+        <div className={cn('border-t border-border-faint', collapsed ? 'p-2' : 'p-3')}>
           <div className={cn(
-            'flex items-center rounded-md hover:bg-[var(--color-bg-surface)] transition-colors group',
+            'flex items-center rounded-md hover:bg-bg-surface transition-colors group',
             collapsed ? 'justify-center p-1.5' : 'gap-3 px-2 py-2',
           )}>
             <Link href={'/vault/profile' as any} className="shrink-0" title={username ?? 'Usuario'}>
@@ -252,22 +252,22 @@ export default function AppLayout({ children }: { children: ReactNode }) {
               <>
                 <Link href={'/vault/profile' as any} onClick={() => setMobileOpen(false)} className="flex-1 min-w-0 cursor-pointer">
                   <div className="text-sm font-medium truncate hover:text-violet-300 transition-colors">{username ?? 'Usuario'}</div>
-                  <div className="text-[10px] text-[var(--color-text-tertiary)]">Plan gratuito</div>
+                  <div className="text-[10px] text-text-tertiary">Plan gratuito</div>
                 </Link>
                 <Link
                   href="/vault/settings"
                   onClick={() => setMobileOpen(false)}
                   aria-label="Ajustes"
-                  className="p-1.5 rounded-md hover:bg-[var(--color-bg-surface-2)] opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
+                  className="p-1.5 rounded-md hover:bg-bg-surface-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
                 >
-                  <Settings className="size-4 text-[var(--color-text-tertiary)]" />
+                  <Settings className="size-4 text-text-tertiary" />
                 </Link>
                 <button
                   onClick={() => { resetVault(); logout(); router.push('/login'); }}
-                  className="p-1.5 rounded-md hover:bg-[var(--color-bg-surface-2)] opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
+                  className="p-1.5 rounded-md hover:bg-bg-surface-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
                   aria-label="Cerrar sesión"
                 >
-                  <LogOut className="size-4 text-[var(--color-text-tertiary)]" />
+                  <LogOut className="size-4 text-text-tertiary" />
                 </button>
               </>
             )}
@@ -277,28 +277,28 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
       {/* ─── Main ─────────────────────────────────────────── */}
       <div className={cn('flex-1 flex flex-col min-w-0 transition-all duration-200', mainMl)}>
-        <header className="h-16 border-b border-[var(--color-border-faint)] bg-[var(--color-bg-base)]/60 backdrop-blur-md flex items-center px-4 md:px-6 gap-3 md:gap-4 sticky top-0 z-20">
+        <header className="h-16 border-b border-border-faint bg-bg-base/60 backdrop-blur-md flex items-center px-4 md:px-6 gap-3 md:gap-4 sticky top-0 z-20">
           {isMobile && (
             <button
               onClick={() => setMobileOpen(true)}
-              className="shrink-0 p-2 -ml-1 rounded-md hover:bg-[var(--color-bg-surface)] text-[var(--color-text-secondary)] transition-colors"
+              className="shrink-0 p-2 -ml-1 rounded-md hover:bg-bg-surface text-text-secondary transition-colors"
               aria-label="Abrir menú"
             >
               <Menu className="size-5" />
             </button>
           )}
           <div className="flex-1 max-w-2xl relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-[var(--color-text-tertiary)]" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-text-tertiary" />
             <input
               type="search"
               placeholder="Buscar en tu bóveda…"
-              className="w-full h-10 pl-10 pr-12 bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] rounded-lg text-sm placeholder:text-[var(--color-text-muted)] focus:outline-none focus:border-violet-500/60 focus:shadow-[0_0_0_3px_rgba(139,92,246,0.12)]"
+              className="w-full h-10 pl-10 pr-12 bg-bg-surface border border-border-subtle rounded-lg text-sm placeholder:text-text-muted focus:outline-none focus:border-violet-500/60 focus:shadow-[0_0_0_3px_rgba(139,92,246,0.12)]"
             />
-            <kbd className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-mono text-[var(--color-text-tertiary)] px-1.5 py-0.5 rounded border border-[var(--color-border-subtle)] bg-[var(--color-bg-surface-2)]">
+            <kbd className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-mono text-text-tertiary px-1.5 py-0.5 rounded border border-border-subtle bg-bg-surface-2">
               ⌘K
             </kbd>
           </div>
-          <div className="text-xs text-[var(--color-text-tertiary)] font-mono">
+          <div className="text-xs text-text-tertiary font-mono">
             🟢 Cifrado activo
           </div>
         </header>

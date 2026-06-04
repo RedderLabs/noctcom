@@ -42,7 +42,7 @@ export default function RoadmapPage() {
             <span className="text-xs text-violet-300 font-medium">Hoja de ruta · a la vista de todos</span>
           </div>
           <h1 className="font-display text-4xl font-light tracking-tight mb-3">A dónde va Noctcom</h1>
-          <p className="text-[var(--color-text-secondary)] leading-relaxed max-w-2xl">
+          <p className="text-text-secondary leading-relaxed max-w-2xl">
             Lo que ya funciona, lo que estamos rematando y lo que viene después. Sin fechas
             prometidas que luego no se cumplen: el núcleo —cifrado, cuentas, archivos, compartir—
             ya está en pie y sólido, y lo demás se va sumando encima. Todo el avance vive en abierto,
@@ -59,24 +59,24 @@ export default function RoadmapPage() {
               <section key={g.status}>
                 <div className="flex items-center gap-2.5 mb-4">
                   <span className={cn('size-2.5 rounded-full', g.dot)} />
-                  <h2 className="text-sm font-semibold uppercase tracking-wider text-[var(--color-text-secondary)]">
+                  <h2 className="text-sm font-semibold uppercase tracking-wider text-text-secondary">
                     {g.label}
                   </h2>
-                  <span className="text-xs text-[var(--color-text-muted)] font-mono">{items.length}</span>
+                  <span className="text-xs text-text-muted font-mono">{items.length}</span>
                 </div>
 
                 <div className="grid sm:grid-cols-2 gap-3">
                   {items.map((m) => (
                     <div
                       key={m.title}
-                      className="flex gap-3 p-4 rounded-xl border border-[var(--color-border-faint)] bg-[var(--color-bg-surface)] hover:border-[var(--color-border-subtle)] transition-colors"
+                      className="flex gap-3 p-4 rounded-xl border border-border-faint bg-bg-surface hover:border-border-subtle transition-colors"
                     >
                       <div className={cn('size-8 rounded-lg grid place-items-center shrink-0 border', g.iconBox)}>
                         <GroupIcon className="size-4" />
                       </div>
                       <div className="min-w-0">
-                        <h3 className="text-sm font-medium text-[var(--color-text-primary)] mb-0.5">{m.title}</h3>
-                        <p className="text-xs text-[var(--color-text-tertiary)] leading-relaxed">{m.desc}</p>
+                        <h3 className="text-sm font-medium text-text-primary mb-0.5">{m.title}</h3>
+                        <p className="text-xs text-text-tertiary leading-relaxed">{m.desc}</p>
                       </div>
                     </div>
                   ))}
@@ -87,9 +87,9 @@ export default function RoadmapPage() {
         </div>
 
         {/* CTA */}
-        <div className="mt-12 p-6 rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-bg-surface)] text-center">
+        <div className="mt-12 p-6 rounded-xl border border-border-subtle bg-bg-surface text-center">
           <h3 className="font-display text-lg font-medium mb-2">¿Echas algo en falta?</h3>
-          <p className="text-sm text-[var(--color-text-tertiary)] mb-4 max-w-lg mx-auto">
+          <p className="text-sm text-text-tertiary mb-4 max-w-lg mx-auto">
             Las ideas y los fallos se cuentan en abierto. Si quieres proponer algo o ver el detalle
             fino de cada fase, pásate por el repositorio.
           </p>

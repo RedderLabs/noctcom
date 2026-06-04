@@ -40,7 +40,7 @@ export function ConfirmDialog({
       <div
         role="alertdialog"
         aria-modal="true"
-        className="w-full max-w-sm rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--color-bg-surface)] p-6 shadow-[0_20px_60px_-12px_rgba(0,0,0,0.7)]"
+        className="w-full max-w-sm rounded-2xl border border-border-subtle bg-bg-surface p-6 shadow-[0_20px_60px_-12px_rgba(0,0,0,0.7)]"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start gap-3 mb-5">
@@ -50,8 +50,8 @@ export function ConfirmDialog({
             </div>
           )}
           <div>
-            <h3 className="font-display text-lg font-medium text-[var(--color-text-primary)]">{title}</h3>
-            <p className="text-sm text-[var(--color-text-tertiary)] mt-1 leading-relaxed">{message}</p>
+            <h3 className="font-display text-lg font-medium text-text-primary">{title}</h3>
+            <p className="text-sm text-text-tertiary mt-1 leading-relaxed">{message}</p>
           </div>
         </div>
         <div className="flex gap-2 justify-end">

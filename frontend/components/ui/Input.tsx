@@ -28,14 +28,14 @@ export const Input = forwardRef<HTMLInputElement, Props>(function Input(
       {label && (
         <label
           htmlFor={inputId}
-          className="block text-xs font-medium text-[var(--color-text-primary)] opacity-75 mb-1.5 tracking-wide uppercase"
+          className="block text-xs font-medium text-text-primary opacity-75 mb-1.5 tracking-wide uppercase"
         >
           {label}
         </label>
       )}
       <div className="relative">
         {leftIcon && (
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-text-tertiary)]">
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary">
             {leftIcon}
           </span>
         )}
@@ -44,11 +44,11 @@ export const Input = forwardRef<HTMLInputElement, Props>(function Input(
           id={inputId}
           type={inputType}
           className={cn(
-            'w-full h-11 bg-[var(--color-bg-surface)] text-[var(--color-text-primary)]',
-            'border border-[var(--color-border-subtle)] rounded-lg',
-            'placeholder:text-[var(--color-text-muted)]',
+            'w-full h-11 bg-bg-surface text-text-primary',
+            'border border-border-subtle rounded-lg',
+            'placeholder:text-text-muted',
             'transition-all duration-150 ease-out',
-            'hover:border-[var(--color-border-strong)]',
+            'hover:border-border-strong',
             'focus:outline-none focus:border-violet-500/60 focus:shadow-[0_0_0_3px_rgba(139,92,246,0.12)]',
             leftIcon ? 'pl-10' : 'pl-3.5',
             isPassword || rightAddon ? 'pr-10' : 'pr-3.5',
@@ -61,7 +61,7 @@ export const Input = forwardRef<HTMLInputElement, Props>(function Input(
           <button
             type="button"
             onClick={() => setShowPassword((s) => !s)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)] transition-colors"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-text-tertiary hover:text-text-secondary transition-colors"
             tabIndex={-1}
           >
             {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
@@ -74,7 +74,7 @@ export const Input = forwardRef<HTMLInputElement, Props>(function Input(
       {(error || hint) && (
         <p className={cn(
           'mt-1.5 text-xs',
-          error ? 'text-red-400' : 'text-[var(--color-text-tertiary)]',
+          error ? 'text-red-400' : 'text-text-tertiary',
         )}>
           {error || hint}
         </p>

@@ -45,7 +45,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
 
   // Evita el parpadeo del formulario mientras comprobamos o redirigimos.
   if (!checked || (hasSession && !isVerify)) {
-    return <div className="min-h-screen bg-[var(--color-bg-base)]" />;
+    return <div className="min-h-screen bg-bg-base" />;
   }
 
   return (
@@ -53,7 +53,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
       <div className="px-6 h-16 flex items-center">
         <Link href="/" className="flex items-center gap-2.5 group">
           <Image src="/logo.png" alt="" width={28} height={28} priority className="rounded-md" />
-          <span className="font-display text-sm tracking-tight text-[var(--color-text-secondary)] group-hover:text-[var(--color-text-primary)] transition-colors">Noctcom</span>
+          <span className="font-display text-sm tracking-tight text-text-secondary group-hover:text-text-primary transition-colors">Noctcom</span>
         </Link>
       </div>
 

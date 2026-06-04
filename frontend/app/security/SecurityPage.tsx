@@ -24,9 +24,9 @@ export default function SecurityPage() {
             <span className="text-xs text-emerald-300 font-medium">Auditable · Open Source · AGPL-3.0</span>
           </div>
           <h1 className="font-display text-4xl font-light tracking-tight mb-3">Seguridad y criptografía</h1>
-          <p className="text-[var(--color-text-secondary)] leading-relaxed max-w-2xl">
+          <p className="text-text-secondary leading-relaxed max-w-2xl">
             No te pedimos que confíes en nuestra palabra. Noctcom está hecho para que, aunque
-            quisiéramos, {' '}<strong className="text-[var(--color-text-primary)] font-medium">no podamos</strong>{' '}
+            quisiéramos, {' '}<strong className="text-text-primary font-medium">no podamos</strong>{' '}
             leer tus archivos: tus claves nacen y se quedan en tu dispositivo, y al servidor solo le llega
             cifrado que no sabe abrir. Aquí te contamos exactamente cómo, sin rodeos. Y si algo de esta
             página no cuadra con el código, abre un issue — al final manda el código, no las promesas.
@@ -39,50 +39,50 @@ export default function SecurityPage() {
             href="https://github.com/RedderLabs/noctcom/blob/main/docs/CRYPTO_SPEC.md"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-3 p-4 rounded-xl border border-[var(--color-border-faint)] bg-[var(--color-bg-surface)] hover:border-[var(--color-border-subtle)] transition-all group"
+            className="flex items-center gap-3 p-4 rounded-xl border border-border-faint bg-bg-surface hover:border-border-subtle transition-all group"
           >
             <Lock className="size-4 text-violet-300" />
             <div className="flex-1 min-w-0">
               <span className="text-sm font-medium block">Spec criptográfica</span>
-              <span className="text-[10px] text-[var(--color-text-tertiary)] font-mono uppercase tracking-wider">CRYPTO_SPEC.md</span>
+              <span className="text-[10px] text-text-tertiary font-mono uppercase tracking-wider">CRYPTO_SPEC.md</span>
             </div>
-            <ExternalLink className="size-3.5 text-[var(--color-text-muted)] group-hover:text-[var(--color-text-secondary)]" />
+            <ExternalLink className="size-3.5 text-text-muted group-hover:text-text-secondary" />
           </a>
           <a
             href="https://github.com/RedderLabs/noctcom/blob/main/docs/THREAT_MODEL.md"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-3 p-4 rounded-xl border border-[var(--color-border-faint)] bg-[var(--color-bg-surface)] hover:border-[var(--color-border-subtle)] transition-all group"
+            className="flex items-center gap-3 p-4 rounded-xl border border-border-faint bg-bg-surface hover:border-border-subtle transition-all group"
           >
             <AlertTriangle className="size-4 text-amber-300" />
             <div className="flex-1 min-w-0">
               <span className="text-sm font-medium block">Modelo de amenazas</span>
-              <span className="text-[10px] text-[var(--color-text-tertiary)] font-mono uppercase tracking-wider">THREAT_MODEL.md</span>
+              <span className="text-[10px] text-text-tertiary font-mono uppercase tracking-wider">THREAT_MODEL.md</span>
             </div>
-            <ExternalLink className="size-3.5 text-[var(--color-text-muted)] group-hover:text-[var(--color-text-secondary)]" />
+            <ExternalLink className="size-3.5 text-text-muted group-hover:text-text-secondary" />
           </a>
           <a
             href="https://github.com/RedderLabs/noctcom/blob/main/SECURITY.md"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-3 p-4 rounded-xl border border-[var(--color-border-faint)] bg-[var(--color-bg-surface)] hover:border-[var(--color-border-subtle)] transition-all group"
+            className="flex items-center gap-3 p-4 rounded-xl border border-border-faint bg-bg-surface hover:border-border-subtle transition-all group"
           >
             <FileText className="size-4 text-emerald-300" />
             <div className="flex-1 min-w-0">
               <span className="text-sm font-medium block">Reportar vulnerabilidad</span>
-              <span className="text-[10px] text-[var(--color-text-tertiary)] font-mono uppercase tracking-wider">SECURITY.md</span>
+              <span className="text-[10px] text-text-tertiary font-mono uppercase tracking-wider">SECURITY.md</span>
             </div>
-            <ExternalLink className="size-3.5 text-[var(--color-text-muted)] group-hover:text-[var(--color-text-secondary)]" />
+            <ExternalLink className="size-3.5 text-text-muted group-hover:text-text-secondary" />
           </a>
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-1 mb-6 p-1 bg-[var(--color-bg-surface)] rounded-lg border border-[var(--color-border-faint)] w-fit">
+        <div className="flex gap-1 mb-6 p-1 bg-bg-surface rounded-lg border border-border-faint w-fit">
           <button
             onClick={() => setTab('crypto')}
             className={cn(
               'px-4 py-2 rounded-md text-sm transition-colors',
-              tab === 'crypto' ? 'bg-violet-500/20 text-violet-200' : 'text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)]',
+              tab === 'crypto' ? 'bg-violet-500/20 text-violet-200' : 'text-text-tertiary hover:text-text-secondary',
             )}
           >
             <span className="flex items-center gap-2"><Lock className="size-3.5" /> Especificación criptográfica</span>
@@ -91,7 +91,7 @@ export default function SecurityPage() {
             onClick={() => setTab('threats')}
             className={cn(
               'px-4 py-2 rounded-md text-sm transition-colors',
-              tab === 'threats' ? 'bg-amber-500/20 text-amber-200' : 'text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)]',
+              tab === 'threats' ? 'bg-amber-500/20 text-amber-200' : 'text-text-tertiary hover:text-text-secondary',
             )}
           >
             <span className="flex items-center gap-2"><AlertTriangle className="size-3.5" /> Modelo de amenazas</span>
@@ -104,13 +104,13 @@ export default function SecurityPage() {
             <Section title="Primitivas criptográficas">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-[var(--color-border-faint)]">
-                    <th className="text-left py-2 text-[10px] font-mono uppercase tracking-wider text-[var(--color-text-tertiary)]">Función</th>
-                    <th className="text-left py-2 text-[10px] font-mono uppercase tracking-wider text-[var(--color-text-tertiary)]">Algoritmo</th>
-                    <th className="text-left py-2 text-[10px] font-mono uppercase tracking-wider text-[var(--color-text-tertiary)]">Parámetros</th>
+                  <tr className="border-b border-border-faint">
+                    <th className="text-left py-2 text-[10px] font-mono uppercase tracking-wider text-text-tertiary">Función</th>
+                    <th className="text-left py-2 text-[10px] font-mono uppercase tracking-wider text-text-tertiary">Algoritmo</th>
+                    <th className="text-left py-2 text-[10px] font-mono uppercase tracking-wider text-text-tertiary">Parámetros</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[var(--color-border-faint)]">
+                <tbody className="divide-y divide-border-faint">
                   {[
                     ['KDF', 'Argon2id', 'OPSLIMIT_MODERATE, 256 MiB'],
                     ['AEAD', 'XChaCha20-Poly1305', 'nonce 24B, tag 16B'],
@@ -120,10 +120,10 @@ export default function SecurityPage() {
                     ['Sealed Boxes', 'X25519 + XSalsa20-Poly1305', 'nonce derivado'],
                     ['Hash', 'BLAKE2b-256', 'output 32B'],
                   ].map(([fn, algo, params]) => (
-                    <tr key={fn} className="text-[var(--color-text-secondary)]">
+                    <tr key={fn} className="text-text-secondary">
                       <td className="py-2.5 font-mono text-violet-300">{fn}</td>
                       <td className="py-2.5">{algo}</td>
-                      <td className="py-2.5 text-xs text-[var(--color-text-tertiary)]">{params}</td>
+                      <td className="py-2.5 text-xs text-text-tertiary">{params}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -131,16 +131,16 @@ export default function SecurityPage() {
             </Section>
 
             <Section title="Jerarquía de claves">
-              <div className="p-4 rounded-lg bg-[var(--color-bg-deep)] border border-[var(--color-border-faint)] font-mono text-xs leading-loose">
-                <p className="text-[var(--color-text-muted)]">{'// Derivación completa desde la contraseña'}</p>
+              <div className="p-4 rounded-lg bg-bg-deep border border-border-faint font-mono text-xs leading-loose">
+                <p className="text-text-muted">{'// Derivación completa desde la contraseña'}</p>
                 <p className="text-violet-300 mt-1">password</p>
-                <p className="text-[var(--color-text-tertiary)]">  │ Argon2id(salt, opsLimit, memLimit)</p>
+                <p className="text-text-tertiary">  │ Argon2id(salt, opsLimit, memLimit)</p>
                 <p className="text-violet-300">  ▼</p>
                 <p className="text-emerald-300">Master Key (MK)</p>
-                <p className="text-[var(--color-text-tertiary)]">  ├── BLAKE2b(&quot;vault.wrap&quot;) → K_vault_wrap</p>
-                <p className="text-[var(--color-text-tertiary)]">  │     └── Unwrap → vault_key → file_key → chunks</p>
-                <p className="text-[var(--color-text-tertiary)]">  ├── BLAKE2b(&quot;login.sign&quot;) → seed → Ed25519 keypair</p>
-                <p className="text-[var(--color-text-tertiary)]">  └── Unwrap → sk_exchange (X25519)</p>
+                <p className="text-text-tertiary">  ├── BLAKE2b(&quot;vault.wrap&quot;) → K_vault_wrap</p>
+                <p className="text-text-tertiary">  │     └── Unwrap → vault_key → file_key → chunks</p>
+                <p className="text-text-tertiary">  ├── BLAKE2b(&quot;login.sign&quot;) → seed → Ed25519 keypair</p>
+                <p className="text-text-tertiary">  └── Unwrap → sk_exchange (X25519)</p>
               </div>
             </Section>
 
@@ -153,23 +153,23 @@ export default function SecurityPage() {
             </Section>
 
             <Section title="Zero-knowledge email">
-              <div className="p-4 rounded-lg bg-[var(--color-bg-deep)] border border-[var(--color-border-faint)] font-mono text-xs leading-loose">
-                <p className="text-[var(--color-text-muted)]">{'// El servidor nunca ve tu email'}</p>
-                <p className="text-[var(--color-text-secondary)]">email_hash = BLAKE2b(</p>
-                <p className="text-[var(--color-text-secondary)]">{'  message = normalize(email),'}</p>
-                <p className="text-[var(--color-text-secondary)]">{'  key = "noctcom.email.v1",'}</p>
-                <p className="text-[var(--color-text-secondary)]">{'  output = 32 bytes'}</p>
-                <p className="text-[var(--color-text-secondary)]">)</p>
+              <div className="p-4 rounded-lg bg-bg-deep border border-border-faint font-mono text-xs leading-loose">
+                <p className="text-text-muted">{'// El servidor nunca ve tu email'}</p>
+                <p className="text-text-secondary">email_hash = BLAKE2b(</p>
+                <p className="text-text-secondary">{'  message = normalize(email),'}</p>
+                <p className="text-text-secondary">{'  key = "noctcom.email.v1",'}</p>
+                <p className="text-text-secondary">{'  output = 32 bytes'}</p>
+                <p className="text-text-secondary">)</p>
               </div>
             </Section>
 
             <Section title="Auditorías externas">
-              <div className="p-4 rounded-xl border border-[var(--color-border-faint)] bg-[var(--color-bg-surface)]">
-                <p className="text-sm text-[var(--color-text-secondary)]">
+              <div className="p-4 rounded-xl border border-border-faint bg-bg-surface">
+                <p className="text-sm text-text-secondary">
                   Aún no se han realizado auditorías externas. Cuando se completen, los reportes completos
                   se publicarán aquí y en el repositorio.
                 </p>
-                <p className="text-xs text-[var(--color-text-tertiary)] mt-2">
+                <p className="text-xs text-text-tertiary mt-2">
                   Mientras tanto, el código es 100% auditable en{' '}
                   <a href="https://github.com/RedderLabs/noctcom" target="_blank" rel="noopener noreferrer" className="text-violet-300 hover:text-violet-200">
                     GitHub
@@ -192,11 +192,11 @@ export default function SecurityPage() {
                   { id: 'A4', name: 'Coerción legal', desc: 'NSL, gag order, orden judicial', color: 'text-violet-400 bg-violet-500/10' },
                   { id: 'A5', name: 'Cliente comprometido', desc: 'Malware, keylogger, RAT en tu dispositivo', color: 'text-slate-400 bg-slate-500/10' },
                 ].map((a) => (
-                  <div key={a.id} className="flex items-center gap-4 p-4 rounded-xl border border-[var(--color-border-faint)] bg-[var(--color-bg-surface)]">
+                  <div key={a.id} className="flex items-center gap-4 p-4 rounded-xl border border-border-faint bg-bg-surface">
                     <span className={cn('text-xs font-mono font-bold px-2 py-1 rounded', a.color)}>{a.id}</span>
                     <div>
                       <span className="text-sm font-medium">{a.name}</span>
-                      <p className="text-xs text-[var(--color-text-tertiary)]">{a.desc}</p>
+                      <p className="text-xs text-text-tertiary">{a.desc}</p>
                     </div>
                   </div>
                 ))}
@@ -207,16 +207,16 @@ export default function SecurityPage() {
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-[var(--color-border-faint)]">
-                      <th className="text-left py-2 text-[10px] font-mono uppercase tracking-wider text-[var(--color-text-tertiary)]">Amenaza</th>
-                      <th className="text-center py-2 text-[10px] font-mono uppercase tracking-wider text-[var(--color-text-tertiary)]">A1</th>
-                      <th className="text-center py-2 text-[10px] font-mono uppercase tracking-wider text-[var(--color-text-tertiary)]">A2</th>
-                      <th className="text-center py-2 text-[10px] font-mono uppercase tracking-wider text-[var(--color-text-tertiary)]">A3</th>
-                      <th className="text-center py-2 text-[10px] font-mono uppercase tracking-wider text-[var(--color-text-tertiary)]">A4</th>
-                      <th className="text-center py-2 text-[10px] font-mono uppercase tracking-wider text-[var(--color-text-tertiary)]">A5</th>
+                    <tr className="border-b border-border-faint">
+                      <th className="text-left py-2 text-[10px] font-mono uppercase tracking-wider text-text-tertiary">Amenaza</th>
+                      <th className="text-center py-2 text-[10px] font-mono uppercase tracking-wider text-text-tertiary">A1</th>
+                      <th className="text-center py-2 text-[10px] font-mono uppercase tracking-wider text-text-tertiary">A2</th>
+                      <th className="text-center py-2 text-[10px] font-mono uppercase tracking-wider text-text-tertiary">A3</th>
+                      <th className="text-center py-2 text-[10px] font-mono uppercase tracking-wider text-text-tertiary">A4</th>
+                      <th className="text-center py-2 text-[10px] font-mono uppercase tracking-wider text-text-tertiary">A5</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-[var(--color-border-faint)]">
+                  <tbody className="divide-y divide-border-faint">
                     {[
                       ['Leer contenido de archivos', '✅', '✅', '✅', '✅', '❌'],
                       ['Leer nombres de archivos', '✅', '✅', '✅', '✅', '❌'],
@@ -227,7 +227,7 @@ export default function SecurityPage() {
                       ['Modificar archivos', '✅', '⚠️', '✅', '✅', '❌'],
                       ['Inferir patrones de uso', '❌', '❌', '❌', '❌', '❌'],
                     ].map(([threat, ...cols]) => (
-                      <tr key={threat} className="text-[var(--color-text-secondary)]">
+                      <tr key={threat} className="text-text-secondary">
                         <td className="py-2.5 text-xs">{threat}</td>
                         {cols.map((v, i) => (
                           <td key={i} className="py-2.5 text-center">{v}</td>
@@ -237,7 +237,7 @@ export default function SecurityPage() {
                   </tbody>
                 </table>
               </div>
-              <div className="flex gap-4 mt-3 text-[10px] text-[var(--color-text-muted)] font-mono">
+              <div className="flex gap-4 mt-3 text-[10px] text-text-muted font-mono">
                 <span>✅ Protegido</span>
                 <span>⚠️ Parcial</span>
                 <span>❌ No protegido</span>
@@ -256,14 +256,14 @@ export default function SecurityPage() {
                 ].map((item) => (
                   <div key={item} className="flex items-center gap-3 px-4 py-3 rounded-lg bg-red-500/5 border border-red-500/10">
                     <span className="text-red-400 text-sm">✕</span>
-                    <span className="text-sm text-[var(--color-text-secondary)]">{item}</span>
+                    <span className="text-sm text-text-secondary">{item}</span>
                   </div>
                 ))}
               </div>
             </Section>
 
             <Section title="Supuestos criptográficos">
-              <p className="text-sm text-[var(--color-text-secondary)] mb-3">
+              <p className="text-sm text-text-secondary mb-3">
                 Si alguna de estas primitivas se rompe (ej. quantum computing real), migraremos a
                 primitivas post-quantum (Kyber, Dilithium) mediante re-encryption + rotación de claves.
               </p>
@@ -275,9 +275,9 @@ export default function SecurityPage() {
                   { prim: 'X25519', assumption: 'DDH en curva25519' },
                   { prim: 'BLAKE2b', assumption: 'Resistencia a colisiones de 256 bits' },
                 ].map((s) => (
-                  <div key={s.prim} className="flex items-center gap-4 px-4 py-2.5 rounded-lg hover:bg-[var(--color-bg-surface)] transition-colors">
+                  <div key={s.prim} className="flex items-center gap-4 px-4 py-2.5 rounded-lg hover:bg-bg-surface transition-colors">
                     <span className="text-sm font-mono text-violet-300 w-48 shrink-0">{s.prim}</span>
-                    <span className="text-xs text-[var(--color-text-tertiary)]">{s.assumption}</span>
+                    <span className="text-xs text-text-tertiary">{s.assumption}</span>
                   </div>
                 ))}
               </div>
@@ -286,12 +286,12 @@ export default function SecurityPage() {
         )}
 
         {/* Footer CTA */}
-        <div className="mt-12 p-6 rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-bg-surface)] text-center">
+        <div className="mt-12 p-6 rounded-xl border border-border-subtle bg-bg-surface text-center">
           <h3 className="font-display text-lg font-medium mb-2">Audita el código tú mismo</h3>
-          <p className="text-sm text-[var(--color-text-tertiary)] mb-4 max-w-lg mx-auto">
+          <p className="text-sm text-text-tertiary mb-4 max-w-lg mx-auto">
             Todo el código es público bajo AGPL-3.0. Las implementaciones de referencia están en{' '}
-            <code className="text-xs bg-[var(--color-bg-surface-2)] px-1.5 py-0.5 rounded">backend/src/crypto/</code> y{' '}
-            <code className="text-xs bg-[var(--color-bg-surface-2)] px-1.5 py-0.5 rounded">frontend/lib/crypto.ts</code>
+            <code className="text-xs bg-bg-surface-2 px-1.5 py-0.5 rounded">backend/src/crypto/</code> y{' '}
+            <code className="text-xs bg-bg-surface-2 px-1.5 py-0.5 rounded">frontend/lib/crypto.ts</code>
           </p>
           <a href="https://github.com/RedderLabs/noctcom" target="_blank" rel="noopener noreferrer">
             <Button variant="outline" size="md" leftIcon={<Github className="size-4" />}>
@@ -307,7 +307,7 @@ export default function SecurityPage() {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section>
-      <h2 className="text-sm font-semibold uppercase tracking-wider text-[var(--color-text-secondary)] mb-4 flex items-center gap-2">
+      <h2 className="text-sm font-semibold uppercase tracking-wider text-text-secondary mb-4 flex items-center gap-2">
         {title}
       </h2>
       {children}
@@ -325,13 +325,13 @@ function InfoCard({ icon, color, title, text }: { icon: string; color: string; t
   const c = colorMap[color] ?? colorMap.violet;
   const [textColor, bgColor, borderColor] = c.split(' ');
   return (
-    <div className="flex gap-4 p-4 rounded-xl border border-[var(--color-border-faint)] bg-[var(--color-bg-surface)]">
+    <div className="flex gap-4 p-4 rounded-xl border border-border-faint bg-bg-surface">
       <div className={cn('size-9 rounded-lg grid place-items-center shrink-0 border', bgColor, borderColor)}>
         <Icon className={cn('size-4', textColor)} />
       </div>
       <div>
         <h4 className="text-sm font-medium mb-0.5">{title}</h4>
-        <p className="text-xs text-[var(--color-text-tertiary)] leading-relaxed">{text}</p>
+        <p className="text-xs text-text-tertiary leading-relaxed">{text}</p>
       </div>
     </div>
   );

@@ -43,7 +43,7 @@ export default function VerifyPage() {
           </svg>
         </div>
         <h1 className="font-display text-3xl font-light tracking-tight">Email verificado</h1>
-        <p className="text-sm text-[var(--color-text-secondary)]">Tu cuenta está completamente activa.</p>
+        <p className="text-sm text-text-secondary">Tu cuenta está completamente activa.</p>
         <Button variant="primary" size="lg" className="w-full" onClick={() => router.push('/vault')}>
           Ir a mi bóveda
         </Button>
@@ -58,7 +58,7 @@ export default function VerifyPage() {
           <Mail className="size-6 text-violet-300" />
         </div>
         <h1 className="font-display text-3xl font-light tracking-tight">Verifica tu email</h1>
-        <p className="text-sm text-[var(--color-text-secondary)] max-w-sm mx-auto">
+        <p className="text-sm text-text-secondary max-w-sm mx-auto">
           Te enviamos un código de 6 dígitos. Revisa tu bandeja de entrada.
         </p>
       </div>
@@ -97,9 +97,9 @@ export default function VerifyPage() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="tu@email.com"
-          className="w-full px-3 py-2 rounded-lg border border-[var(--color-border-faint)]
-                     bg-[var(--color-bg-deep)] text-sm text-[var(--color-text-primary)]
-                     placeholder:text-[var(--color-text-muted)] text-center
+          className="w-full px-3 py-2 rounded-lg border border-border-faint
+                     bg-bg-deep text-sm text-text-primary
+                     placeholder:text-text-muted text-center
                      focus:outline-none focus:border-violet-500/50"
         />
         <button
@@ -131,15 +131,15 @@ export default function VerifyPage() {
         <button
           type="button"
           onClick={() => router.push('/vault')}
-          className="text-sm text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)] transition-colors"
+          className="text-sm text-text-tertiary hover:text-text-secondary transition-colors"
         >
           Verificar más tarde →
         </button>
       </div>
 
-      <div className="flex items-center justify-center gap-2 pt-4 border-t border-[var(--color-border-faint)]">
+      <div className="flex items-center justify-center gap-2 pt-4 border-t border-border-faint">
         <Shield className="size-3.5 text-violet-400" />
-        <span className="text-[10px] font-mono uppercase tracking-widest text-[var(--color-text-tertiary)]">
+        <span className="text-[10px] font-mono uppercase tracking-widest text-text-tertiary">
           Tu email no se almacena en nuestros servidores
         </span>
       </div>

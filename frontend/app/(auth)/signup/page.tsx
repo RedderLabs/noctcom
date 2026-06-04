@@ -31,7 +31,7 @@ function StepIndicator({ current }: { current: Step }) {
           key={i}
           className={cn(
             'h-0.5 flex-1 rounded-full transition-colors duration-300',
-            i <= idx ? 'bg-violet-500' : 'bg-[var(--color-bg-surface-3)]',
+            i <= idx ? 'bg-violet-500' : 'bg-bg-surface-3',
           )}
         />
       ))}
@@ -249,7 +249,7 @@ export default function SignupPage() {
           {step === 'mnemonic' && 'Tu frase de recuperación'}
           {step === 'confirm' && 'Casi listo'}
         </h1>
-        <p className="text-sm text-[var(--color-text-primary)] opacity-80">
+        <p className="text-sm text-text-primary opacity-80">
           {step === 'form' && 'Tu contraseña jamás se enviará a nuestros servidores'}
           {step === 'mnemonic' && 'Guárdala en lugar seguro. Es tu única forma de recuperar tu cuenta.'}
           {step === 'confirm' && 'Confirmamos algunas palabras al azar'}
@@ -301,12 +301,12 @@ export default function SignupPage() {
                       key={i}
                       className={cn(
                         'h-1 flex-1 rounded-full transition-colors',
-                        i < strength.score ? strength.color : 'bg-[var(--color-bg-surface-3)]',
+                        i < strength.score ? strength.color : 'bg-bg-surface-3',
                       )}
                     />
                   ))}
                 </div>
-                <p className="text-xs text-[var(--color-text-tertiary)]">{strength.label}</p>
+                <p className="text-xs text-text-tertiary">{strength.label}</p>
               </div>
             )}
           </div>
@@ -324,8 +324,8 @@ export default function SignupPage() {
 
           <div className="flex gap-2 p-3 rounded-lg bg-violet-500/5 border border-violet-500/20">
             <Shield className="size-4 text-violet-300 mt-0.5 shrink-0" />
-            <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed">
-              <strong className="text-[var(--color-text-primary)]">Importante:</strong>{' '}
+            <p className="text-xs text-text-secondary leading-relaxed">
+              <strong className="text-text-primary">Importante:</strong>{' '}
               Si olvidas esta contraseña y pierdes tu frase de recuperación, tus datos serán
               irrecuperables. No tenemos forma de restaurarlos.
             </p>
@@ -340,13 +340,13 @@ export default function SignupPage() {
       {/* ─── Paso 2: Frase mnemónica ──────────────────────────── */}
       {step === 'mnemonic' && (
         <div className="space-y-5">
-          <div className="grid grid-cols-3 gap-2.5 p-5 rounded-xl bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)]">
+          <div className="grid grid-cols-3 gap-2.5 p-5 rounded-xl bg-bg-surface border border-border-subtle">
             {mnemonic.map((word, i) => (
               <div
                 key={i}
-                className="flex items-center gap-2.5 p-3 rounded-lg bg-[var(--color-bg-surface-2)] border border-[var(--color-border-faint)] hover:border-violet-500/30 transition-colors"
+                className="flex items-center gap-2.5 p-3 rounded-lg bg-bg-surface-2 border border-border-faint hover:border-violet-500/30 transition-colors"
               >
-                <span className="text-xs font-mono text-[var(--color-text-secondary)] w-5 text-right">{i + 1}</span>
+                <span className="text-xs font-mono text-text-secondary w-5 text-right">{i + 1}</span>
                 <span className="text-base font-mono text-violet-200 font-medium">{word}</span>
               </div>
             ))}
@@ -370,14 +370,14 @@ export default function SignupPage() {
             {copied ? 'Copiado' : 'Copiar frase'}
           </Button>
 
-          <label className="flex items-start gap-2 text-sm cursor-pointer p-3 rounded-lg hover:bg-[var(--color-bg-surface)] transition-colors">
+          <label className="flex items-start gap-2 text-sm cursor-pointer p-3 rounded-lg hover:bg-bg-surface transition-colors">
             <input
               type="checkbox"
               checked={confirmed}
               onChange={(e) => setConfirmed(e.target.checked)}
               className="mt-0.5 size-4 accent-violet-500"
             />
-            <span className="text-[var(--color-text-primary)] opacity-80">
+            <span className="text-text-primary opacity-80">
               He guardado mi frase de recuperación en un lugar seguro y entiendo que es la
               única forma de recuperar mi cuenta.
             </span>
@@ -406,7 +406,7 @@ export default function SignupPage() {
                   <span className="inline-flex items-center justify-center size-6 rounded bg-violet-500/15 text-violet-200 text-sm font-mono font-semibold">
                     {wordIdx + 1}
                   </span>
-                  <span className="text-sm text-[var(--color-text-primary)]">
+                  <span className="text-sm text-text-primary">
                     Palabra #{wordIdx + 1}
                   </span>
                 </label>
@@ -422,7 +422,7 @@ export default function SignupPage() {
                     }}
                     onDrop={(e) => e.preventDefault()}
                     placeholder={`Escribe la palabra nº ${wordIdx + 1}`}
-                    className="w-full h-12 pl-4 pr-10 font-mono text-base bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] focus:outline-none focus:border-violet-500/60 focus:shadow-[0_0_0_3px_rgba(139,92,246,0.12)] transition-all"
+                    className="w-full h-12 pl-4 pr-10 font-mono text-base bg-bg-surface border border-border-subtle rounded-lg text-text-primary placeholder:text-text-tertiary focus:outline-none focus:border-violet-500/60 focus:shadow-[0_0_0_3px_rgba(139,92,246,0.12)] transition-all"
                     autoComplete="off"
                     autoCorrect="off"
                     autoCapitalize="off"
@@ -433,7 +433,7 @@ export default function SignupPage() {
                     'absolute right-3 top-1/2 -translate-y-1/2 size-5 transition-colors',
                     verifyInputs[i] && verifyInputs[i] === mnemonic[wordIdx]
                       ? 'text-emerald-400'
-                      : 'text-[var(--color-text-tertiary)]',
+                      : 'text-text-tertiary',
                   )} />
                 </div>
               </div>
@@ -462,16 +462,16 @@ export default function SignupPage() {
             </Button>
           </div>
 
-          <div className="flex items-center justify-center gap-2 pt-3 border-t border-[var(--color-border-faint)]">
+          <div className="flex items-center justify-center gap-2 pt-3 border-t border-border-faint">
             <Shield className="size-3.5 text-violet-400" />
-            <span className="text-xs font-mono uppercase tracking-widest text-[var(--color-text-secondary)]">
+            <span className="text-xs font-mono uppercase tracking-widest text-text-secondary">
               Zero-Knowledge Verification Active
             </span>
           </div>
         </div>
       )}
 
-      <div className="text-center text-sm text-[var(--color-text-secondary)]">
+      <div className="text-center text-sm text-text-secondary">
         ¿Ya tienes cuenta?{' '}
         <Link href="/login" className="text-violet-300 hover:text-violet-200 transition-colors">
           Iniciar sesión

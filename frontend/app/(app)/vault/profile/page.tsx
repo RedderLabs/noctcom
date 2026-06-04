@@ -164,7 +164,7 @@ export default function ProfilePage() {
   return (
     <div className="px-8 py-6 max-w-3xl mx-auto">
       {/* Header / Identity card */}
-      <div className="p-6 rounded-2xl border border-[var(--color-border-faint)] bg-[var(--color-bg-surface)] mb-8">
+      <div className="p-6 rounded-2xl border border-border-faint bg-bg-surface mb-8">
         <div className="flex items-start gap-5">
           <div className="size-20 rounded-2xl bg-gradient-to-br from-violet-400 to-violet-700 grid place-items-center text-2xl font-bold shadow-[0_0_32px_-8px_rgba(139,92,246,0.5)] shrink-0">
             {username?.[0]?.toUpperCase() ?? '?'}
@@ -177,18 +177,18 @@ export default function ProfilePage() {
                   <ShieldCheck className="size-3" /> Admin
                 </span>
               ) : (
-                <span className="inline-flex items-center gap-1 text-[10px] font-mono uppercase tracking-wider text-[var(--color-text-muted)] bg-[var(--color-bg-surface-2)] border border-[var(--color-border-faint)] px-2 py-0.5 rounded-full">
+                <span className="inline-flex items-center gap-1 text-[10px] font-mono uppercase tracking-wider text-text-muted bg-bg-surface-2 border border-border-faint px-2 py-0.5 rounded-full">
                   <User className="size-3" /> Usuario
                 </span>
               )}
             </div>
-            <p className="text-sm text-[var(--color-text-tertiary)] mt-1">Plan gratuito</p>
+            <p className="text-sm text-text-tertiary mt-1">Plan gratuito</p>
             <div className="flex items-center gap-4 mt-3 flex-wrap">
-              <div className="flex items-center gap-1.5 text-xs text-[var(--color-text-muted)]">
+              <div className="flex items-center gap-1.5 text-xs text-text-muted">
                 <Monitor className="size-3.5" />
                 <span>{devices.length} {devices.length === 1 ? 'dispositivo' : 'dispositivos'}</span>
               </div>
-              <div className="flex items-center gap-1.5 text-xs text-[var(--color-text-muted)]">
+              <div className="flex items-center gap-1.5 text-xs text-text-muted">
                 <HardDrive className="size-3.5" />
                 <span>{fmtSize(storageUsed)} usado</span>
               </div>
@@ -206,19 +206,19 @@ export default function ProfilePage() {
       <section className="mb-8">
         <div className="flex items-center gap-2 mb-4">
           <HardDrive className="size-4 text-amber-300" />
-          <h2 className="text-sm font-semibold uppercase tracking-wider text-[var(--color-text-secondary)]">
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-text-secondary">
             Almacenamiento
           </h2>
         </div>
-        <div className="p-5 rounded-xl border border-[var(--color-border-faint)] bg-[var(--color-bg-surface)]">
+        <div className="p-5 rounded-xl border border-border-faint bg-bg-surface">
           <div className="flex items-end justify-between mb-3">
             <div>
               <span className="text-2xl font-mono font-medium">{fmtSize(storageUsed)}</span>
-              <span className="text-sm text-[var(--color-text-tertiary)] ml-1">de {fmtSize(storageQuota)}</span>
+              <span className="text-sm text-text-tertiary ml-1">de {fmtSize(storageQuota)}</span>
             </div>
-            <span className="text-xs font-mono text-[var(--color-text-muted)]">{usedPct.toFixed(1)}%</span>
+            <span className="text-xs font-mono text-text-muted">{usedPct.toFixed(1)}%</span>
           </div>
-          <div className="h-2 bg-[var(--color-bg-surface-2)] rounded-full overflow-hidden">
+          <div className="h-2 bg-bg-surface-2 rounded-full overflow-hidden">
             <div
               className="h-full bg-gradient-to-r from-violet-600 to-violet-400 rounded-full transition-all duration-500"
               style={{ width: `${usedPct}%` }}
@@ -231,13 +231,13 @@ export default function ProfilePage() {
       <section className="mb-8">
         <div className="flex items-center gap-2 mb-4">
           <Monitor className="size-4 text-cyan-300" />
-          <h2 className="text-sm font-semibold uppercase tracking-wider text-[var(--color-text-secondary)]">
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-text-secondary">
             Sesiones activas
           </h2>
         </div>
         <div className="space-y-1">
           {loadingDevices && (
-            <p className="text-xs text-[var(--color-text-muted)] px-1 animate-pulse">Cargando dispositivos...</p>
+            <p className="text-xs text-text-muted px-1 animate-pulse">Cargando dispositivos...</p>
           )}
           {devices.map((device) => {
             const isMobile = device.os.includes('iOS') || device.os.includes('Android');
@@ -245,17 +245,17 @@ export default function ProfilePage() {
               <div
                 key={device.id}
                 className={cn(
-                  'flex items-center gap-4 p-4 rounded-xl border bg-[var(--color-bg-surface)] transition-all',
-                  device.isCurrent ? 'border-emerald-500/20' : 'border-[var(--color-border-faint)]',
+                  'flex items-center gap-4 p-4 rounded-xl border bg-bg-surface transition-all',
+                  device.isCurrent ? 'border-emerald-500/20' : 'border-border-faint',
                 )}
               >
                 <div className={cn(
                   'size-10 rounded-lg grid place-items-center shrink-0 border',
-                  device.isCurrent ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-[var(--color-bg-surface-2)] border-[var(--color-border-faint)]',
+                  device.isCurrent ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-bg-surface-2 border-border-faint',
                 )}>
                   {isMobile
-                    ? <Smartphone className={cn('size-4', device.isCurrent ? 'text-emerald-300' : 'text-[var(--color-text-tertiary)]')} />
-                    : <Monitor className={cn('size-4', device.isCurrent ? 'text-emerald-300' : 'text-[var(--color-text-tertiary)]')} />
+                    ? <Smartphone className={cn('size-4', device.isCurrent ? 'text-emerald-300' : 'text-text-tertiary')} />
+                    : <Monitor className={cn('size-4', device.isCurrent ? 'text-emerald-300' : 'text-text-tertiary')} />
                   }
                 </div>
                 <div className="flex-1 min-w-0">
@@ -267,13 +267,13 @@ export default function ProfilePage() {
                       </span>
                     )}
                   </div>
-                  <p className="text-xs text-[var(--color-text-tertiary)] mt-0.5">{device.os}</p>
+                  <p className="text-xs text-text-tertiary mt-0.5">{device.os}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-[10px] font-mono text-[var(--color-text-muted)] uppercase tracking-wider">
+                  <p className="text-[10px] font-mono text-text-muted uppercase tracking-wider">
                     {device.isCurrent ? 'Ahora' : timeAgo(device.lastSeenAt)}
                   </p>
-                  <p className="text-[10px] text-[var(--color-text-muted)]">
+                  <p className="text-[10px] text-text-muted">
                     Desde {fmtDate(device.createdAt)}
                   </p>
                 </div>
@@ -281,7 +281,7 @@ export default function ProfilePage() {
             );
           })}
           {!loadingDevices && devices.length === 0 && (
-            <p className="text-xs text-[var(--color-text-muted)] px-1">Sin dispositivos registrados.</p>
+            <p className="text-xs text-text-muted px-1">Sin dispositivos registrados.</p>
           )}
         </div>
       </section>
@@ -290,24 +290,24 @@ export default function ProfilePage() {
       <section className="mb-8">
         <div className="flex items-center gap-2 mb-4">
           <Shield className="size-4 text-violet-300" />
-          <h2 className="text-sm font-semibold uppercase tracking-wider text-[var(--color-text-secondary)]">
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-text-secondary">
             Seguridad
           </h2>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <div className="p-4 rounded-xl border border-[var(--color-border-faint)] bg-[var(--color-bg-surface)]">
+          <div className="p-4 rounded-xl border border-border-faint bg-bg-surface">
             <KeyRound className="size-4 text-violet-300 mb-2" />
             <p className="text-xs font-medium">Cifrado E2E</p>
             <p className="text-[10px] font-mono text-emerald-400 uppercase tracking-wider mt-1">Activo</p>
           </div>
-          <div className="p-4 rounded-xl border border-[var(--color-border-faint)] bg-[var(--color-bg-surface)]">
+          <div className="p-4 rounded-xl border border-border-faint bg-bg-surface">
             <Fingerprint className="size-4 text-violet-300 mb-2" />
             <p className="text-xs font-medium">2FA / Passkey</p>
             <Link href="/vault/settings" className="text-[10px] font-mono text-violet-400 uppercase tracking-wider mt-1 block hover:text-violet-300 transition-colors">
               Configurar
             </Link>
           </div>
-          <div className="p-4 rounded-xl border border-[var(--color-border-faint)] bg-[var(--color-bg-surface)]">
+          <div className="p-4 rounded-xl border border-border-faint bg-bg-surface">
             <Shield className="size-4 text-violet-300 mb-2" />
             <p className="text-xs font-medium">Zero-knowledge</p>
             <p className="text-[10px] font-mono text-emerald-400 uppercase tracking-wider mt-1">Verificado</p>
@@ -320,26 +320,26 @@ export default function ProfilePage() {
         <section className="mb-8">
           <div className="flex items-center gap-2 mb-4">
             <Users className="size-4 text-amber-300" />
-            <h2 className="text-sm font-semibold uppercase tracking-wider text-[var(--color-text-secondary)]">
+            <h2 className="text-sm font-semibold uppercase tracking-wider text-text-secondary">
               Administrar usuarios
             </h2>
           </div>
           <div className="space-y-1">
             {loadingUsers && (
-              <p className="text-xs text-[var(--color-text-muted)] px-1 animate-pulse">Cargando usuarios...</p>
+              <p className="text-xs text-text-muted px-1 animate-pulse">Cargando usuarios...</p>
             )}
             {adminUsers.map((u) => (
               <div
                 key={u.id}
-                className="flex items-center gap-4 p-4 rounded-xl border border-[var(--color-border-faint)] bg-[var(--color-bg-surface)] transition-all"
+                className="flex items-center gap-4 p-4 rounded-xl border border-border-faint bg-bg-surface transition-all"
               >
                 <div className={cn(
                   'size-10 rounded-lg grid place-items-center shrink-0 border',
-                  u.isAdmin ? 'bg-violet-500/10 border-violet-500/20' : 'bg-[var(--color-bg-surface-2)] border-[var(--color-border-faint)]',
+                  u.isAdmin ? 'bg-violet-500/10 border-violet-500/20' : 'bg-bg-surface-2 border-border-faint',
                 )}>
                   {u.isAdmin
                     ? <Crown className="size-4 text-violet-300" />
-                    : <User className="size-4 text-[var(--color-text-tertiary)]" />
+                    : <User className="size-4 text-text-tertiary" />
                   }
                 </div>
                 <div className="flex-1 min-w-0">
@@ -356,7 +356,7 @@ export default function ProfilePage() {
                       </span>
                     )}
                   </div>
-                  <p className="text-xs text-[var(--color-text-tertiary)] mt-0.5">
+                  <p className="text-xs text-text-tertiary mt-0.5">
                     Registro: {fmtDate(u.createdAt)} &middot; {u.lastLoginAt ? `Activo ${timeAgo(u.lastLoginAt)}` : 'Sin login'}
                   </p>
                 </div>

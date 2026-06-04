@@ -68,7 +68,7 @@ export default function TrashPage() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="font-display text-2xl font-semibold tracking-tight">Papelera</h1>
-          <p className="text-sm text-[var(--color-text-tertiary)] mt-1">
+          <p className="text-sm text-text-tertiary mt-1">
             Los archivos se eliminan permanentemente después de 30 días
           </p>
         </div>
@@ -77,7 +77,7 @@ export default function TrashPage() {
       {items.length > 0 && (
         <div className="p-3 rounded-lg bg-amber-500/5 border border-amber-500/20 mb-6 flex items-start gap-2">
           <AlertTriangle className="size-4 text-amber-300 mt-0.5 shrink-0" />
-          <p className="text-xs text-[var(--color-text-secondary)]">
+          <p className="text-xs text-text-secondary">
             Los archivos en la papelera siguen cifrados. Al eliminarlos permanentemente, se destruyen las claves de descifrado.
           </p>
         </div>
@@ -86,7 +86,7 @@ export default function TrashPage() {
       {loading && (
         <div className="py-24 text-center">
           <Loader2 className="size-8 text-violet-400 animate-spin mx-auto mb-4" />
-          <p className="text-sm text-[var(--color-text-tertiary)]">Cargando papelera…</p>
+          <p className="text-sm text-text-tertiary">Cargando papelera…</p>
         </div>
       )}
 
@@ -97,16 +97,16 @@ export default function TrashPage() {
             return (
               <div
                 key={item.id}
-                className="flex items-center gap-4 px-4 py-3 rounded-lg hover:bg-[var(--color-bg-surface)] transition-colors group"
+                className="flex items-center gap-4 px-4 py-3 rounded-lg hover:bg-bg-surface transition-colors group"
               >
                 <div className="size-10 rounded-lg bg-red-500/10 border border-red-500/20 grid place-items-center shrink-0">
                   <Icon className="size-4 text-red-300" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h3 className="text-sm font-medium truncate line-through text-[var(--color-text-secondary)]">
+                  <h3 className="text-sm font-medium truncate line-through text-text-secondary">
                     {item.name}
                   </h3>
-                  <span className="text-[10px] text-[var(--color-text-tertiary)] font-mono uppercase tracking-wider">
+                  <span className="text-[10px] text-text-tertiary font-mono uppercase tracking-wider">
                     {item.kind === 'folder' ? 'Carpeta' : formatSize(item.size)} · Expira en {daysUntilExpiry(item.deletedAt)}
                   </span>
                 </div>
@@ -124,11 +124,11 @@ export default function TrashPage() {
 
       {!loading && items.length === 0 && (
         <div className="py-24 text-center">
-          <div className="size-16 rounded-full bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] grid place-items-center mx-auto mb-4">
-            <Trash2 className="size-6 text-[var(--color-text-tertiary)]" />
+          <div className="size-16 rounded-full bg-bg-surface border border-border-subtle grid place-items-center mx-auto mb-4">
+            <Trash2 className="size-6 text-text-tertiary" />
           </div>
           <h3 className="font-display text-lg mb-1">Papelera vacía</h3>
-          <p className="text-sm text-[var(--color-text-tertiary)]">No hay archivos eliminados</p>
+          <p className="text-sm text-text-tertiary">No hay archivos eliminados</p>
         </div>
       )}
 

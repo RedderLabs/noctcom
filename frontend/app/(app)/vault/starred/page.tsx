@@ -49,7 +49,7 @@ export default function StarredPage() {
     <div className="px-8 py-6 max-w-4xl mx-auto">
       <div className="mb-6">
         <h1 className="font-display text-2xl font-semibold tracking-tight">Destacados</h1>
-        <p className="text-sm text-[var(--color-text-tertiary)] mt-1">
+        <p className="text-sm text-text-tertiary mt-1">
           Archivos y carpetas que marcaste como favoritos
         </p>
       </div>
@@ -57,7 +57,7 @@ export default function StarredPage() {
       {loading && (
         <div className="py-24 text-center">
           <Loader2 className="size-8 text-violet-400 animate-spin mx-auto mb-4" />
-          <p className="text-sm text-[var(--color-text-tertiary)]">Cargando destacados…</p>
+          <p className="text-sm text-text-tertiary">Cargando destacados…</p>
         </div>
       )}
 
@@ -70,7 +70,7 @@ export default function StarredPage() {
               return (
                 <div
                   key={item.id}
-                  className="group relative p-4 rounded-xl border border-[var(--color-border-faint)] bg-[var(--color-bg-surface)] hover:bg-[var(--color-bg-surface-2)] hover:border-[var(--color-border-strong)] transition-all"
+                  className="group relative p-4 rounded-xl border border-border-faint bg-bg-surface hover:bg-bg-surface-2 hover:border-border-strong transition-all"
                 >
                   <div className="flex items-start justify-between mb-3">
                     <div className={cn('size-11 rounded-lg grid place-items-center border', color.bg, color.border)}>
@@ -84,7 +84,7 @@ export default function StarredPage() {
                     />
                   </div>
                   <h3 className="text-sm font-medium truncate">{item.name}</h3>
-                  <p className="text-[10px] text-[var(--color-text-tertiary)] uppercase tracking-wider mt-0.5">Carpeta</p>
+                  <p className="text-[10px] text-text-tertiary uppercase tracking-wider mt-0.5">Carpeta</p>
                 </div>
               );
             }
@@ -94,11 +94,11 @@ export default function StarredPage() {
               <div
                 key={item.id}
                 onClick={() => setPreviewNode(item)}
-                className="group relative p-4 rounded-xl border border-[var(--color-border-faint)] bg-[var(--color-bg-surface)] hover:bg-[var(--color-bg-surface-2)] hover:border-[var(--color-border-strong)] transition-all cursor-pointer"
+                className="group relative p-4 rounded-xl border border-border-faint bg-bg-surface hover:bg-bg-surface-2 hover:border-border-strong transition-all cursor-pointer"
               >
                 <div className="flex items-start justify-between mb-3">
-                  <div className="size-11 rounded-lg grid place-items-center bg-[var(--color-bg-surface-2)] border border-[var(--color-border-faint)]">
-                    <FileIcon className="size-5 text-[var(--color-text-secondary)]" />
+                  <div className="size-11 rounded-lg grid place-items-center bg-bg-surface-2 border border-border-faint">
+                    <FileIcon className="size-5 text-text-secondary" />
                   </div>
                   <CardActionsMenu
                     actions={[
@@ -111,7 +111,7 @@ export default function StarredPage() {
                   />
                 </div>
                 <h3 className="text-sm font-medium truncate">{item.name}</h3>
-                <p className="text-[10px] text-[var(--color-text-tertiary)] uppercase tracking-wider mt-0.5">
+                <p className="text-[10px] text-text-tertiary uppercase tracking-wider mt-0.5">
                   {formatSize(item.size)}
                 </p>
               </div>
@@ -122,11 +122,11 @@ export default function StarredPage() {
 
       {!loading && items.length === 0 && (
         <div className="py-24 text-center">
-          <div className="size-16 rounded-full bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] grid place-items-center mx-auto mb-4">
-            <Star className="size-6 text-[var(--color-text-tertiary)]" />
+          <div className="size-16 rounded-full bg-bg-surface border border-border-subtle grid place-items-center mx-auto mb-4">
+            <Star className="size-6 text-text-tertiary" />
           </div>
           <h3 className="font-display text-lg mb-1">Sin destacados</h3>
-          <p className="text-sm text-[var(--color-text-tertiary)]">
+          <p className="text-sm text-text-tertiary">
             Marca archivos con la estrella para acceder rápido
           </p>
         </div>

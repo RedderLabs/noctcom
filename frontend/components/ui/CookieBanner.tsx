@@ -21,17 +21,17 @@ export function CookieBanner() {
 
   return (
     <div className="fixed bottom-4 left-4 right-4 z-50 flex justify-center animate-fade-in">
-      <div className="max-w-2xl w-full p-4 rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-bg-surface)] shadow-[var(--shadow-modal)] backdrop-blur-md flex items-start gap-4">
+      <div className="max-w-2xl w-full p-4 rounded-xl border border-border-subtle bg-bg-surface shadow-modal backdrop-blur-md flex items-start gap-4">
         <div className="size-9 rounded-lg bg-violet-500/10 border border-violet-500/20 grid place-items-center shrink-0 mt-0.5">
           <Shield className="size-4 text-violet-300" />
         </div>
         <div className="flex-1 min-w-0">
           <h3 className="text-sm font-medium mb-1">Cookies</h3>
-          <p className="text-xs text-[var(--color-text-tertiary)] leading-relaxed">
+          <p className="text-xs text-text-tertiary leading-relaxed">
             Noctcom no utiliza cookies propias de rastreo. Las unicas cookies activas son las
-            que establece <strong className="text-[var(--color-text-secondary)]">Cloudflare</strong> para
-            proteccion DDoS y seguridad de red (<code className="text-[10px] bg-[var(--color-bg-surface-2)] px-1 py-0.5 rounded">__cf_bm</code>,{' '}
-            <code className="text-[10px] bg-[var(--color-bg-surface-2)] px-1 py-0.5 rounded">cf_clearance</code>).
+            que establece <strong className="text-text-secondary">Cloudflare</strong> para
+            proteccion DDoS y seguridad de red (<code className="text-[10px] bg-bg-surface-2 px-1 py-0.5 rounded">__cf_bm</code>,{' '}
+            <code className="text-[10px] bg-bg-surface-2 px-1 py-0.5 rounded">cf_clearance</code>).
             Estas cookies son estrictamente necesarias y no recopilan datos personales.
           </p>
         </div>
@@ -43,7 +43,7 @@ export function CookieBanner() {
         </button>
         <button
           onClick={accept}
-          className="shrink-0 p-1.5 rounded-md hover:bg-[var(--color-bg-surface-2)] text-[var(--color-text-muted)] transition-colors"
+          className="shrink-0 p-1.5 rounded-md hover:bg-bg-surface-2 text-text-muted transition-colors"
           aria-label="Cerrar"
         >
           <X className="size-4" />

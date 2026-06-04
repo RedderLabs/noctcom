@@ -24,9 +24,9 @@ export default function LandingPage() {
             <span className="text-gradient-violet font-normal">Cifrada antes de salir de tu dispositivo.</span>
           </h1>
 
-          <p className="text-lg text-[var(--color-text-secondary)] max-w-xl mx-auto mb-10 leading-relaxed">
+          <p className="text-lg text-text-secondary max-w-xl mx-auto mb-10 leading-relaxed">
             La mayoría de las nubes prometen no mirar tus archivos. Noctcom está construido para que
-            <strong className="text-[var(--color-text-primary)] font-medium"> no pueda</strong>, aunque quisiéramos.
+            <strong className="text-text-primary font-medium"> no pueda</strong>, aunque quisiéramos.
             Tu contraseña y tus claves jamás tocan nuestros servidores. Nosotros solo guardamos cifrado que no sabemos abrir.
           </p>
 
@@ -54,13 +54,13 @@ export default function LandingPage() {
           ].map((f, i) => (
             <div
               key={i}
-              className="group relative p-5 rounded-xl border border-[var(--color-border-faint)] bg-[var(--color-bg-surface)] hover:border-[var(--color-border-subtle)] transition-all duration-200"
+              className="group relative p-5 rounded-xl border border-border-faint bg-bg-surface hover:border-border-subtle transition-all duration-200"
             >
               <div className="size-9 rounded-lg bg-violet-500/10 border border-violet-500/20 grid place-items-center mb-4 group-hover:bg-violet-500/15 transition-colors">
                 <f.icon className="size-4 text-violet-300" />
               </div>
               <h3 className="font-medium mb-1.5 tracking-tight">{f.title}</h3>
-              <p className="text-sm text-[var(--color-text-tertiary)] leading-relaxed">{f.body}</p>
+              <p className="text-sm text-text-tertiary leading-relaxed">{f.body}</p>
             </div>
           ))}
         </div>
@@ -72,14 +72,14 @@ export default function LandingPage() {
           <h2 className="font-display text-2xl md:text-3xl font-light tracking-tight mb-4">
             Lo que <span className="text-gradient-violet font-normal">no</span> hacemos.
           </h2>
-          <p className="text-[var(--color-text-secondary)] leading-relaxed">
+          <p className="text-text-secondary leading-relaxed">
             Noctcom no es una suite de ofimática. No tenemos chat, ni videollamadas, ni editor de
             documentos online. Es deliberado: cada función que añade un servidor capaz de{' '}
             <em>leer</em> tus datos es una grieta en la privacidad. Hacemos{' '}
-            <strong className="text-[var(--color-text-primary)] font-medium">una sola cosa</strong>{' '}
+            <strong className="text-text-primary font-medium">una sola cosa</strong>{' '}
             —guardar tus archivos de forma que solo tú puedas leerlos— y la hacemos mejor que nadie.
           </p>
-          <p className="text-sm text-[var(--color-text-tertiary)] leading-relaxed mt-5">
+          <p className="text-sm text-text-tertiary leading-relaxed mt-5">
             Versionado de algoritmos preparado para post-cuántico (Kyber/Dilithium en hoja de ruta).
             Tu cifrado de hoy no caduca mañana.
           </p>
@@ -93,10 +93,10 @@ export default function LandingPage() {
             <h2 className="font-display text-2xl md:text-3xl font-light tracking-tight mb-4">
               Para quien la privacidad <span className="text-gradient-violet font-normal">no es opcional</span>.
             </h2>
-            <p className="text-[var(--color-text-secondary)] max-w-2xl mx-auto leading-relaxed">
+            <p className="text-text-secondary max-w-2xl mx-auto leading-relaxed">
               Si manejas material que no puede filtrarse —una investigación, una fuente, un expediente—
               necesitas algo más que la promesa de un proveedor de «no mirar». Necesitas que{' '}
-              <strong className="text-[var(--color-text-primary)] font-medium">no pueda</strong>.
+              <strong className="text-text-primary font-medium">no pueda</strong>.
             </p>
           </div>
 
@@ -109,26 +109,26 @@ export default function LandingPage() {
             ].map((f, i) => (
               <div
                 key={i}
-                className="group relative p-5 rounded-xl border border-[var(--color-border-faint)] bg-[var(--color-bg-surface)] hover:border-[var(--color-border-subtle)] transition-all duration-200"
+                className="group relative p-5 rounded-xl border border-border-faint bg-bg-surface hover:border-border-subtle transition-all duration-200"
               >
                 <div className="size-9 rounded-lg bg-violet-500/10 border border-violet-500/20 grid place-items-center mb-4 group-hover:bg-violet-500/15 transition-colors">
                   <f.icon className="size-4 text-violet-300" />
                 </div>
                 <h3 className="font-medium mb-1.5 tracking-tight">{f.title}</h3>
-                <p className="text-sm text-[var(--color-text-tertiary)] leading-relaxed">{f.body}</p>
+                <p className="text-sm text-text-tertiary leading-relaxed">{f.body}</p>
               </div>
             ))}
           </div>
 
           {/* Nota honesta: lo que viene + el modelo de amenaza real */}
-          <div className="mt-6 rounded-xl border border-[var(--color-border-faint)] bg-[var(--color-bg-surface)] p-5 md:p-6">
-            <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed">
+          <div className="mt-6 rounded-xl border border-border-faint bg-bg-surface p-5 md:p-6">
+            <p className="text-sm text-text-secondary leading-relaxed">
               <span className="text-violet-300 font-medium">En hoja de ruta — cadena de custodia verificable:</span>{' '}
               firma de autoría y sellado de tiempo para demostrar a un editor o un juez que un archivo es
               íntegro y de qué fecha es, <em>sin que nadie más lo lea</em>. Todo sobre hashes y firmas;
               el contenido nunca sale de tu control.
             </p>
-            <p className="text-xs text-[var(--color-text-tertiary)] leading-relaxed mt-3">
+            <p className="text-xs text-text-tertiary leading-relaxed mt-3">
               Honestidad ante todo: el cifrado zero-knowledge protege tus archivos en reposo, no te da
               anonimato de red. Para ocultar <em>con quién</em> hablas, combínalo con herramientas como
               Tor según tu modelo de amenaza. Y como todo en Noctcom, el código es abierto y auditable.
@@ -140,7 +140,7 @@ export default function LandingPage() {
       {/* ─── Self-Host ──────────────────────────────────────── */}
       <section className="px-6 pb-24">
         <div className="max-w-4xl mx-auto">
-          <div className="relative overflow-hidden rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--color-bg-surface)] p-8 md:p-12">
+          <div className="relative overflow-hidden rounded-2xl border border-border-subtle bg-bg-surface p-8 md:p-12">
             <div className="absolute inset-0 bg-gradient-to-br from-violet-500/5 via-transparent to-violet-500/5 pointer-events-none" />
             <div className="relative flex flex-col md:flex-row gap-8 items-center">
               <div className="flex-1">
@@ -151,7 +151,7 @@ export default function LandingPage() {
                 <h2 className="font-display text-2xl md:text-3xl font-light tracking-tight mb-3">
                   Tu servidor, tus reglas.
                 </h2>
-                <p className="text-[var(--color-text-secondary)] leading-relaxed mb-6">
+                <p className="text-text-secondary leading-relaxed mb-6">
                   Noctcom es 100% open source (AGPL-3.0). Despliégalo en tu propio hardware con
                   un solo comando Docker. Mismo cifrado, sin depender de terceros. Tu nube,
                   tu hardware, zero-knowledge de verdad.
@@ -176,14 +176,14 @@ export default function LandingPage() {
                 </div>
               </div>
               <div className="w-full md:w-80 shrink-0">
-                <div className="rounded-lg bg-[var(--color-bg-deep)] border border-[var(--color-border-faint)] p-4 font-mono text-xs leading-relaxed">
-                  <p className="text-[var(--color-text-muted)]"># Despliegue rápido</p>
+                <div className="rounded-lg bg-bg-deep border border-border-faint p-4 font-mono text-xs leading-relaxed">
+                  <p className="text-text-muted"># Despliegue rápido</p>
                   <p className="text-emerald-300 mt-1">git clone https://github.com/</p>
                   <p className="text-emerald-300">  RedderLabs/noctcom.git</p>
-                  <p className="text-[var(--color-text-secondary)] mt-2">cd noctcom</p>
-                  <p className="text-[var(--color-text-secondary)]">cp .env.example .env</p>
+                  <p className="text-text-secondary mt-2">cd noctcom</p>
+                  <p className="text-text-secondary">cp .env.example .env</p>
                   <p className="text-violet-300 mt-2">docker compose up -d</p>
-                  <p className="text-[var(--color-text-muted)] mt-2"># Listo en https://tu-dominio.com</p>
+                  <p className="text-text-muted mt-2"># Listo en https://tu-dominio.com</p>
                 </div>
               </div>
             </div>
@@ -205,37 +205,37 @@ export default function LandingPage() {
             ].map((f, i) => (
               <div
                 key={i}
-                className="p-5 rounded-xl border border-[var(--color-border-faint)] bg-[var(--color-bg-surface)] hover:border-[var(--color-border-subtle)] transition-all"
+                className="p-5 rounded-xl border border-border-faint bg-bg-surface hover:border-border-subtle transition-all"
               >
                 <div className="size-9 rounded-lg bg-emerald-500/10 border border-emerald-500/20 grid place-items-center mb-4">
                   <f.icon className="size-4 text-emerald-300" />
                 </div>
                 <h3 className="font-medium mb-1.5 tracking-tight">{f.title}</h3>
-                <p className="text-sm text-[var(--color-text-tertiary)] leading-relaxed">{f.body}</p>
+                <p className="text-sm text-text-tertiary leading-relaxed">{f.body}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      <footer className="border-t border-[var(--color-border-faint)] py-6">
-        <div className="max-w-6xl mx-auto px-6 text-xs text-[var(--color-text-tertiary)] flex justify-between items-center">
+      <footer className="border-t border-border-faint py-6">
+        <div className="max-w-6xl mx-auto px-6 text-xs text-text-tertiary flex justify-between items-center">
           <div className="flex items-center gap-4">
             <span>© {new Date().getFullYear()} Noctcom · AGPL-3.0</span>
-            <Link href="/about" className="hover:text-[var(--color-text-secondary)] transition-colors">
+            <Link href="/about" className="hover:text-text-secondary transition-colors">
               Nosotros
             </Link>
-            <Link href="/security" className="hover:text-[var(--color-text-secondary)] transition-colors">
+            <Link href="/security" className="hover:text-text-secondary transition-colors">
               Seguridad
             </Link>
-            <Link href="/roadmap" className="hover:text-[var(--color-text-secondary)] transition-colors">
+            <Link href="/roadmap" className="hover:text-text-secondary transition-colors">
               Hoja de ruta
             </Link>
             <a
               href="https://x.com/noctcom"
               target="_blank"
               rel="noopener noreferrer"
-              className="hover:text-[var(--color-text-secondary)] transition-colors"
+              className="hover:text-text-secondary transition-colors"
               aria-label="Noctcom en X"
             >
               <svg viewBox="0 0 24 24" fill="currentColor" className="w-3.5 h-3.5">

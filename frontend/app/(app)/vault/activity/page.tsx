@@ -91,16 +91,16 @@ export default function ActivityPage() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="font-display text-2xl font-semibold tracking-tight">Registro de actividad</h1>
-          <p className="text-sm text-[var(--color-text-tertiary)] mt-1">
+          <p className="text-sm text-text-tertiary mt-1">
             Historial cifrado de acciones en tu bóveda
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Filter className="size-4 text-[var(--color-text-tertiary)]" />
+          <Filter className="size-4 text-text-tertiary" />
           <select
             value={filterType}
             onChange={(e) => setFilterType(e.target.value)}
-            className="h-9 px-3 bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] rounded-lg text-sm text-[var(--color-text-secondary)] focus:outline-none focus:border-violet-500/60"
+            className="h-9 px-3 bg-bg-surface border border-border-subtle rounded-lg text-sm text-text-secondary focus:outline-none focus:border-violet-500/60"
           >
             {filterOptions.map((o) => (
               <option key={o.value} value={o.value}>{o.label}</option>
@@ -112,7 +112,7 @@ export default function ActivityPage() {
       {loading && (
         <div className="py-24 text-center">
           <Loader2 className="size-8 text-violet-400 animate-spin mx-auto mb-4" />
-          <p className="text-sm text-[var(--color-text-tertiary)]">Descifrando actividad…</p>
+          <p className="text-sm text-text-tertiary">Descifrando actividad…</p>
         </div>
       )}
 
@@ -120,7 +120,7 @@ export default function ActivityPage() {
         <div className="space-y-8">
           {grouped.map(([dateLabel, items]) => (
             <section key={dateLabel}>
-              <h2 className="text-[10px] uppercase tracking-widest text-[var(--color-text-tertiary)] mb-3 font-mono">
+              <h2 className="text-[10px] uppercase tracking-widest text-text-tertiary mb-3 font-mono">
                 {dateLabel}
               </h2>
               <div className="space-y-1">
@@ -131,7 +131,7 @@ export default function ActivityPage() {
                   return (
                     <div
                       key={activity.id}
-                      className="flex items-center gap-4 px-4 py-3 rounded-lg hover:bg-[var(--color-bg-surface)] transition-colors"
+                      className="flex items-center gap-4 px-4 py-3 rounded-lg hover:bg-bg-surface transition-colors"
                     >
                       <div className={cn('size-9 rounded-lg grid place-items-center shrink-0', iconBg)}>
                         <Icon className={cn('size-4', iconText)} />
@@ -140,12 +140,12 @@ export default function ActivityPage() {
                         <div className="flex items-baseline gap-2">
                           <span className="text-sm font-medium">{activity.description}</span>
                           {activity.target && (
-                            <span className="text-sm text-[var(--color-text-secondary)] truncate font-mono">
+                            <span className="text-sm text-text-secondary truncate font-mono">
                               {activity.target}
                             </span>
                           )}
                         </div>
-                        <span className="text-[10px] text-[var(--color-text-tertiary)] font-mono uppercase tracking-wider">
+                        <span className="text-[10px] text-text-tertiary font-mono uppercase tracking-wider">
                           {formatTimestamp(activity.createdAt)}
                         </span>
                       </div>
@@ -166,17 +166,17 @@ export default function ActivityPage() {
 
       {!loading && activities.length === 0 && (
         <div className="py-24 text-center">
-          <div className="size-16 rounded-full bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] grid place-items-center mx-auto mb-4">
-            <Eye className="size-6 text-[var(--color-text-tertiary)]" />
+          <div className="size-16 rounded-full bg-bg-surface border border-border-subtle grid place-items-center mx-auto mb-4">
+            <Eye className="size-6 text-text-tertiary" />
           </div>
           <h3 className="font-display text-lg mb-1">Sin actividad</h3>
-          <p className="text-sm text-[var(--color-text-tertiary)]">Las acciones que realices aparecerán aquí, cifradas</p>
+          <p className="text-sm text-text-tertiary">Las acciones que realices aparecerán aquí, cifradas</p>
         </div>
       )}
 
       {totalPages > 1 && (
         <div className="mt-8 flex items-center justify-between text-sm">
-          <span className="text-[var(--color-text-tertiary)] text-xs">
+          <span className="text-text-tertiary text-xs">
             {total} eventos
           </span>
           <div className="flex items-center gap-1">
@@ -184,18 +184,18 @@ export default function ActivityPage() {
               type="button"
               disabled={page === 1}
               onClick={() => setPage((p) => p - 1)}
-              className="h-8 w-8 grid place-items-center rounded-md text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-surface)] disabled:opacity-30"
+              className="h-8 w-8 grid place-items-center rounded-md text-text-secondary hover:bg-bg-surface disabled:opacity-30"
             >
               <ChevronLeft className="size-4" />
             </button>
-            <span className="text-xs text-[var(--color-text-tertiary)] px-2">
+            <span className="text-xs text-text-tertiary px-2">
               {page} / {totalPages}
             </span>
             <button
               type="button"
               disabled={page === totalPages}
               onClick={() => setPage((p) => p + 1)}
-              className="h-8 w-8 grid place-items-center rounded-md text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-surface)] disabled:opacity-30"
+              className="h-8 w-8 grid place-items-center rounded-md text-text-secondary hover:bg-bg-surface disabled:opacity-30"
             >
               <ChevronRight className="size-4" />
             </button>

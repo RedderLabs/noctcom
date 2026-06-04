@@ -11,7 +11,7 @@ interface NavbarProps {
 
 export function Navbar({ variant = "landing" }: NavbarProps) {
   return (
-    <nav className="border-b border-[var(--color-border-faint)] backdrop-blur-md bg-[var(--color-bg-base)]/60 sticky top-0 z-50">
+    <nav className="border-b border-border-faint backdrop-blur-md bg-bg-base/60 sticky top-0 z-50">
       <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2.5 group">
           <Image
@@ -22,7 +22,7 @@ export function Navbar({ variant = "landing" }: NavbarProps) {
             priority
             className="rounded-md"
           />
-          <h3 className="text-xl font-semibold tracking-tight text-[var(--color-text-primary)]">
+          <h3 className="text-xl font-semibold tracking-tight text-text-primary">
             Noctcom
           </h3>
         </Link>

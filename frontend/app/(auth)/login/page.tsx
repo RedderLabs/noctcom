@@ -258,7 +258,7 @@ export default function LoginPage() {
           <h1 className="font-display text-3xl font-light tracking-tight">
             Verificación en dos pasos
           </h1>
-          <p className="text-sm text-[var(--color-text-secondary)]">
+          <p className="text-sm text-text-secondary">
             Tu contraseña es correcta. Confirma tu identidad para desbloquear.
           </p>
         </div>
@@ -281,10 +281,10 @@ export default function LoginPage() {
           {pending2fa.methods.includes('passkey') && pending2fa.methods.includes('email') && (
             <div className="relative my-2">
               <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-[var(--color-border-faint)]" />
+                <div className="w-full border-t border-border-faint" />
               </div>
               <div className="relative flex justify-center">
-                <span className="bg-[var(--color-bg-base)] px-3 text-xs text-[var(--color-text-tertiary)] uppercase tracking-widest">o</span>
+                <span className="bg-bg-base px-3 text-xs text-text-tertiary uppercase tracking-widest">o</span>
               </div>
             </div>
           )}
@@ -316,7 +316,7 @@ export default function LoginPage() {
                 </Button>
                 <button
                   type="button"
-                  className="w-full text-xs text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)] transition-colors"
+                  className="w-full text-xs text-text-tertiary hover:text-text-secondary transition-colors"
                   onClick={handleSendOtp}
                 >
                   Reenviar código
@@ -339,16 +339,16 @@ export default function LoginPage() {
 
           <button
             type="button"
-            className="w-full text-sm text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)] transition-colors pt-2"
+            className="w-full text-sm text-text-tertiary hover:text-text-secondary transition-colors pt-2"
             onClick={cancel2FA}
           >
             Cancelar
           </button>
         </div>
 
-        <div className="flex items-center justify-center gap-2 pt-4 border-t border-[var(--color-border-faint)]">
+        <div className="flex items-center justify-center gap-2 pt-4 border-t border-border-faint">
           <Shield className="size-3.5 text-violet-400" />
-          <span className="text-[10px] font-mono uppercase tracking-widest text-[var(--color-text-tertiary)]">
+          <span className="text-[10px] font-mono uppercase tracking-widest text-text-tertiary">
             Cifrado local · Zero-Knowledge
           </span>
         </div>
@@ -363,7 +363,7 @@ export default function LoginPage() {
         <h1 className="font-display text-3xl font-light tracking-tight">
           Bienvenido de nuevo
         </h1>
-        <p className="text-sm text-[var(--color-text-secondary)]">
+        <p className="text-sm text-text-secondary">
           Desbloquea tu bóveda
         </p>
       </div>
@@ -406,17 +406,17 @@ export default function LoginPage() {
         <Link href="/recovery" className="text-violet-300 hover:text-violet-200 transition-colors">
           ¿Olvidaste tu contraseña?
         </Link>
-        <div className="text-[var(--color-text-tertiary)]">
+        <div className="text-text-tertiary">
           ¿No tienes cuenta?{' '}
-          <Link href="/signup" className="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors">
+          <Link href="/signup" className="text-text-secondary hover:text-text-primary transition-colors">
             Crear una
           </Link>
         </div>
       </div>
 
-      <div className="flex items-center justify-center gap-2 pt-4 border-t border-[var(--color-border-faint)]">
+      <div className="flex items-center justify-center gap-2 pt-4 border-t border-border-faint">
         <Shield className="size-3.5 text-violet-400" />
-        <span className="text-[10px] font-mono uppercase tracking-widest text-[var(--color-text-tertiary)]">
+        <span className="text-[10px] font-mono uppercase tracking-widest text-text-tertiary">
           Cifrado local · Zero-Knowledge
         </span>
       </div>

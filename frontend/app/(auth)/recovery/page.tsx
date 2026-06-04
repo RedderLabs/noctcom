@@ -41,7 +41,7 @@ function StepIndicator({ current }: { current: Step }) {
           key={i}
           className={cn(
             'h-0.5 flex-1 rounded-full transition-colors duration-300',
-            i <= idx ? 'bg-amber-500' : 'bg-[var(--color-bg-surface-3)]',
+            i <= idx ? 'bg-amber-500' : 'bg-bg-surface-3',
           )}
         />
       ))}
@@ -238,7 +238,7 @@ export default function RecoveryPage() {
           {step === 'new_password' && 'Nueva contraseña'}
           {step === 'done' && 'Cuenta restaurada'}
         </h1>
-        <p className="text-sm text-[var(--color-text-secondary)] max-w-sm mx-auto">
+        <p className="text-sm text-text-secondary max-w-sm mx-auto">
           {step === 'email' && 'Necesitarás tu frase de recuperación de 12 palabras'}
           {step === 'mnemonic' && 'En el orden exacto que la generaste'}
           {step === 'new_password' && 'Tu bóveda se re-cifrará con esta contraseña'}
@@ -252,7 +252,7 @@ export default function RecoveryPage() {
         <form onSubmit={handleEmailSubmit} className="space-y-4">
           <div className="flex gap-2 p-3 rounded-lg bg-amber-500/5 border border-amber-500/20">
             <AlertTriangle className="size-4 text-amber-300 mt-0.5 shrink-0" />
-            <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed">
+            <p className="text-xs text-text-secondary leading-relaxed">
               Recuperar tu cuenta revoca todas las sesiones activas. Si tu cuenta tiene el
               kit de recuperación completo, tus archivos y compartidos se conservan.
             </p>
@@ -280,7 +280,7 @@ export default function RecoveryPage() {
           <div className="grid grid-cols-3 gap-2">
             {words.map((w, i) => (
               <div key={i} className="relative">
-                <span className="absolute left-2 top-2.5 text-[10px] font-mono text-[var(--color-text-tertiary)]">{i + 1}</span>
+                <span className="absolute left-2 top-2.5 text-[10px] font-mono text-text-tertiary">{i + 1}</span>
                 <input
                   type="text"
                   value={w}
@@ -301,7 +301,7 @@ export default function RecoveryPage() {
                       setWords(next);
                     }
                   }}
-                  className="w-full h-10 pl-7 pr-2 text-sm font-mono bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] rounded-md focus:outline-none focus:border-violet-500/60 focus:shadow-[0_0_0_3px_rgba(139,92,246,0.12)] text-[var(--color-text-primary)]"
+                  className="w-full h-10 pl-7 pr-2 text-sm font-mono bg-bg-surface border border-border-subtle rounded-md focus:outline-none focus:border-violet-500/60 focus:shadow-[0_0_0_3px_rgba(139,92,246,0.12)] text-text-primary"
                   autoComplete="off"
                   autoCorrect="off"
                   autoCapitalize="off"
@@ -310,7 +310,7 @@ export default function RecoveryPage() {
               </div>
             ))}
           </div>
-          <p className="text-[10px] text-[var(--color-text-muted)] text-center">
+          <p className="text-[10px] text-text-muted text-center">
             Pega la frase completa en cualquier campo para rellenar todos automáticamente
           </p>
 
@@ -345,7 +345,7 @@ export default function RecoveryPage() {
           {hasKit ? (
             <div className="flex gap-2 p-3 rounded-lg bg-emerald-500/5 border border-emerald-500/20">
               <FileKey2 className="size-4 text-emerald-300 mt-0.5 shrink-0" />
-              <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed">
+              <p className="text-xs text-text-secondary leading-relaxed">
                 <strong className="text-emerald-200">Kit de recuperación verificado.</strong>{' '}
                 Tus bóvedas{unlock!.vaults.length > 1 ? ` (${unlock!.vaults.length})` : ''} se
                 re-cifrarán con la nueva contraseña: archivos y compartidos siguen accesibles.
@@ -354,7 +354,7 @@ export default function RecoveryPage() {
           ) : (
             <div className="flex gap-2 p-3 rounded-lg bg-amber-500/5 border border-amber-500/20">
               <AlertTriangle className="size-4 text-amber-300 mt-0.5 shrink-0" />
-              <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed">
+              <p className="text-xs text-text-secondary leading-relaxed">
                 <strong className="text-amber-200">Esta cuenta no tiene el kit de recuperación completo.</strong>{' '}
                 Recuperarás el acceso, pero los archivos cifrados con tu contraseña anterior
                 no podrán descifrarse. Tras entrar, activa el kit en Ajustes → Seguridad
@@ -408,7 +408,7 @@ export default function RecoveryPage() {
               <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
             </svg>
           </div>
-          <p className="text-sm text-[var(--color-text-secondary)]">
+          <p className="text-sm text-text-secondary">
             {hasKit
               ? 'Tu cuenta ha sido restaurada: tus bóvedas se re-cifraron con la nueva contraseña y tus archivos siguen accesibles. Todas las sesiones anteriores han sido revocadas.'
               : 'Tu cuenta ha sido restaurada y tus claves re-generadas con la nueva contraseña. Todas las sesiones anteriores han sido revocadas.'}
@@ -419,15 +419,15 @@ export default function RecoveryPage() {
         </div>
       )}
 
-      <div className="text-center text-sm text-[var(--color-text-tertiary)]">
-        <Link href="/login" className="hover:text-[var(--color-text-secondary)] transition-colors">
+      <div className="text-center text-sm text-text-tertiary">
+        <Link href="/login" className="hover:text-text-secondary transition-colors">
           ← Volver a inicio de sesión
         </Link>
       </div>
 
-      <div className="flex items-center justify-center gap-2 pt-4 border-t border-[var(--color-border-faint)]">
+      <div className="flex items-center justify-center gap-2 pt-4 border-t border-border-faint">
         <Shield className="size-3.5 text-amber-400" />
-        <span className="text-[10px] font-mono uppercase tracking-widest text-[var(--color-text-tertiary)]">
+        <span className="text-[10px] font-mono uppercase tracking-widest text-text-tertiary">
           Recuperación Zero-Knowledge
         </span>
       </div>

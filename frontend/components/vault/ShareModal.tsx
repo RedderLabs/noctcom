@@ -59,14 +59,14 @@ export function ShareModal({ open, onClose, node }: Props) {
     <Dialog.Root open={open} onOpenChange={(v) => { if (!v) { reset(); onClose(); } }}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm animate-fade-in" />
-        <Dialog.Content className="fixed left-1/2 top-1/2 z-50 -translate-x-1/2 -translate-y-1/2 w-full max-w-md rounded-xl bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] shadow-[var(--shadow-modal)] animate-fade-in">
-          <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--color-border-faint)]">
+        <Dialog.Content className="fixed left-1/2 top-1/2 z-50 -translate-x-1/2 -translate-y-1/2 w-full max-w-md rounded-xl bg-bg-surface border border-border-subtle shadow-modal animate-fade-in">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-border-faint">
             <Dialog.Title className="font-display text-lg font-medium tracking-tight flex items-center gap-2">
               <Share2 className="size-5 text-violet-300" />
               Compartir archivo
             </Dialog.Title>
             <Dialog.Close asChild>
-              <button className="p-1.5 rounded-md hover:bg-[var(--color-bg-surface-2)] text-[var(--color-text-tertiary)]">
+              <button className="p-1.5 rounded-md hover:bg-bg-surface-2 text-text-tertiary">
                 <X className="size-4" />
               </button>
             </Dialog.Close>
@@ -74,9 +74,9 @@ export function ShareModal({ open, onClose, node }: Props) {
 
           <form onSubmit={handleShare} className="p-5 space-y-5">
             {node && (
-              <div className="p-3 rounded-lg bg-[var(--color-bg-surface-2)] border border-[var(--color-border-faint)]">
+              <div className="p-3 rounded-lg bg-bg-surface-2 border border-border-faint">
                 <p className="text-sm font-medium truncate">{node.name}</p>
-                <p className="text-[10px] text-[var(--color-text-tertiary)] uppercase tracking-wider mt-0.5">
+                <p className="text-[10px] text-text-tertiary uppercase tracking-wider mt-0.5">
                   Cifrado E2E · sealed box
                 </p>
               </div>
@@ -124,7 +124,7 @@ export function ShareModal({ open, onClose, node }: Props) {
             )}
 
             <div>
-              <span className="block text-xs font-medium text-[var(--color-text-secondary)] mb-2 tracking-wide uppercase">
+              <span className="block text-xs font-medium text-text-secondary mb-2 tracking-wide uppercase">
                 Permiso
               </span>
               <div className="flex gap-2">
@@ -137,7 +137,7 @@ export function ShareModal({ open, onClose, node }: Props) {
                       'flex-1 px-4 py-2.5 rounded-lg text-sm border transition-all',
                       permission === p
                         ? 'bg-violet-500/15 border-violet-500/30 text-violet-200'
-                        : 'bg-[var(--color-bg-surface-2)] border-[var(--color-border-faint)] text-[var(--color-text-tertiary)] hover:border-[var(--color-border-subtle)]',
+                        : 'bg-bg-surface-2 border-border-faint text-text-tertiary hover:border-border-subtle',
                     )}
                   >
                     {p === 'read' ? 'Solo lectura' : 'Lectura y escritura'}
@@ -148,7 +148,7 @@ export function ShareModal({ open, onClose, node }: Props) {
 
             <div className="flex items-start gap-2 p-3 rounded-lg bg-violet-500/5 border border-violet-500/20">
               <Shield className="size-4 text-violet-300 mt-0.5 shrink-0" />
-              <p className="text-[10px] text-[var(--color-text-tertiary)] leading-relaxed">
+              <p className="text-[10px] text-text-tertiary leading-relaxed">
                 La clave del archivo se cifra con la clave pública del destinatario (sealed box).
                 Ni Noctcom ni nadie más puede acceder al contenido.
               </p>

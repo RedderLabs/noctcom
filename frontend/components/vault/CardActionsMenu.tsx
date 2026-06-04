@@ -25,7 +25,7 @@ export function CardActionsMenu({ actions, className }: { actions: CardAction[];
           type="button"
           aria-label="Acciones"
           className={cn(
-            'p-1.5 rounded-md text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-surface-3)] transition-colors',
+            'p-1.5 rounded-md text-text-tertiary hover:text-text-primary hover:bg-bg-surface-3 transition-colors',
             className,
           )}
           onClick={stop}
@@ -41,7 +41,7 @@ export function CardActionsMenu({ actions, className }: { actions: CardAction[];
           align="end"
           sideOffset={6}
           onClick={stop}
-          className="z-50 min-w-[190px] rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-bg-surface-2)] p-1.5 shadow-[0_8px_30px_-8px_rgba(0,0,0,0.6)]"
+          className="z-50 min-w-[190px] rounded-xl border border-border-subtle bg-bg-surface-2 p-1.5 shadow-[0_8px_30px_-8px_rgba(0,0,0,0.6)]"
         >
           {actions.map((a) => {
             const Icon = a.icon;
@@ -51,8 +51,8 @@ export function CardActionsMenu({ actions, className }: { actions: CardAction[];
                 onSelect={a.onSelect}
                 className={cn(
                   'flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm cursor-pointer outline-none select-none',
-                  'data-[highlighted]:bg-[var(--color-bg-surface-3)]',
-                  a.danger ? 'text-red-400' : 'text-[var(--color-text-secondary)]',
+                  'data-[highlighted]:bg-bg-surface-3',
+                  a.danger ? 'text-red-400' : 'text-text-secondary',
                 )}
               >
                 <Icon className="size-4 shrink-0" />

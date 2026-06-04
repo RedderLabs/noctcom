@@ -21,9 +21,9 @@ export default function ManualPage() {
     return (
       <div className="px-8 py-12 max-w-3xl mx-auto">
         <div className="animate-pulse space-y-4">
-          <div className="h-8 bg-[var(--color-bg-surface)] rounded w-64" />
-          <div className="h-4 bg-[var(--color-bg-surface)] rounded w-full" />
-          <div className="h-4 bg-[var(--color-bg-surface)] rounded w-3/4" />
+          <div className="h-8 bg-bg-surface rounded w-64" />
+          <div className="h-4 bg-bg-surface rounded w-full" />
+          <div className="h-4 bg-bg-surface rounded w-3/4" />
         </div>
       </div>
     );
@@ -37,7 +37,7 @@ export default function ManualPage() {
         </div>
         <div>
           <h1 className="font-display text-2xl font-semibold tracking-tight">Manual de usuario</h1>
-          <p className="text-xs text-[var(--color-text-muted)] font-mono uppercase tracking-wider">
+          <p className="text-xs text-text-muted font-mono uppercase tracking-wider">
             Se actualiza con cada versión
           </p>
         </div>

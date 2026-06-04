@@ -104,7 +104,7 @@ export function FormatDiskModal({ open, onClose, disk, onFormatted }: Props) {
     <Dialog.Root open={open} onOpenChange={(v) => !v && handleClose()}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50" />
-        <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-[var(--color-bg-surface)] border border-[var(--color-border-faint)] rounded-2xl p-6 z-50 shadow-2xl">
+        <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-bg-surface border border-border-faint rounded-2xl p-6 z-50 shadow-2xl">
           {/* Header */}
           <div className="flex items-center justify-between mb-5">
             <div className="flex items-center gap-2">
@@ -114,35 +114,35 @@ export function FormatDiskModal({ open, onClose, disk, onFormatted }: Props) {
               <Dialog.Title className="text-lg font-semibold">Formatear disco</Dialog.Title>
             </div>
             <Dialog.Close asChild>
-              <button className="size-8 grid place-items-center rounded-lg hover:bg-[var(--color-bg-surface-2)] transition-colors">
+              <button className="size-8 grid place-items-center rounded-lg hover:bg-bg-surface-2 transition-colors">
                 <X className="size-4" />
               </button>
             </Dialog.Close>
           </div>
 
           {/* Disk info */}
-          <div className="p-3 rounded-xl bg-[var(--color-bg-surface-2)] border border-[var(--color-border-faint)] mb-4">
+          <div className="p-3 rounded-xl bg-bg-surface-2 border border-border-faint mb-4">
             <div className="flex items-center gap-3">
-              <div className="size-9 rounded-lg bg-[var(--color-bg-surface-3)] grid place-items-center">
+              <div className="size-9 rounded-lg bg-bg-surface-3 grid place-items-center">
                 {disk.removable
                   ? <Usb className="size-4 text-amber-400" />
-                  : <HardDrive className="size-4 text-[var(--color-text-tertiary)]" />
+                  : <HardDrive className="size-4 text-text-tertiary" />
                 }
               </div>
               <div className="min-w-0">
                 <p className="text-sm font-medium truncate">{disk.label}</p>
-                <p className="text-xs text-[var(--color-text-tertiary)] font-mono">{disk.device}</p>
+                <p className="text-xs text-text-tertiary font-mono">{disk.device}</p>
                 <div className="flex items-center gap-2 mt-0.5">
-                  <span className="text-[10px] text-[var(--color-text-muted)] font-mono">
+                  <span className="text-[10px] text-text-muted font-mono">
                     {fmtSize(disk.totalBytes)}
                   </span>
-                  <span className="text-[10px] text-[var(--color-text-muted)]">·</span>
+                  <span className="text-[10px] text-text-muted">·</span>
                   <span className="text-[10px] text-amber-400 font-mono uppercase">
                     {disk.filesystem || 'sin formato'}
                   </span>
                   {disk.removable && (
                     <>
-                      <span className="text-[10px] text-[var(--color-text-muted)]">·</span>
+                      <span className="text-[10px] text-text-muted">·</span>
                       <span className="text-[10px] text-amber-400 font-mono uppercase">USB</span>
                     </>
                   )}
@@ -153,7 +153,7 @@ export function FormatDiskModal({ open, onClose, disk, onFormatted }: Props) {
 
           {/* Filesystem selector */}
           <div className="mb-4">
-            <label className="text-xs text-[var(--color-text-secondary)] font-medium mb-1.5 block">
+            <label className="text-xs text-text-secondary font-medium mb-1.5 block">
               Sistema de archivos
             </label>
             <div className="flex gap-2">
@@ -165,7 +165,7 @@ export function FormatDiskModal({ open, onClose, disk, onFormatted }: Props) {
                     'flex-1 py-2 px-3 rounded-lg text-sm font-medium border transition-all',
                     filesystem === fs
                       ? 'bg-violet-500/10 border-violet-500/30 text-violet-300'
-                      : 'bg-[var(--color-bg-surface-2)] border-[var(--color-border-faint)] text-[var(--color-text-tertiary)] hover:border-[var(--color-border-subtle)]',
+                      : 'bg-bg-surface-2 border-border-faint text-text-tertiary hover:border-border-subtle',
                   )}
                 >
                   {fs}

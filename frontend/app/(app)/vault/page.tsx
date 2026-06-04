@@ -77,10 +77,10 @@ function FolderCard({
       {...attributes}
       onClick={onClick}
       className={cn(
-        'group relative p-4 rounded-xl border bg-[var(--color-bg-surface)]',
-        'hover:bg-[var(--color-bg-surface-2)] hover:border-[var(--color-border-strong)]',
+        'group relative p-4 rounded-xl border bg-bg-surface',
+        'hover:bg-bg-surface-2 hover:border-border-strong',
         'transition-all duration-150 cursor-pointer select-none',
-        'border-[var(--color-border-faint)]',
+        'border-border-faint',
         isOver && 'border-violet-500/60 bg-violet-500/5 shadow-[0_0_0_3px_rgba(139,92,246,0.15)] scale-[1.02]',
         isDragging && 'opacity-30',
       )}
@@ -95,7 +95,7 @@ function FolderCard({
         <CardActionsMenu actions={[{ label: 'Eliminar', icon: Trash2, onSelect: onDelete, danger: true }]} />
       </div>
       <h3 className="text-sm font-medium truncate mb-0.5">{node.name}</h3>
-      <p className="text-[10px] text-[var(--color-text-tertiary)] uppercase tracking-wider">
+      <p className="text-[10px] text-text-tertiary uppercase tracking-wider">
         {formatDate(node.updatedAt)}
       </p>
     </div>
@@ -125,15 +125,15 @@ function FileCard({
       {...attributes}
       onClick={onClick}
       className={cn(
-        'group relative p-4 rounded-xl border border-[var(--color-border-faint)] bg-[var(--color-bg-surface)]',
-        'hover:bg-[var(--color-bg-surface-2)] hover:border-[var(--color-border-strong)]',
+        'group relative p-4 rounded-xl border border-border-faint bg-bg-surface',
+        'hover:bg-bg-surface-2 hover:border-border-strong',
         'transition-all duration-150 cursor-pointer select-none',
         isDragging && 'opacity-30',
       )}
     >
       <div className="flex items-start justify-between mb-3">
-        <div className="size-11 rounded-lg grid place-items-center bg-[var(--color-bg-surface-2)] border border-[var(--color-border-faint)]">
-          <FileIcon className="size-5 text-[var(--color-text-secondary)]" />
+        <div className="size-11 rounded-lg grid place-items-center bg-bg-surface-2 border border-border-faint">
+          <FileIcon className="size-5 text-text-secondary" />
         </div>
         <CardActionsMenu
           actions={[
@@ -145,7 +145,7 @@ function FileCard({
         />
       </div>
       <h3 className="text-sm font-medium truncate mb-0.5">{node.name}</h3>
-      <p className="text-[10px] text-[var(--color-text-tertiary)] uppercase tracking-wider">
+      <p className="text-[10px] text-text-tertiary uppercase tracking-wider">
         {formatSize(node.size)} · {formatDate(node.updatedAt)}
       </p>
     </div>
@@ -160,17 +160,17 @@ function UploadBar({ uploads }: { uploads: Record<string, { fileName: string; pr
   return (
     <div className="fixed bottom-6 right-6 z-40 w-80 space-y-2">
       {entries.map(([id, u]) => (
-        <div key={id} className="p-3 rounded-lg bg-[var(--color-bg-surface-2)] border border-[var(--color-border-subtle)] shadow-lg">
+        <div key={id} className="p-3 rounded-lg bg-bg-surface-2 border border-border-subtle shadow-lg">
           <div className="flex items-center justify-between mb-1.5">
             <span className="text-xs font-medium truncate max-w-[200px]">{u.fileName}</span>
-            <span className="text-[10px] font-mono text-[var(--color-text-tertiary)]">
+            <span className="text-[10px] font-mono text-text-tertiary">
               {u.status === 'encrypting' && 'Cifrando…'}
               {u.status === 'uploading' && `${u.progress}%`}
               {u.status === 'done' && '✓'}
               {u.status === 'error' && 'Error'}
             </span>
           </div>
-          <div className="h-1.5 bg-[var(--color-bg-surface-3)] rounded-full overflow-hidden">
+          <div className="h-1.5 bg-bg-surface-3 rounded-full overflow-hidden">
             <div
               className={cn(
                 'h-full rounded-full transition-all duration-300',
@@ -275,7 +275,7 @@ export default function VaultPage() {
             <div className="flex items-center gap-1 text-sm">
               {breadcrumb.map((bc, i) => (
                 <span key={i} className="flex items-center gap-1">
-                  {i > 0 && <ChevronRight className="size-3.5 text-[var(--color-text-tertiary)]" />}
+                  {i > 0 && <ChevronRight className="size-3.5 text-text-tertiary" />}
                   <button
                     type="button"
                     onClick={() => {
@@ -288,8 +288,8 @@ export default function VaultPage() {
                     className={cn(
                       'transition-colors',
                       i === breadcrumb.length - 1
-                        ? 'text-[var(--color-text-primary)] font-medium cursor-default'
-                        : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]',
+                        ? 'text-text-primary font-medium cursor-default'
+                        : 'text-text-secondary hover:text-text-primary',
                     )}
                   >
                     {bc.name}
@@ -337,23 +337,23 @@ export default function VaultPage() {
                 value={search}
                 onChange={(e) => { setSearch(e.target.value); setPage(1); }}
                 placeholder="Filtrar por nombre…"
-                className="w-full h-9 px-3 bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] rounded-md text-sm placeholder:text-[var(--color-text-muted)] focus:outline-none focus:border-violet-500/60"
+                className="w-full h-9 px-3 bg-bg-surface border border-border-subtle rounded-md text-sm placeholder:text-text-muted focus:outline-none focus:border-violet-500/60"
               />
             </div>
             <button
               type="button"
-              className="h-9 px-3 flex items-center gap-1.5 bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] rounded-md text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-surface-2)]"
+              className="h-9 px-3 flex items-center gap-1.5 bg-bg-surface border border-border-subtle rounded-md text-xs text-text-secondary hover:bg-bg-surface-2"
             >
               <Filter className="size-3.5" />
               Filtros
             </button>
-            <div className="flex bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] rounded-md p-0.5">
+            <div className="flex bg-bg-surface border border-border-subtle rounded-md p-0.5">
               <button
                 type="button"
                 onClick={() => setView('grid')}
                 className={cn(
                   'h-8 px-2.5 rounded text-xs flex items-center gap-1.5',
-                  view === 'grid' ? 'bg-violet-500/20 text-violet-200' : 'text-[var(--color-text-tertiary)]',
+                  view === 'grid' ? 'bg-violet-500/20 text-violet-200' : 'text-text-tertiary',
                 )}
               >
                 <Grid3x3 className="size-3.5" />
@@ -363,7 +363,7 @@ export default function VaultPage() {
                 onClick={() => setView('list')}
                 className={cn(
                   'h-8 px-2.5 rounded text-xs flex items-center gap-1.5',
-                  view === 'list' ? 'bg-violet-500/20 text-violet-200' : 'text-[var(--color-text-tertiary)]',
+                  view === 'list' ? 'bg-violet-500/20 text-violet-200' : 'text-text-tertiary',
                 )}
               >
                 <List className="size-3.5" />
@@ -375,14 +375,14 @@ export default function VaultPage() {
           {loading && !initialized && (
             <div className="py-24 text-center">
               <Loader2 className="size-8 text-violet-400 animate-spin mx-auto mb-4" />
-              <p className="text-sm text-[var(--color-text-tertiary)]">Descifrando bóveda…</p>
+              <p className="text-sm text-text-tertiary">Descifrando bóveda…</p>
             </div>
           )}
 
           {/* ─── Carpetas ─────────────────────────────────── */}
           {initialized && folders.length > 0 && (
             <section className="mb-8">
-              <h2 className="text-[10px] uppercase tracking-widest text-[var(--color-text-tertiary)] mb-3">
+              <h2 className="text-[10px] uppercase tracking-widest text-text-tertiary mb-3">
                 Carpetas · {folders.length}
               </h2>
               <div className={cn(
@@ -406,7 +406,7 @@ export default function VaultPage() {
           {/* ─── Archivos ─────────────────────────────────── */}
           {initialized && files.length > 0 && (
             <section>
-              <h2 className="text-[10px] uppercase tracking-widest text-[var(--color-text-tertiary)] mb-3">
+              <h2 className="text-[10px] uppercase tracking-widest text-text-tertiary mb-3">
                 Archivos · {files.length}
               </h2>
               <div className={cn(
@@ -433,11 +433,11 @@ export default function VaultPage() {
           {/* ─── Empty state ──────────────────────────────── */}
           {initialized && pageNodes.length === 0 && !loading && (
             <div className="py-24 text-center">
-              <div className="size-16 rounded-full bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] grid place-items-center mx-auto mb-4">
-                <Upload className="size-6 text-[var(--color-text-tertiary)]" />
+              <div className="size-16 rounded-full bg-bg-surface border border-border-subtle grid place-items-center mx-auto mb-4">
+                <Upload className="size-6 text-text-tertiary" />
               </div>
               <h3 className="font-display text-lg mb-1">Nada por aquí todavía</h3>
-              <p className="text-sm text-[var(--color-text-tertiary)] mb-4">
+              <p className="text-sm text-text-tertiary mb-4">
                 Arrastra archivos a esta ventana o crea una carpeta para empezar
               </p>
             </div>
@@ -446,7 +446,7 @@ export default function VaultPage() {
           {/* ─── Paginación ───────────────────────────────── */}
           {totalPages > 1 && (
             <div className="mt-8 flex items-center justify-between text-sm">
-              <span className="text-[var(--color-text-tertiary)] text-xs">
+              <span className="text-text-tertiary text-xs">
                 Página {page} de {totalPages} · {filtered.length} elementos
               </span>
               <div className="flex items-center gap-1">
@@ -454,7 +454,7 @@ export default function VaultPage() {
                   type="button"
                   disabled={page === 1}
                   onClick={() => setPage((p) => p - 1)}
-                  className="h-8 w-8 grid place-items-center rounded-md text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-surface)] disabled:opacity-30 disabled:hover:bg-transparent"
+                  className="h-8 w-8 grid place-items-center rounded-md text-text-secondary hover:bg-bg-surface disabled:opacity-30 disabled:hover:bg-transparent"
                 >
                   <ChevronLeft className="size-4" />
                 </button>
@@ -467,7 +467,7 @@ export default function VaultPage() {
                       'h-8 min-w-8 px-2 rounded-md text-xs font-mono',
                       p === page
                         ? 'bg-violet-500/20 text-violet-200 border border-violet-500/30'
-                        : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-surface)]',
+                        : 'text-text-secondary hover:bg-bg-surface',
                     )}
                   >
                     {p}
@@ -477,7 +477,7 @@ export default function VaultPage() {
                   type="button"
                   disabled={page === totalPages}
                   onClick={() => setPage((p) => p + 1)}
-                  className="h-8 w-8 grid place-items-center rounded-md text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-surface)] disabled:opacity-30 disabled:hover:bg-transparent"
+                  className="h-8 w-8 grid place-items-center rounded-md text-text-secondary hover:bg-bg-surface disabled:opacity-30 disabled:hover:bg-transparent"
                 >
                   <ChevronRight className="size-4" />
                 </button>
@@ -488,9 +488,9 @@ export default function VaultPage() {
 
         <DragOverlay>
           {draggedNode && (
-            <div className="p-4 rounded-xl bg-[var(--color-bg-surface-3)] border border-violet-500/40 shadow-[0_8px_32px_-4px_rgba(0,0,0,0.6)] rotate-2 w-48">
+            <div className="p-4 rounded-xl bg-bg-surface-3 border border-violet-500/40 shadow-[0_8px_32px_-4px_rgba(0,0,0,0.6)] rotate-2 w-48">
               <p className="text-sm font-medium truncate">{draggedNode.name}</p>
-              <p className="text-[10px] text-[var(--color-text-tertiary)] uppercase tracking-wider">
+              <p className="text-[10px] text-text-tertiary uppercase tracking-wider">
                 {draggedNode.kind === 'folder' ? 'Carpeta' : formatSize(draggedNode.size)}
               </p>
             </div>
