@@ -36,7 +36,7 @@
     "zod-to-json-schema": "^3.23.3"
   },
   "devDependencies": {
-    "@types/node": "^22.7.4",
+    "@types/node": "^25.9.1",
     "@types/nodemailer": "^8.0.0",
     "@types/pg": "^8.11.10",
     "@types/yazl": "^3.3.1",
