@@ -624,5 +624,171 @@
     "description": "Noctcom does not use tracking cookies. The only active cookies are those set by <strong>Cloudflare</strong> for DDoS protection and network security (<cfBm></cfBm>, <cfClearance></cfClearance>): strictly necessary and they do not collect personal data. <link>Learn more</link>.",
     "accept": "Got it",
     "close": "Close"
+  },
+  "login": {
+    "credentials": {
+      "title": "Welcome back",
+      "subtitle": "Unlock your vault",
+      "emailLabel": "Email address",
+      "emailPlaceholder": "you@email.com",
+      "passwordLabel": "Master password",
+      "decrypting": "Decrypting locally…",
+      "unlock": "Unlock vault",
+      "forgotPassword": "Forgot your password?",
+      "noAccount": "Don't have an account? <signup>Create one</signup>"
+    },
+    "twoFactor": {
+      "title": "Two-step verification",
+      "subtitle": "Your password is correct. Confirm your identity to unlock.",
+      "usePasskey": "Use passkey",
+      "or": "or",
+      "otpLabel": "Access code (6 digits)",
+      "verifyCode": "Verify code",
+      "resendCode": "Resend code",
+      "sendCodeEmail": "Send a code to my email",
+      "cancel": "Cancel"
+    },
+    "footer": {
+      "security": "Local encryption · Zero-Knowledge"
+    },
+    "toasts": {
+      "authCancelled": "Authentication cancelled",
+      "codeSent": "Code sent to your email"
+    },
+    "errors": {
+      "login": "Couldn't sign in",
+      "passkey": "Couldn't verify the passkey",
+      "sendCode": "Couldn't send the code",
+      "wrongCode": "Incorrect code"
+    }
+  },
+  "signup": {
+    "defaultVaultName": "My vault",
+    "strength": {
+      "0": "Very weak",
+      "1": "Weak",
+      "2": "Acceptable",
+      "3": "Good",
+      "4": "Strong",
+      "5": "Excellent"
+    },
+    "form": {
+      "title": "Create account",
+      "subtitle": "Your password will never be sent to our servers",
+      "usernameLabel": "Username",
+      "usernamePlaceholder": "alex",
+      "emailLabel": "Email",
+      "emailPlaceholder": "you@email.com",
+      "emailHint": "We only store a hash. You'll never get spam.",
+      "passwordLabel": "Master password",
+      "passwordConfirmLabel": "Repeat password",
+      "noMatch": "Doesn't match",
+      "important": "<strong>Important:</strong> If you forget this password and lose your recovery phrase, your data will be unrecoverable. We have no way to restore it.",
+      "continue": "Continue",
+      "legal": "By creating an account you accept the <terms>Terms</terms> and the <privacy>Privacy Policy</privacy>."
+    },
+    "mnemonic": {
+      "title": "Your recovery phrase",
+      "subtitle": "Keep it somewhere safe. It's your only way to recover your account.",
+      "copy": "Copy phrase",
+      "copied": "Copied",
+      "confirmCheckbox": "I've saved my recovery phrase somewhere safe and I understand it's the only way to recover my account.",
+      "continue": "Continue"
+    },
+    "confirm": {
+      "title": "Almost done",
+      "subtitle": "We'll confirm a few random words",
+      "wordLabel": "Word #{n}",
+      "wordPlaceholder": "Type word #{n}",
+      "creating": "Creating vault…",
+      "finalize": "Confirm and enter",
+      "back": "Back"
+    },
+    "errors": {
+      "usernameTooShort": "The username must have at least 3 valid characters.",
+      "invalidEmail": "Enter a valid email address.",
+      "passwordTooLong": "The password can't exceed 128 characters.",
+      "passwordMismatch": "The passwords don't match",
+      "passwordTooWeak": "Your password is too weak. Use at least 12 characters with numbers and symbols.",
+      "wordsMismatch": "The words don't match. Check your recovery phrase."
+    },
+    "toasts": {
+      "copied": "Copied to clipboard (it'll be cleared in 60s)",
+      "accountCreated": "Account created — check your email to verify"
+    },
+    "haveAccount": "Already have an account? <login>Sign in</login>"
+  },
+  "recovery": {
+    "toast": {
+      "initError": "Failed to start recovery",
+      "phraseMismatch": "The phrase doesn't match this account. Check the words and their order.",
+      "passwordsDoNotMatch": "Passwords don't match",
+      "passwordTooShort": "Password must be at least 8 characters",
+      "recoverError": "Failed to recover the account"
+    },
+    "title": {
+      "email": "Recover account",
+      "mnemonic": "Enter your phrase",
+      "newPassword": "New password",
+      "done": "Account restored"
+    },
+    "subtitle": {
+      "email": "You'll need your 12-word recovery phrase",
+      "mnemonic": "In the exact order you generated it",
+      "newPassword": "Your vault will be re-encrypted with this password",
+      "doneKit": "Your keys and your files stay with you",
+      "doneNoKit": "Your keys have been regenerated with the new password"
+    },
+    "email": {
+      "warning": "Recovering your account revokes all active sessions. If your account has the full recovery kit, your files and shares are preserved.",
+      "label": "Email",
+      "placeholder": "you@email.com",
+      "continue": "Continue"
+    },
+    "mnemonic": {
+      "pasteHint": "Paste the full phrase into any field to fill them all automatically",
+      "verify": "Verify phrase"
+    },
+    "common": {
+      "back": "Back"
+    },
+    "newPassword": {
+      "kitVerified": "<strong>Recovery kit verified.</strong> Your vaults{count} will be re-encrypted with the new password: files and shares stay accessible.",
+      "noKit": "<strong>This account doesn't have the full recovery kit.</strong> You'll regain access, but files encrypted with your previous password can't be decrypted. After signing in, enable the kit in Settings → Security so it doesn't happen again.",
+      "label": "New master password",
+      "confirmLabel": "Repeat password",
+      "mismatch": "Doesn't match",
+      "restore": "Restore account"
+    },
+    "done": {
+      "messageKit": "Your account has been restored: your vaults were re-encrypted with the new password and your files stay accessible. All previous sessions have been revoked.",
+      "messageNoKit": "Your account has been restored and your keys regenerated with the new password. All previous sessions have been revoked.",
+      "login": "Sign in"
+    },
+    "backToLogin": "← Back to sign in",
+    "zkFooter": "Zero-Knowledge Recovery"
+  },
+  "verify": {
+    "title": "Verify your email",
+    "subtitle": "We sent you a 6-digit code. Check your inbox.",
+    "codeLabel": "Verification code",
+    "verifyButton": "Verify",
+    "emailPlaceholder": "you@email.com",
+    "resending": "Sending...",
+    "resendButton": "Resend code",
+    "verifyLater": "Verify later →",
+    "emailNotStored": "Your email is not stored on our servers",
+    "success": {
+      "title": "Email verified",
+      "description": "Your account is fully active.",
+      "goToVault": "Go to my vault"
+    },
+    "toast": {
+      "verifiedSuccess": "Email verified",
+      "invalidCode": "Invalid or expired code",
+      "emailRequired": "Enter your email to resend the code",
+      "resentSuccess": "Code resent — check your email",
+      "resendError": "Failed to resend"
+    }
   }
 }

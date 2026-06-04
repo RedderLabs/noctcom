@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { useRouter } from '@/i18n/navigation';
 import { Mail, Shield, ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
@@ -9,6 +10,7 @@ import { Input } from '@/components/ui/Input';
 import { apiFetch } from '@/lib/api';
 
 export default function VerifyPage() {
+  const t = useTranslations('verify');
   const router = useRouter();
   const [code, setCode] = useState('');
   const [email, setEmail] = useState('');
@@ -26,9 +28,9 @@ export default function VerifyPage() {
         body: JSON.stringify({ code }),
       });
       setVerified(true);
-      toast.success('Email verificado');
+      toast.success(t('toast.verifiedSuccess'));
     } catch (err: any) {
-      toast.error(err.message ?? 'Código inválido o expirado');
+      toast.error(err.message ?? t('toast.invalidCode'));
     } finally {
       setLoading(false);
     }
@@ -42,10 +44,10 @@ export default function VerifyPage() {
             <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
           </svg>
         </div>
-        <h1 className="font-display text-3xl font-light tracking-tight">Email verificado</h1>
-        <p className="text-sm text-text-secondary">Tu cuenta está completamente activa.</p>
+        <h1 className="font-display text-3xl font-light tracking-tight">{t('success.title')}</h1>
+        <p className="text-sm text-text-secondary">{t('success.description')}</p>
         <Button variant="primary" size="lg" className="w-full" onClick={() => router.push('/vault')}>
-          Ir a mi bóveda
+          {t('success.goToVault')}
         </Button>
       </div>
     );
@@ -57,15 +59,15 @@ export default function VerifyPage() {
         <div className="size-14 rounded-full bg-violet-500/10 border border-violet-500/30 grid place-items-center mx-auto mb-4">
           <Mail className="size-6 text-violet-300" />
         </div>
-        <h1 className="font-display text-3xl font-light tracking-tight">Verifica tu email</h1>
+        <h1 className="font-display text-3xl font-light tracking-tight">{t('title')}</h1>
         <p className="text-sm text-text-secondary max-w-sm mx-auto">
-          Te enviamos un código de 6 dígitos. Revisa tu bandeja de entrada.
+          {t('subtitle')}
         </p>
       </div>
 
       <form onSubmit={handleVerify} className="space-y-4">
         <Input
-          label="Código de verificación"
+          label={t('codeLabel')}
           type="text"
           inputMode="numeric"
           pattern="[0-9]{6}"
@@ -87,7 +89,7 @@ export default function VerifyPage() {
           disabled={code.length !== 6}
           rightIcon={!loading ? <ArrowRight className="size-4" /> : undefined}
         >
-          Verificar
+          {t('verifyButton')}
         </Button>
       </form>
 
@@ -96,7 +98,7 @@ export default function VerifyPage() {
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          placeholder="tu@email.com"
+          placeholder={t('emailPlaceholder')}
           className="w-full px-3 py-2 rounded-lg border border-border-faint
                      bg-bg-deep text-sm text-text-primary
                      placeholder:text-text-muted text-center
@@ -109,23 +111,23 @@ export default function VerifyPage() {
             setResending(true);
             try {
               if (!email) {
-                toast.error('Introduce tu email para reenviar el código');
+                toast.error(t('toast.emailRequired'));
                 return;
               }
               await apiFetch('/api/v1/auth/resend-verification', {
                 method: 'POST',
                 body: JSON.stringify({ email }),
               });
-              toast.success('Código reenviado — revisa tu email');
+              toast.success(t('toast.resentSuccess'));
             } catch (err: any) {
-              toast.error(err.message ?? 'Error al reenviar');
+              toast.error(err.message ?? t('toast.resendError'));
             } finally {
               setResending(false);
             }
           }}
           className="text-sm text-violet-400 hover:text-violet-300 transition-colors disabled:opacity-50"
         >
-          {resending ? 'Enviando...' : 'Reenviar código'}
+          {resending ? t('resending') : t('resendButton')}
         </button>
         <br />
         <button
@@ -133,14 +135,14 @@ export default function VerifyPage() {
           onClick={() => router.push('/vault')}
           className="text-sm text-text-tertiary hover:text-text-secondary transition-colors"
         >
-          Verificar más tarde →
+          {t('verifyLater')}
         </button>
       </div>
 
       <div className="flex items-center justify-center gap-2 pt-4 border-t border-border-faint">
         <Shield className="size-3.5 text-violet-400" />
         <span className="text-[10px] font-mono uppercase tracking-widest text-text-tertiary">
-          Tu email no se almacena en nuestros servidores
+          {t('emailNotStored')}
         </span>
       </div>
     </div>

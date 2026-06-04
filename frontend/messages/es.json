@@ -624,5 +624,171 @@
     "description": "Noctcom no utiliza cookies de rastreo. Las únicas cookies activas son las que establece <strong>Cloudflare</strong> para protección DDoS y seguridad de red (<cfBm></cfBm>, <cfClearance></cfClearance>): estrictamente necesarias y no recopilan datos personales. <link>Más información</link>.",
     "accept": "Entendido",
     "close": "Cerrar"
+  },
+  "login": {
+    "credentials": {
+      "title": "Bienvenido de nuevo",
+      "subtitle": "Desbloquea tu bóveda",
+      "emailLabel": "Correo electrónico",
+      "emailPlaceholder": "tu@email.com",
+      "passwordLabel": "Contraseña maestra",
+      "decrypting": "Descifrando localmente…",
+      "unlock": "Desbloquear bóveda",
+      "forgotPassword": "¿Olvidaste tu contraseña?",
+      "noAccount": "¿No tienes cuenta? <signup>Crear una</signup>"
+    },
+    "twoFactor": {
+      "title": "Verificación en dos pasos",
+      "subtitle": "Tu contraseña es correcta. Confirma tu identidad para desbloquear.",
+      "usePasskey": "Usar passkey",
+      "or": "o",
+      "otpLabel": "Código de acceso (6 dígitos)",
+      "verifyCode": "Verificar código",
+      "resendCode": "Reenviar código",
+      "sendCodeEmail": "Enviar código a mi email",
+      "cancel": "Cancelar"
+    },
+    "footer": {
+      "security": "Cifrado local · Zero-Knowledge"
+    },
+    "toasts": {
+      "authCancelled": "Autenticación cancelada",
+      "codeSent": "Código enviado a tu email"
+    },
+    "errors": {
+      "login": "Error al iniciar sesión",
+      "passkey": "No se pudo verificar la passkey",
+      "sendCode": "No se pudo enviar el código",
+      "wrongCode": "Código incorrecto"
+    }
+  },
+  "signup": {
+    "defaultVaultName": "Mi bóveda",
+    "strength": {
+      "0": "Muy débil",
+      "1": "Débil",
+      "2": "Aceptable",
+      "3": "Buena",
+      "4": "Fuerte",
+      "5": "Excelente"
+    },
+    "form": {
+      "title": "Crear cuenta",
+      "subtitle": "Tu contraseña jamás se enviará a nuestros servidores",
+      "usernameLabel": "Nombre de usuario",
+      "usernamePlaceholder": "alex",
+      "emailLabel": "Correo electrónico",
+      "emailPlaceholder": "tu@email.com",
+      "emailHint": "Solo guardamos un hash. Nunca verás spam.",
+      "passwordLabel": "Contraseña maestra",
+      "passwordConfirmLabel": "Repetir contraseña",
+      "noMatch": "No coincide",
+      "important": "<strong>Importante:</strong> Si olvidas esta contraseña y pierdes tu frase de recuperación, tus datos serán irrecuperables. No tenemos forma de restaurarlos.",
+      "continue": "Continuar",
+      "legal": "Al crear la cuenta aceptas los <terms>Términos</terms> y la <privacy>Política de Privacidad</privacy>."
+    },
+    "mnemonic": {
+      "title": "Tu frase de recuperación",
+      "subtitle": "Guárdala en lugar seguro. Es tu única forma de recuperar tu cuenta.",
+      "copy": "Copiar frase",
+      "copied": "Copiado",
+      "confirmCheckbox": "He guardado mi frase de recuperación en un lugar seguro y entiendo que es la única forma de recuperar mi cuenta.",
+      "continue": "Continuar"
+    },
+    "confirm": {
+      "title": "Casi listo",
+      "subtitle": "Confirmamos algunas palabras al azar",
+      "wordLabel": "Palabra #{n}",
+      "wordPlaceholder": "Escribe la palabra nº {n}",
+      "creating": "Creando bóveda…",
+      "finalize": "Confirmar y entrar",
+      "back": "Atrás"
+    },
+    "errors": {
+      "usernameTooShort": "El nombre de usuario debe tener al menos 3 caracteres válidos.",
+      "invalidEmail": "Introduce un correo electrónico válido.",
+      "passwordTooLong": "La contraseña no puede superar los 128 caracteres.",
+      "passwordMismatch": "Las contraseñas no coinciden",
+      "passwordTooWeak": "Tu contraseña es demasiado débil. Usa al menos 12 caracteres con números y símbolos.",
+      "wordsMismatch": "Las palabras no coinciden. Revisa tu frase de recuperación."
+    },
+    "toasts": {
+      "copied": "Copiado al portapapeles (se borrará en 60s)",
+      "accountCreated": "Cuenta creada — revisa tu email para verificar"
+    },
+    "haveAccount": "¿Ya tienes cuenta? <login>Iniciar sesión</login>"
+  },
+  "recovery": {
+    "toast": {
+      "initError": "Error al iniciar recuperación",
+      "phraseMismatch": "La frase no corresponde a esta cuenta. Revisa las palabras y el orden.",
+      "passwordsDoNotMatch": "Las contraseñas no coinciden",
+      "passwordTooShort": "La contraseña debe tener al menos 8 caracteres",
+      "recoverError": "Error al recuperar la cuenta"
+    },
+    "title": {
+      "email": "Recuperar cuenta",
+      "mnemonic": "Ingresa tu frase",
+      "newPassword": "Nueva contraseña",
+      "done": "Cuenta restaurada"
+    },
+    "subtitle": {
+      "email": "Necesitarás tu frase de recuperación de 12 palabras",
+      "mnemonic": "En el orden exacto que la generaste",
+      "newPassword": "Tu bóveda se re-cifrará con esta contraseña",
+      "doneKit": "Tus claves y tus archivos siguen contigo",
+      "doneNoKit": "Tus claves han sido regeneradas con la nueva contraseña"
+    },
+    "email": {
+      "warning": "Recuperar tu cuenta revoca todas las sesiones activas. Si tu cuenta tiene el kit de recuperación completo, tus archivos y compartidos se conservan.",
+      "label": "Correo electrónico",
+      "placeholder": "tu@email.com",
+      "continue": "Continuar"
+    },
+    "mnemonic": {
+      "pasteHint": "Pega la frase completa en cualquier campo para rellenar todos automáticamente",
+      "verify": "Verificar frase"
+    },
+    "common": {
+      "back": "Atrás"
+    },
+    "newPassword": {
+      "kitVerified": "<strong>Kit de recuperación verificado.</strong> Tus bóvedas{count} se re-cifrarán con la nueva contraseña: archivos y compartidos siguen accesibles.",
+      "noKit": "<strong>Esta cuenta no tiene el kit de recuperación completo.</strong> Recuperarás el acceso, pero los archivos cifrados con tu contraseña anterior no podrán descifrarse. Tras entrar, activa el kit en Ajustes → Seguridad para que no vuelva a pasar.",
+      "label": "Nueva contraseña maestra",
+      "confirmLabel": "Repetir contraseña",
+      "mismatch": "No coincide",
+      "restore": "Restaurar cuenta"
+    },
+    "done": {
+      "messageKit": "Tu cuenta ha sido restaurada: tus bóvedas se re-cifraron con la nueva contraseña y tus archivos siguen accesibles. Todas las sesiones anteriores han sido revocadas.",
+      "messageNoKit": "Tu cuenta ha sido restaurada y tus claves re-generadas con la nueva contraseña. Todas las sesiones anteriores han sido revocadas.",
+      "login": "Iniciar sesión"
+    },
+    "backToLogin": "← Volver a inicio de sesión",
+    "zkFooter": "Recuperación Zero-Knowledge"
+  },
+  "verify": {
+    "title": "Verifica tu email",
+    "subtitle": "Te enviamos un código de 6 dígitos. Revisa tu bandeja de entrada.",
+    "codeLabel": "Código de verificación",
+    "verifyButton": "Verificar",
+    "emailPlaceholder": "tu@email.com",
+    "resending": "Enviando...",
+    "resendButton": "Reenviar código",
+    "verifyLater": "Verificar más tarde →",
+    "emailNotStored": "Tu email no se almacena en nuestros servidores",
+    "success": {
+      "title": "Email verificado",
+      "description": "Tu cuenta está completamente activa.",
+      "goToVault": "Ir a mi bóveda"
+    },
+    "toast": {
+      "verifiedSuccess": "Email verificado",
+      "invalidCode": "Código inválido o expirado",
+      "emailRequired": "Introduce tu email para reenviar el código",
+      "resentSuccess": "Código reenviado — revisa tu email",
+      "resendError": "Error al reenviar"
+    }
   }
 }

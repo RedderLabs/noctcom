@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
+import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import { useRouter } from '@/i18n/navigation';
 import { Mail, Lock, User, ArrowRight, Shield, Copy, Check, KeyRound } from 'lucide-react';
@@ -40,6 +41,7 @@ function StepIndicator({ current }: { current: Step }) {
 }
 
 export default function SignupPage() {
+  const t = useTranslations('signup');
   const router = useRouter();
   const setIdentity = useAuth((s) => s.setIdentity);
   const [step, setStep] = useState<Step>('form');
@@ -66,9 +68,8 @@ export default function SignupPage() {
     if (p.length >= 16) score++;
     if (/[A-Z]/.test(p) && /[a-z]/.test(p)) score++;
     if (/\d/.test(p) && /[^\w\s]/.test(p)) score++;
-    const labels = ['Muy débil', 'Débil', 'Aceptable', 'Buena', 'Fuerte', 'Excelente'];
     const colors = ['bg-red-500', 'bg-orange-500', 'bg-yellow-500', 'bg-lime-500', 'bg-emerald-500', 'bg-violet-500'];
-    return { score, label: labels[score]!, color: colors[score]! };
+    return { score, label: t(`strength.${score}` as any), color: colors[score]! };
   }
 
   const strength = passwordStrength(password);
@@ -81,23 +82,23 @@ export default function SignupPage() {
     const cleanEmail = sanitizeEmail(email);
 
     if (cleanUsername.length < 3) {
-      toast.error('El nombre de usuario debe tener al menos 3 caracteres válidos.');
+      toast.error(t('errors.usernameTooShort'));
       return;
     }
     if (!cleanEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
-      toast.error('Introduce un correo electrónico válido.');
+      toast.error(t('errors.invalidEmail'));
       return;
     }
     if (password.length > 128) {
-      toast.error('La contraseña no puede superar los 128 caracteres.');
+      toast.error(t('errors.passwordTooLong'));
       return;
     }
     if (password !== passwordConfirm) {
-      toast.error('Las contraseñas no coinciden');
+      toast.error(t('errors.passwordMismatch'));
       return;
     }
     if (strength.score < 3) {
-      toast.error('Tu contraseña es demasiado débil. Usa al menos 12 caracteres con números y símbolos.');
+      toast.error(t('errors.passwordTooWeak'));
       return;
     }
 
@@ -130,7 +131,7 @@ export default function SignupPage() {
 
   async function handleFinalize() {
     if (!verifyCorrect) {
-      toast.error('Las palabras no coinciden. Revisa tu frase de recuperación.');
+      toast.error(t('errors.wordsMismatch'));
       return;
     }
     setLoading(true);
@@ -152,7 +153,7 @@ export default function SignupPage() {
       const exWrapped = encrypt(exchangeKp.privateKey, mk);
 
       const vaultKey = randomKey();
-      const vaultName = encryptString('Mi bóveda', vaultKey);
+      const vaultName = encryptString(t('defaultVaultName'), vaultKey);
       const vaultWrapKey = deriveSubKey(mk, 'noctcom.vault.wrap');
       const vaultKeyWrapped = encrypt(vaultKey, vaultWrapKey);
 
@@ -231,7 +232,7 @@ export default function SignupPage() {
       setPassword('');
       setPasswordConfirm('');
       navigator.clipboard.writeText('').catch(() => {});
-      toast.success('Cuenta creada — revisa tu email para verificar');
+      toast.success(t('toasts.accountCreated'));
       router.push('/verify');
     } catch (err: unknown) {
       toast.error(sanitizeErrorMessage(err));
@@ -245,14 +246,14 @@ export default function SignupPage() {
 
       <div className="text-center space-y-2">
         <h1 className="font-display text-3xl font-light tracking-tight">
-          {step === 'form' && 'Crear cuenta'}
-          {step === 'mnemonic' && 'Tu frase de recuperación'}
-          {step === 'confirm' && 'Casi listo'}
+          {step === 'form' && t('form.title')}
+          {step === 'mnemonic' && t('mnemonic.title')}
+          {step === 'confirm' && t('confirm.title')}
         </h1>
         <p className="text-sm text-text-primary opacity-80">
-          {step === 'form' && 'Tu contraseña jamás se enviará a nuestros servidores'}
-          {step === 'mnemonic' && 'Guárdala en lugar seguro. Es tu única forma de recuperar tu cuenta.'}
-          {step === 'confirm' && 'Confirmamos algunas palabras al azar'}
+          {step === 'form' && t('form.subtitle')}
+          {step === 'mnemonic' && t('mnemonic.subtitle')}
+          {step === 'confirm' && t('confirm.subtitle')}
         </p>
       </div>
 
@@ -260,31 +261,31 @@ export default function SignupPage() {
       {step === 'form' && (
         <form onSubmit={handleNext} className="space-y-4">
           <Input
-            label="Nombre de usuario"
+            label={t('form.usernameLabel')}
             type="text"
             value={username}
             onChange={(e) => setUsername(sanitizeUsername(e.target.value))}
             leftIcon={<User className="size-4" />}
-            placeholder="alex"
+            placeholder={t('form.usernamePlaceholder')}
             pattern="[a-zA-Z0-9_.\-]{3,64}"
             maxLength={64}
             required
             autoFocus
           />
           <Input
-            label="Correo electrónico"
+            label={t('form.emailLabel')}
             type="email"
             value={email}
             onChange={(e) => setEmail(sanitizeEmail(e.target.value))}
             leftIcon={<Mail className="size-4" />}
-            placeholder="tu@email.com"
-            hint="Solo guardamos un hash. Nunca verás spam."
+            placeholder={t('form.emailPlaceholder')}
+            hint={t('form.emailHint')}
             maxLength={254}
             required
           />
           <div className="space-y-2">
             <Input
-              label="Contraseña maestra"
+              label={t('form.passwordLabel')}
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value.slice(0, 128))}
@@ -311,7 +312,7 @@ export default function SignupPage() {
             )}
           </div>
           <Input
-            label="Repetir contraseña"
+            label={t('form.passwordConfirmLabel')}
             type="password"
             value={passwordConfirm}
             onChange={(e) => setPasswordConfirm(e.target.value.slice(0, 128))}
@@ -319,27 +320,31 @@ export default function SignupPage() {
             placeholder="••••••••••••"
             maxLength={128}
             required
-            error={passwordConfirm.length > 0 && password !== passwordConfirm ? 'No coincide' : undefined}
+            error={passwordConfirm.length > 0 && password !== passwordConfirm ? t('form.noMatch') : undefined}
           />
 
           <div className="flex gap-2 p-3 rounded-lg bg-violet-500/5 border border-violet-500/20">
             <Shield className="size-4 text-violet-300 mt-0.5 shrink-0" />
             <p className="text-xs text-text-secondary leading-relaxed">
-              <strong className="text-text-primary">Importante:</strong>{' '}
-              Si olvidas esta contraseña y pierdes tu frase de recuperación, tus datos serán
-              irrecuperables. No tenemos forma de restaurarlos.
+              {t.rich('form.important', {
+                strong: (chunks) => <strong className="text-text-primary">{chunks}</strong>,
+              })}
             </p>
           </div>
 
           <Button type="submit" variant="primary" size="lg" className="w-full" rightIcon={<ArrowRight className="size-4" />}>
-            Continuar
+            {t('form.continue')}
           </Button>
 
           <p className="text-[11px] text-text-tertiary text-center leading-relaxed">
-            Al crear la cuenta aceptas los{' '}
-            <Link href={'/terminos' as any} className="text-violet-300 hover:text-violet-200">Términos</Link>{' '}
-            y la{' '}
-            <Link href={'/privacidad' as any} className="text-violet-300 hover:text-violet-200">Política de Privacidad</Link>.
+            {t.rich('form.legal', {
+              terms: (chunks) => (
+                <Link href={'/terminos' as any} className="text-violet-300 hover:text-violet-200">{chunks}</Link>
+              ),
+              privacy: (chunks) => (
+                <Link href={'/privacidad' as any} className="text-violet-300 hover:text-violet-200">{chunks}</Link>
+              ),
+            })}
           </p>
         </form>
       )}
@@ -371,10 +376,10 @@ export default function SignupPage() {
               setTimeout(() => {
                 navigator.clipboard.writeText('').catch(() => {});
               }, 60_000);
-              toast.success('Copiado al portapapeles (se borrará en 60s)');
+              toast.success(t('toasts.copied'));
             }}
           >
-            {copied ? 'Copiado' : 'Copiar frase'}
+            {copied ? t('mnemonic.copied') : t('mnemonic.copy')}
           </Button>
 
           <label className="flex items-start gap-2 text-sm cursor-pointer p-3 rounded-lg hover:bg-bg-surface transition-colors">
@@ -385,8 +390,7 @@ export default function SignupPage() {
               className="mt-0.5 size-4 accent-violet-500"
             />
             <span className="text-text-primary opacity-80">
-              He guardado mi frase de recuperación en un lugar seguro y entiendo que es la
-              única forma de recuperar mi cuenta.
+              {t('mnemonic.confirmCheckbox')}
             </span>
           </label>
 
@@ -398,7 +402,7 @@ export default function SignupPage() {
             onClick={handleGoToConfirm}
             rightIcon={<ArrowRight className="size-4" />}
           >
-            Continuar
+            {t('mnemonic.continue')}
           </Button>
         </div>
       )}
@@ -414,7 +418,7 @@ export default function SignupPage() {
                     {wordIdx + 1}
                   </span>
                   <span className="text-sm text-text-primary">
-                    Palabra #{wordIdx + 1}
+                    {t('confirm.wordLabel', { n: wordIdx + 1 })}
                   </span>
                 </label>
                 <div className="relative">
@@ -428,7 +432,7 @@ export default function SignupPage() {
                       setVerifyInputs(next);
                     }}
                     onDrop={(e) => e.preventDefault()}
-                    placeholder={`Escribe la palabra nº ${wordIdx + 1}`}
+                    placeholder={t('confirm.wordPlaceholder', { n: wordIdx + 1 })}
                     className="w-full h-12 pl-4 pr-10 font-mono text-base bg-bg-surface border border-border-subtle rounded-lg text-text-primary placeholder:text-text-tertiary focus:outline-none focus:border-violet-500/60 focus:shadow-[0_0_0_3px_rgba(139,92,246,0.12)] transition-all"
                     autoComplete="off"
                     autoCorrect="off"
@@ -457,7 +461,7 @@ export default function SignupPage() {
               onClick={handleFinalize}
               rightIcon={!loading ? <ArrowRight className="size-4" /> : undefined}
             >
-              {loading ? 'Creando bóveda…' : 'Confirmar y entrar'}
+              {loading ? t('confirm.creating') : t('confirm.finalize')}
             </Button>
             <Button
               variant="ghost"
@@ -465,7 +469,7 @@ export default function SignupPage() {
               className="w-full"
               onClick={() => setStep('mnemonic')}
             >
-              Atrás
+              {t('confirm.back')}
             </Button>
           </div>
 
@@ -479,10 +483,11 @@ export default function SignupPage() {
       )}
 
       <div className="text-center text-sm text-text-secondary">
-        ¿Ya tienes cuenta?{' '}
-        <Link href="/login" className="text-violet-300 hover:text-violet-200 transition-colors">
-          Iniciar sesión
-        </Link>
+        {t.rich('haveAccount', {
+          login: (chunks) => (
+            <Link href="/login" className="text-violet-300 hover:text-violet-200 transition-colors">{chunks}</Link>
+          ),
+        })}
       </div>
     </div>
   );

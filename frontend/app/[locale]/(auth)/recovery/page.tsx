@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import { useRouter } from '@/i18n/navigation';
 import { Mail, KeyRound, ArrowRight, AlertTriangle, Shield, ArrowLeft, FileKey2 } from 'lucide-react';
@@ -50,6 +51,7 @@ function StepIndicator({ current }: { current: Step }) {
 }
 
 export default function RecoveryPage() {
+  const t = useTranslations('recovery');
   const router = useRouter();
   const [step, setStep] = useState<Step>('email');
   const [email, setEmail] = useState('');
@@ -77,7 +79,7 @@ export default function RecoveryPage() {
       setChallenge(res.challenge);
       setStep('mnemonic');
     } catch (err: any) {
-      toast.error(err.message ?? 'Error al iniciar recuperación');
+      toast.error(err.message ?? t('toast.initError'));
     } finally {
       setLoading(false);
     }
@@ -111,7 +113,7 @@ export default function RecoveryPage() {
       setUnlock(res);
       setStep('new_password');
     } catch {
-      toast.error('La frase no corresponde a esta cuenta. Revisa las palabras y el orden.');
+      toast.error(t('toast.phraseMismatch'));
     } finally {
       setLoading(false);
     }
@@ -120,11 +122,11 @@ export default function RecoveryPage() {
   async function handleRecovery(e: React.FormEvent) {
     e.preventDefault();
     if (newPassword !== newPasswordConfirm) {
-      toast.error('Las contraseñas no coinciden');
+      toast.error(t('toast.passwordsDoNotMatch'));
       return;
     }
     if (newPassword.length < 8) {
-      toast.error('La contraseña debe tener al menos 8 caracteres');
+      toast.error(t('toast.passwordTooShort'));
       return;
     }
     setLoading(true);
@@ -219,7 +221,7 @@ export default function RecoveryPage() {
       wipe(mk, seed, signKp.privateKey, identityKp.privateKey, exchangePrivateKey);
       setStep('done');
     } catch (err: any) {
-      toast.error(err.message ?? 'Error al recuperar la cuenta');
+      toast.error(err.message ?? t('toast.recoverError'));
     } finally {
       setLoading(false);
     }
@@ -233,18 +235,18 @@ export default function RecoveryPage() {
 
       <div className="text-center space-y-2">
         <h1 className="font-display text-3xl font-light tracking-tight">
-          {step === 'email' && 'Recuperar cuenta'}
-          {step === 'mnemonic' && 'Ingresa tu frase'}
-          {step === 'new_password' && 'Nueva contraseña'}
-          {step === 'done' && 'Cuenta restaurada'}
+          {step === 'email' && t('title.email')}
+          {step === 'mnemonic' && t('title.mnemonic')}
+          {step === 'new_password' && t('title.newPassword')}
+          {step === 'done' && t('title.done')}
         </h1>
         <p className="text-sm text-text-secondary max-w-sm mx-auto">
-          {step === 'email' && 'Necesitarás tu frase de recuperación de 12 palabras'}
-          {step === 'mnemonic' && 'En el orden exacto que la generaste'}
-          {step === 'new_password' && 'Tu bóveda se re-cifrará con esta contraseña'}
+          {step === 'email' && t('subtitle.email')}
+          {step === 'mnemonic' && t('subtitle.mnemonic')}
+          {step === 'new_password' && t('subtitle.newPassword')}
           {step === 'done' && (hasKit
-            ? 'Tus claves y tus archivos siguen contigo'
-            : 'Tus claves han sido regeneradas con la nueva contraseña')}
+            ? t('subtitle.doneKit')
+            : t('subtitle.doneNoKit'))}
         </p>
       </div>
 
@@ -253,24 +255,23 @@ export default function RecoveryPage() {
           <div className="flex gap-2 p-3 rounded-lg bg-amber-500/5 border border-amber-500/20">
             <AlertTriangle className="size-4 text-amber-300 mt-0.5 shrink-0" />
             <p className="text-xs text-text-secondary leading-relaxed">
-              Recuperar tu cuenta revoca todas las sesiones activas. Si tu cuenta tiene el
-              kit de recuperación completo, tus archivos y compartidos se conservan.
+              {t('email.warning')}
             </p>
           </div>
 
           <Input
-            label="Correo electrónico"
+            label={t('email.label')}
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             leftIcon={<Mail className="size-4" />}
-            placeholder="tu@email.com"
+            placeholder={t('email.placeholder')}
             required
             autoFocus
           />
 
           <Button type="submit" variant="primary" size="lg" className="w-full" loading={loading} rightIcon={!loading ? <ArrowRight className="size-4" /> : undefined}>
-            Continuar
+            {t('email.continue')}
           </Button>
         </form>
       )}
@@ -311,7 +312,7 @@ export default function RecoveryPage() {
             ))}
           </div>
           <p className="text-[10px] text-text-muted text-center">
-            Pega la frase completa en cualquier campo para rellenar todos automáticamente
+            {t('mnemonic.pasteHint')}
           </p>
 
           <div className="flex gap-2">
@@ -323,7 +324,7 @@ export default function RecoveryPage() {
               leftIcon={<ArrowLeft className="size-4" />}
               onClick={() => setStep('email')}
             >
-              Atrás
+              {t('common.back')}
             </Button>
             <Button
               type="submit"
@@ -334,7 +335,7 @@ export default function RecoveryPage() {
               loading={loading}
               rightIcon={!loading ? <ArrowRight className="size-4" /> : undefined}
             >
-              Verificar frase
+              {t('mnemonic.verify')}
             </Button>
           </div>
         </form>
@@ -346,25 +347,25 @@ export default function RecoveryPage() {
             <div className="flex gap-2 p-3 rounded-lg bg-emerald-500/5 border border-emerald-500/20">
               <FileKey2 className="size-4 text-emerald-300 mt-0.5 shrink-0" />
               <p className="text-xs text-text-secondary leading-relaxed">
-                <strong className="text-emerald-200">Kit de recuperación verificado.</strong>{' '}
-                Tus bóvedas{unlock!.vaults.length > 1 ? ` (${unlock!.vaults.length})` : ''} se
-                re-cifrarán con la nueva contraseña: archivos y compartidos siguen accesibles.
+                {t.rich('newPassword.kitVerified', {
+                  strong: (chunks) => <strong className="text-emerald-200">{chunks}</strong>,
+                  count: unlock!.vaults.length > 1 ? ` (${unlock!.vaults.length})` : '',
+                })}
               </p>
             </div>
           ) : (
             <div className="flex gap-2 p-3 rounded-lg bg-amber-500/5 border border-amber-500/20">
               <AlertTriangle className="size-4 text-amber-300 mt-0.5 shrink-0" />
               <p className="text-xs text-text-secondary leading-relaxed">
-                <strong className="text-amber-200">Esta cuenta no tiene el kit de recuperación completo.</strong>{' '}
-                Recuperarás el acceso, pero los archivos cifrados con tu contraseña anterior
-                no podrán descifrarse. Tras entrar, activa el kit en Ajustes → Seguridad
-                para que no vuelva a pasar.
+                {t.rich('newPassword.noKit', {
+                  strong: (chunks) => <strong className="text-amber-200">{chunks}</strong>,
+                })}
               </p>
             </div>
           )}
 
           <Input
-            label="Nueva contraseña maestra"
+            label={t('newPassword.label')}
             type="password"
             value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)}
@@ -374,14 +375,14 @@ export default function RecoveryPage() {
             autoFocus
           />
           <Input
-            label="Repetir contraseña"
+            label={t('newPassword.confirmLabel')}
             type="password"
             value={newPasswordConfirm}
             onChange={(e) => setNewPasswordConfirm(e.target.value)}
             leftIcon={<KeyRound className="size-4" />}
             placeholder="••••••••••••"
             required
-            error={newPasswordConfirm.length > 0 && newPassword !== newPasswordConfirm ? 'No coincide' : undefined}
+            error={newPasswordConfirm.length > 0 && newPassword !== newPasswordConfirm ? t('newPassword.mismatch') : undefined}
           />
 
           <div className="flex gap-2">
@@ -392,10 +393,10 @@ export default function RecoveryPage() {
               leftIcon={<ArrowLeft className="size-4" />}
               onClick={() => setStep('mnemonic')}
             >
-              Atrás
+              {t('common.back')}
             </Button>
             <Button type="submit" variant="primary" size="lg" className="flex-1" loading={loading}>
-              Restaurar cuenta
+              {t('newPassword.restore')}
             </Button>
           </div>
         </form>
@@ -409,26 +410,24 @@ export default function RecoveryPage() {
             </svg>
           </div>
           <p className="text-sm text-text-secondary">
-            {hasKit
-              ? 'Tu cuenta ha sido restaurada: tus bóvedas se re-cifraron con la nueva contraseña y tus archivos siguen accesibles. Todas las sesiones anteriores han sido revocadas.'
-              : 'Tu cuenta ha sido restaurada y tus claves re-generadas con la nueva contraseña. Todas las sesiones anteriores han sido revocadas.'}
+            {hasKit ? t('done.messageKit') : t('done.messageNoKit')}
           </p>
           <Button variant="primary" size="lg" className="w-full" onClick={() => router.push('/login')}>
-            Iniciar sesión
+            {t('done.login')}
           </Button>
         </div>
       )}
 
       <div className="text-center text-sm text-text-tertiary">
         <Link href="/login" className="hover:text-text-secondary transition-colors">
-          ← Volver a inicio de sesión
+          {t('backToLogin')}
         </Link>
       </div>
 
       <div className="flex items-center justify-center gap-2 pt-4 border-t border-border-faint">
         <Shield className="size-3.5 text-amber-400" />
         <span className="text-[10px] font-mono uppercase tracking-widest text-text-tertiary">
-          Recuperación Zero-Knowledge
+          {t('zkFooter')}
         </span>
       </div>
     </div>

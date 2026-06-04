@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import { useRouter } from '@/i18n/navigation';
 import { Mail, Lock, Fingerprint, ArrowRight, Shield, KeyRound } from 'lucide-react';
@@ -43,6 +44,7 @@ type Pending2FA = {
 };
 
 export default function LoginPage() {
+  const t = useTranslations('login');
   const router = useRouter();
   const setIdentity = useAuth((s) => s.setIdentity);
   const [email, setEmail] = useState('');
@@ -168,7 +170,7 @@ export default function LoginPage() {
 
       await completeLogin(finalize as SessionPayload, mk, kp.publicKey);
     } catch (err: any) {
-      toast.error(err.message ?? 'Error al iniciar sesión');
+      toast.error(err.message ?? t('errors.login'));
       setLoading(false);
     }
   }
@@ -190,7 +192,7 @@ export default function LoginPage() {
         asseResp = await startAuthentication({ optionsJSON: options as any });
       } catch (err: any) {
         if (err?.name === 'NotAllowedError' || err?.name === 'AbortError') {
-          toast.info('Autenticación cancelada');
+          toast.info(t('toasts.authCancelled'));
           setLoading(false);
           return;
         }
@@ -204,7 +206,7 @@ export default function LoginPage() {
       });
       await completeLogin(payload, pending2fa.mk, pending2fa.identityPublicKey);
     } catch (err: any) {
-      toast.error(err.message ?? 'No se pudo verificar la passkey');
+      toast.error(err.message ?? t('errors.passkey'));
       setLoading(false);
     }
   }
@@ -219,9 +221,9 @@ export default function LoginPage() {
         skipAuth: true,
       });
       setOtpSent(true);
-      toast.success('Código enviado a tu email');
+      toast.success(t('toasts.codeSent'));
     } catch (err: any) {
-      toast.error(err.message ?? 'No se pudo enviar el código');
+      toast.error(err.message ?? t('errors.sendCode'));
     } finally {
       setLoading(false);
     }
@@ -238,7 +240,7 @@ export default function LoginPage() {
       });
       await completeLogin(payload, pending2fa.mk, pending2fa.identityPublicKey);
     } catch (err: any) {
-      toast.error(err.message ?? 'Código incorrecto');
+      toast.error(err.message ?? t('errors.wrongCode'));
       setLoading(false);
     }
   }
@@ -256,10 +258,10 @@ export default function LoginPage() {
       <div className="space-y-6 animate-fade-in">
         <div className="text-center space-y-2">
           <h1 className="font-display text-3xl font-light tracking-tight">
-            Verificación en dos pasos
+            {t('twoFactor.title')}
           </h1>
           <p className="text-sm text-text-secondary">
-            Tu contraseña es correcta. Confirma tu identidad para desbloquear.
+            {t('twoFactor.subtitle')}
           </p>
         </div>
 
@@ -274,7 +276,7 @@ export default function LoginPage() {
               leftIcon={!loading ? <Fingerprint className="size-4" /> : undefined}
               onClick={handlePasskey2FA}
             >
-              Usar passkey
+              {t('twoFactor.usePasskey')}
             </Button>
           )}
 
@@ -284,7 +286,7 @@ export default function LoginPage() {
                 <div className="w-full border-t border-border-faint" />
               </div>
               <div className="relative flex justify-center">
-                <span className="bg-bg-base px-3 text-xs text-text-tertiary uppercase tracking-widest">o</span>
+                <span className="bg-bg-base px-3 text-xs text-text-tertiary uppercase tracking-widest">{t('twoFactor.or')}</span>
               </div>
             </div>
           )}
@@ -293,7 +295,7 @@ export default function LoginPage() {
             otpSent ? (
               <div className="space-y-4">
                 <Input
-                  label="Código de acceso (6 dígitos)"
+                  label={t('twoFactor.otpLabel')}
                   inputMode="numeric"
                   autoComplete="one-time-code"
                   maxLength={6}
@@ -312,14 +314,14 @@ export default function LoginPage() {
                   rightIcon={!loading ? <ArrowRight className="size-4" /> : undefined}
                   onClick={handleVerifyOtp}
                 >
-                  Verificar código
+                  {t('twoFactor.verifyCode')}
                 </Button>
                 <button
                   type="button"
                   className="w-full text-xs text-text-tertiary hover:text-text-secondary transition-colors"
                   onClick={handleSendOtp}
                 >
-                  Reenviar código
+                  {t('twoFactor.resendCode')}
                 </button>
               </div>
             ) : (
@@ -332,7 +334,7 @@ export default function LoginPage() {
                 leftIcon={!loading ? <Mail className="size-4" /> : undefined}
                 onClick={handleSendOtp}
               >
-                Enviar código a mi email
+                {t('twoFactor.sendCodeEmail')}
               </Button>
             )
           )}
@@ -342,14 +344,14 @@ export default function LoginPage() {
             className="w-full text-sm text-text-tertiary hover:text-text-secondary transition-colors pt-2"
             onClick={cancel2FA}
           >
-            Cancelar
+            {t('twoFactor.cancel')}
           </button>
         </div>
 
         <div className="flex items-center justify-center gap-2 pt-4 border-t border-border-faint">
           <Shield className="size-3.5 text-violet-400" />
           <span className="text-[10px] font-mono uppercase tracking-widest text-text-tertiary">
-            Cifrado local · Zero-Knowledge
+            {t('footer.security')}
           </span>
         </div>
       </div>
@@ -361,26 +363,26 @@ export default function LoginPage() {
     <div className="space-y-6 animate-fade-in">
       <div className="text-center space-y-2">
         <h1 className="font-display text-3xl font-light tracking-tight">
-          Bienvenido de nuevo
+          {t('credentials.title')}
         </h1>
         <p className="text-sm text-text-secondary">
-          Desbloquea tu bóveda
+          {t('credentials.subtitle')}
         </p>
       </div>
 
       <form onSubmit={handleCredentials} className="space-y-4">
           <Input
-            label="Correo electrónico"
+            label={t('credentials.emailLabel')}
             type="email"
             autoComplete="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             leftIcon={<Mail className="size-4" />}
-            placeholder="tu@email.com"
+            placeholder={t('credentials.emailPlaceholder')}
             required
           />
           <Input
-            label="Contraseña maestra"
+            label={t('credentials.passwordLabel')}
             type="password"
             autoComplete="current-password"
             value={password}
@@ -398,19 +400,22 @@ export default function LoginPage() {
             loading={loading}
             rightIcon={!loading ? <ArrowRight className="size-4" /> : undefined}
           >
-            {loading ? 'Descifrando localmente…' : 'Desbloquear bóveda'}
+            {loading ? t('credentials.decrypting') : t('credentials.unlock')}
           </Button>
         </form>
 
       <div className="text-center space-y-2 text-sm">
         <Link href="/recovery" className="text-violet-300 hover:text-violet-200 transition-colors">
-          ¿Olvidaste tu contraseña?
+          {t('credentials.forgotPassword')}
         </Link>
         <div className="text-text-tertiary">
-          ¿No tienes cuenta?{' '}
-          <Link href="/signup" className="text-text-secondary hover:text-text-primary transition-colors">
-            Crear una
-          </Link>
+          {t.rich('credentials.noAccount', {
+            signup: (chunks) => (
+              <Link href="/signup" className="text-text-secondary hover:text-text-primary transition-colors">
+                {chunks}
+              </Link>
+            ),
+          })}
         </div>
       </div>
 
