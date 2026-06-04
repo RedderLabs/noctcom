@@ -4,6 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { ThemeToggle } from "@/components/ui/ThemeToggle";
 
 interface NavbarProps {
   variant?: "landing" | "back";
@@ -28,6 +29,7 @@ export function Navbar({ variant = "landing" }: NavbarProps) {
         </Link>
 
         <div className="flex items-center gap-3">
+          <ThemeToggle />
           {variant === "landing" ? (
             <>
               <Link href="/login">

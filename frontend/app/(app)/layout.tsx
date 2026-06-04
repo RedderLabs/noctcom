@@ -15,6 +15,7 @@ import { loadTokens } from '@/lib/api';
 import { useVault } from '@/lib/vault-store';
 import { cn } from '@/lib/utils';
 import { FontScaleControl } from '@/components/ui/FontScaleControl';
+import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { useFontScale } from '@/lib/font-scale';
 import { useSync } from '@/lib/sync';
 import { syncPushToken, onForegroundMessage } from '@/lib/firebase';
@@ -191,9 +192,13 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           ))}
         </nav>
 
-        {/* Accesibilidad */}
-        <div className={cn('py-2 border-t border-border-faint', collapsed ? 'px-1.5' : 'px-4')}>
+        {/* Accesibilidad — tamaño de texto + tema claro/oscuro */}
+        <div className={cn(
+          'py-2 border-t border-border-faint flex items-center gap-2',
+          collapsed ? 'px-1.5 flex-col' : 'px-4 justify-between',
+        )}>
           <FontScaleControl collapsed={collapsed} />
+          <ThemeToggle />
         </div>
 
         {/* Manual */}

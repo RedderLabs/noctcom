@@ -50,6 +50,50 @@
   --shadow-modal: 0 24px 48px -12px rgba(0, 0, 0, 0.6);
 }
 
+/* ─── Tema claro ────────────────────────────────────────────
+   Override de las variables de color cuando <html> lleva la clase .light.
+   Las utilidades de Tailwind referencian var(--color-*), así que cambiar las
+   variables en runtime reescribe todo el tema sin tocar el markup. La marca
+   (violetas, foco, gradientes de acento) se mantiene; invertimos fondos/texto
+   y bajamos el extremo claro de los violetas para que el texto-acento siga
+   legible sobre blanco. ──────────────────────────────────── */
+html.light {
+  /* Fondos — las tarjetas (surface) sobresalen en blanco sobre un gris muy claro */
+  --color-bg-deep: #e9e9f1;          /* pozos / inset (pre, code) */
+  --color-bg-base: #f5f5fa;          /* fondo de página */
+  --color-bg-surface: #ffffff;       /* tarjetas */
+  --color-bg-surface-2: #f0f0f6;     /* hover / elevación */
+  --color-bg-surface-3: #e6e6ef;     /* activo */
+
+  /* Bordes — sutiles pero visibles sobre claro */
+  --color-border-faint: #e7e7ef;
+  --color-border-subtle: #d6d6e2;
+  --color-border-strong: #b8b8ca;
+
+  /* Texto — contraste alto, con un punto de violeta en los oscuros */
+  --color-text-primary: #16161e;
+  --color-text-secondary: #43435a;
+  --color-text-tertiary: #6a6a82;
+  --color-text-muted: #9494a8;
+
+  /* Violetas — el extremo claro se oscurece para usos como texto/acento.
+     Los pasos 500–950 (rellenos, botones) se mantienen idénticos. */
+  --color-violet-200: #a78bfa;
+  --color-violet-300: #8b5cf6;
+  --color-violet-400: #7c3aed;
+
+  /* Acentos semánticos — versiones más oscuras, legibles sobre claro */
+  --color-success: #059669;
+  --color-warning: #b45309;
+  --color-danger: #dc2626;
+  --color-info: #2563eb;
+
+  /* Sombras — basadas en tinte oscuro, no en highlight blanco */
+  --shadow-glow: 0 0 0 1px rgba(124, 58, 237, 0.18), 0 8px 32px -8px rgba(124, 58, 237, 0.18);
+  --shadow-card: 0 1px 2px rgba(20, 20, 45, 0.04), 0 8px 24px -10px rgba(20, 20, 45, 0.10);
+  --shadow-modal: 0 24px 48px -12px rgba(20, 20, 45, 0.20);
+}
+
 /* ─── Reset / base ──────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; }
 
@@ -274,3 +318,22 @@ body {
 .prose-noctcom em {
   color: var(--color-text-tertiary);
 }
+
+/* ─── Ajustes finos del tema claro ──────────────────────────
+   Reglas que no son simples tokens: fondo del body, glass, textura grain,
+   selección y enlaces/código de prose, que en oscuro asumían superficie negra. */
+html.light body {
+  background:
+    radial-gradient(ellipse 80% 50% at 20% -10%, rgba(124, 58, 237, 0.06), transparent 70%),
+    radial-gradient(ellipse 70% 50% at 100% 50%, rgba(139, 92, 246, 0.04), transparent 70%),
+    var(--color-bg-base);
+}
+/* La textura de ruido es oscura; sobre claro basta una pizca para que no ensucie. */
+html.light .grain::before { opacity: 0.012; }
+/* Glass: panel translúcido claro en lugar de negro. */
+html.light .glass { background: rgba(255, 255, 255, 0.72); }
+html.light ::selection { background: rgba(124, 58, 237, 0.18); }
+/* Prose: enlaces y código necesitan violetas oscuros para contrastar sobre blanco. */
+html.light .prose-noctcom a { color: var(--color-violet-700); }
+html.light .prose-noctcom a:hover { color: var(--color-violet-500); }
+html.light .prose-noctcom code { color: var(--color-violet-700); }

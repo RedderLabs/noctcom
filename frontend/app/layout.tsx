@@ -1,7 +1,12 @@
 import './globals.css';
-import { Toaster } from 'sonner';
 import { CookieBanner } from '@/components/ui/CookieBanner';
+import { ThemedToaster } from '@/components/ui/ThemedToaster';
 import type { Metadata } from 'next';
+
+// Anti-FOUC: fija la clase de tema en <html> ANTES del primer pintado, leyendo
+// la preferencia guardada o, si no hay, la del sistema. Así no hay parpadeo
+// claro→oscuro al cargar. Se mantiene minificado y a prueba de fallos (try/catch).
+const themeScript = `(function(){try{var t=localStorage.getItem('noctcom.theme');if(t!=='light'&&t!=='dark'){t=window.matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';}var e=document.documentElement;e.classList.add(t);e.style.colorScheme=t;}catch(e){}})();`;
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://noctcom.com'),
@@ -63,21 +68,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="es" suppressHydrationWarning>
       <head>
         <meta name="google-site-verification" content="zI45FHf6c5bM5siv6QHQEEPvYqjwfZ4tan65XOzaq4E" />
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body className="grain">
         {children}
         <CookieBanner />
-        <Toaster
-          theme="dark"
-          position="bottom-right"
-          toastOptions={{
-            style: {
-              background: 'var(--color-bg-surface-2)',
-              border: '1px solid var(--color-border-subtle)',
-              color: 'var(--color-text-primary)',
-            },
-          }}
-        />
+        <ThemedToaster />
       </body>
     </html>
   );
