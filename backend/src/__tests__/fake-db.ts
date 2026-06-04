@@ -121,7 +121,7 @@ async function query(text: string, params: any[] = []): Promise<QueryResult> {
 
   // ─── webauthn_challenges ──────────────────────────────────
   if (sql.startsWith('INSERT INTO webauthn_challenges')) {
-    const purpose = /'(registration|authentication|step-up)'/.exec(sql)?.[1] ?? 'unknown';
+    const purpose = /'(registration|authentication|step-up|change-password)'/.exec(sql)?.[1] ?? 'unknown';
     store.challenges.push({
       id: randomUUID(),
       user_id: params[0],
@@ -146,13 +146,14 @@ async function query(text: string, params: any[] = []): Promise<QueryResult> {
     return { rows: [{ challenge: target.challenge }], rowCount: 1 };
   }
 
-  // step-up/finish: consume el challenge exacto.
-  if (sql.startsWith('DELETE FROM webauthn_challenges') && sql.includes("purpose = 'step-up'") && sql.includes('challenge = $2')) {
+  // step-up/finish y change-password/finalize: consumen el challenge exacto.
+  if (sql.startsWith('DELETE FROM webauthn_challenges') && sql.includes('challenge = $2')) {
+    const purpose = /purpose = '([\w-]+)'/.exec(sql)?.[1] ?? '';
     const [userId, challenge] = params;
     const buf = asBuf(challenge);
     const now = Date.now();
     const target = store.challenges.find(
-      (c) => c.user_id === userId && c.purpose === 'step-up' && c.challenge.equals(buf) && c.expires_at.getTime() > now,
+      (c) => c.user_id === userId && c.purpose === purpose && c.challenge.equals(buf) && c.expires_at.getTime() > now,
     );
     if (!target) return { rows: [], rowCount: 0 };
     store.challenges = store.challenges.filter((c) => c.id !== target.id);
@@ -240,6 +241,32 @@ async function query(text: string, params: any[] = []): Promise<QueryResult> {
         created_at: c.created_at,
       }));
     return { rows, rowCount: rows.length };
+  }
+
+  // ─── change-password (auth.ts) ────────────────────────────
+  // begin: params KDF actuales del usuario.
+  if (sql.startsWith('SELECT kdf_salt, kdf_ops_limit, kdf_mem_limit FROM users')) {
+    const u = store.users.get(params[0]);
+    return u
+      ? { rows: [{ kdf_salt: u.kdf_salt, kdf_ops_limit: u.kdf_ops_limit, kdf_mem_limit: u.kdf_mem_limit }], rowCount: 1 }
+      : { rows: [], rowCount: 0 };
+  }
+
+  // finalize: reemplaza claves (mismo prefijo que recovery pero re-envuelve la
+  // exchange PRIVADA, no la pública; lo distingue 'updated_at = now()').
+  if (sql.startsWith('UPDATE users SET') && sql.includes('opaque_record = $1') && sql.includes('updated_at = now()')) {
+    const u = store.users.get(params[9]);
+    if (!u) return { rows: [], rowCount: 0 };
+    u.opaque_record = asBuf(params[0]);
+    u.kdf_salt = asBuf(params[1]);
+    u.kdf_ops_limit = Number(params[2]);
+    u.kdf_mem_limit = Number(params[3]);
+    u.identity_public_key = asBuf(params[4]);
+    u.identity_private_key_wrapped = asBuf(params[5]);
+    u.identity_private_key_nonce = asBuf(params[6]);
+    u.exchange_private_key_wrapped = asBuf(params[7]);
+    u.exchange_private_key_nonce = asBuf(params[8]);
+    return { rows: [], rowCount: 1 };
   }
 
   // ─── recovery (two_factor.ts) ─────────────────────────────

@@ -313,6 +313,141 @@ const authRoutes: FastifyPluginAsync = async (app) => {
     return reply.send(payload);
   });
 
+  // ═══════════════════════════════════════════════════════════
+  // Cambio de contraseña maestra (autenticado)
+  //
+  // El usuario YA tiene en memoria sus vault keys y la exchange privada, así
+  // que solo hay que RE-ENVOLVERLAS con la MK nueva (no se descifra nada en el
+  // servidor: zero-knowledge intacto). La prueba de que conoce la contraseña
+  // ACTUAL es firmar un challenge con la identity key derivada de ella: si la
+  // teclea mal, la firma no valida contra la identity_public_key guardada, y
+  // rechazamos (evita que una contraseña equivocada deje la cuenta inservible).
+  // Los seals de recuperación NO cambian: la mnemónica es la misma.
+  // ═══════════════════════════════════════════════════════════
+
+  // POST /change-password/begin: challenge + params KDF actuales (para derivar
+  // la MK vieja desde la contraseña tecleada y firmar el challenge).
+  app.post('/change-password/begin', { onRequest: [app.authenticate] }, async (req, reply) => {
+    const u = await db.query(
+      `SELECT kdf_salt, kdf_ops_limit, kdf_mem_limit FROM users WHERE id = $1`,
+      [req.user.sub],
+    );
+    if (u.rowCount === 0) return reply.notFound();
+
+    const challenge = randomBytes(32);
+    const expires = new Date(Date.now() + 5 * 60 * 1000);
+    await db.query(
+      `INSERT INTO webauthn_challenges (user_id, challenge, purpose, expires_at)
+       VALUES ($1,$2,'change-password',$3)`,
+      [req.user.sub, challenge, expires],
+    );
+
+    return reply.send({
+      challenge: toB64(challenge),
+      kdfSalt: toB64(u.rows[0].kdf_salt),
+      kdfOpsLimit: u.rows[0].kdf_ops_limit,
+      kdfMemLimit: u.rows[0].kdf_mem_limit,
+    });
+  });
+
+  const changePasswordSchema = z.object({
+    challenge: bytesB64,
+    signature: bytesB64, // firma del challenge con la identity key ACTUAL
+    newOpaqueRecord: b64Exactly(64),
+    newKdfSalt: b64Exactly(16),
+    newKdfOpsLimit: z.number().int().min(2).max(10),
+    newKdfMemLimit: z.number().int().min(67108864).max(1073741824),
+    newIdentityPublicKey: pubKey32,
+    newIdentityPrivateKeyWrapped: wrappedSignKey,
+    newIdentityPrivateKeyNonce: nonce24,
+    // El par exchange se CONSERVA (misma pública); solo se re-envuelve la privada.
+    newExchangePrivateKeyWrapped: wrappedKey,
+    newExchangePrivateKeyNonce: nonce24,
+    vaults: z.array(z.object({
+      id: z.string().uuid(),
+      vaultKeyWrapped: wrappedKey,
+      vaultKeyNonce: nonce24,
+    })).max(200),
+  });
+
+  // POST /change-password/finalize: verifica la firma con la identity key ACTUAL,
+  // luego reemplaza KDF/opaque/identity y re-envuelve exchange + vault keys.
+  app.post('/change-password/finalize', { onRequest: [app.authenticate] }, async (req, reply) => {
+    const body = changePasswordSchema.parse(req.body);
+    const userId = req.user.sub;
+
+    // Consume el challenge exacto (un solo uso, anti-replay).
+    const ch = await db.query(
+      `DELETE FROM webauthn_challenges
+        WHERE user_id = $1 AND purpose = 'change-password' AND challenge = $2 AND expires_at > now()
+        RETURNING id`,
+      [userId, fromB64(body.challenge)],
+    );
+    if (ch.rowCount === 0) return reply.unauthorized('challenge inválido o expirado');
+
+    const u = await db.query('SELECT identity_public_key FROM users WHERE id = $1', [userId]);
+    if (u.rowCount === 0) return reply.notFound();
+
+    const sodium = await import('libsodium-wrappers-sumo').then((m) => m.default);
+    await sodium.ready;
+    const ok = sodium.crypto_sign_verify_detached(
+      fromB64(body.signature),
+      fromB64(body.challenge),
+      u.rows[0].identity_public_key,
+    );
+    if (!ok) return reply.unauthorized('contraseña actual incorrecta');
+
+    try {
+      await tx(async (client) => {
+        await client.query(
+          `UPDATE users SET
+            opaque_record = $1,
+            kdf_salt = $2,
+            kdf_ops_limit = $3,
+            kdf_mem_limit = $4,
+            identity_public_key = $5,
+            identity_private_key_wrapped = $6,
+            identity_private_key_nonce = $7,
+            exchange_private_key_wrapped = $8,
+            exchange_private_key_nonce = $9,
+            updated_at = now()
+           WHERE id = $10`,
+          [
+            fromB64(body.newOpaqueRecord), fromB64(body.newKdfSalt),
+            body.newKdfOpsLimit, body.newKdfMemLimit,
+            fromB64(body.newIdentityPublicKey),
+            fromB64(body.newIdentityPrivateKeyWrapped), fromB64(body.newIdentityPrivateKeyNonce),
+            fromB64(body.newExchangePrivateKeyWrapped), fromB64(body.newExchangePrivateKeyNonce),
+            userId,
+          ],
+        );
+
+        for (const v of body.vaults) {
+          const r = await client.query(
+            `UPDATE vaults SET vault_key_wrapped = $1, vault_key_nonce = $2
+             WHERE id = $3 AND owner_id = $4`,
+            [fromB64(v.vaultKeyWrapped), fromB64(v.vaultKeyNonce), v.id, userId],
+          );
+          if (r.rowCount === 0) throw new Error('vault-not-owned');
+        }
+      });
+    } catch (e: any) {
+      if (e?.message === 'vault-not-owned') return reply.badRequest('vault does not belong to user');
+      throw e;
+    }
+
+    // Revoca las sesiones de OTROS dispositivos (cambiar contraseña corta el
+    // acceso a quien tuviera una sesión vieja). La de este dispositivo sigue:
+    // el access token (JWT) vale hasta expirar y el cliente ya tiene la MK nueva.
+    await db.query(
+      `UPDATE sessions SET revoked_at = now()
+       WHERE user_id = $1 AND revoked_at IS NULL AND device_id IS DISTINCT FROM $2`,
+      [userId, req.user.deviceId ?? null],
+    );
+
+    return reply.send({ ok: true });
+  });
+
   // ─── POST /refresh ────────────────────────────────────────
   app.post('/refresh', {
     config: {

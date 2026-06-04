@@ -11,6 +11,7 @@ import { FormatDiskModal } from '@/components/vault/FormatDiskModal';
 import { AgentFormatModal } from '@/components/vault/AgentFormatModal';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
 import { useAuth } from '@/lib/auth-store';
 import { useVault } from '@/lib/vault-store';
 import { apiFetch } from '@/lib/api';
@@ -21,15 +22,10 @@ import {
   deriveRecoverySignKeypair, deriveRecoveryBoxKeypair, sealToRecovery,
 } from '@/lib/recovery';
 import { getPushStatus, isPushChosen, enablePush, disablePush, type PushStatus } from '@/lib/firebase';
+import { changeMasterPassword } from '@/lib/change-password';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
-
-const SOON = (
-  <span className="text-[10px] font-mono uppercase tracking-wider text-text-muted px-2 py-1 rounded bg-bg-surface-2 border border-border-faint whitespace-nowrap">
-    Próximamente
-  </span>
-);
 
 function parseDeviceName(raw: string): { browser: string; os: string } {
   let browser = 'Navegador';
@@ -215,27 +211,6 @@ export default function SettingsPage() {
     }
   }
 
-  const sections = [
-    {
-      title: 'Seguridad',
-      icon: Shield,
-      items: [
-        {
-          label: 'Cambiar contraseña maestra',
-          description: 'Re-cifra todas tus claves con una nueva contraseña',
-          icon: Lock,
-          action: SOON,
-        },
-        {
-          label: 'Frase de recuperación',
-          description: 'Regenera o verifica tu frase de 12 palabras',
-          icon: KeyRound,
-          action: SOON,
-        },
-      ],
-    },
-  ];
-
   const onlineAgents = agents.filter((a) => a.online);
   // Self-host: el backend corre en la máquina del usuario, así que sus discos SÍ
   // son los suyos. En la nube (noctcom.com) los discos del servidor son ajenos y
@@ -251,32 +226,8 @@ export default function SettingsPage() {
         </p>
       </div>
 
-      {/* Security section */}
-      <section className="mb-8">
-        <div className="flex items-center gap-2 mb-4">
-          <Shield className="size-4 text-violet-300" />
-          <h2 className="text-sm font-semibold uppercase tracking-wider text-text-secondary">
-            Seguridad
-          </h2>
-        </div>
-        <div className="space-y-1">
-          {sections[0].items.map((item) => (
-            <div
-              key={item.label}
-              className="flex items-center gap-4 p-4 rounded-xl border border-border-faint bg-bg-surface hover:border-border-subtle transition-all"
-            >
-              <div className="size-10 rounded-lg bg-violet-500/10 border border-violet-500/20 grid place-items-center shrink-0">
-                <item.icon className="size-4 text-violet-300" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <h3 className="text-sm font-medium">{item.label}</h3>
-                <p className="text-xs text-text-tertiary mt-0.5">{item.description}</p>
-              </div>
-              {item.action}
-            </div>
-          ))}
-        </div>
-      </section>
+      {/* Cambiar contraseña maestra */}
+      <ChangePasswordSection />
 
       {/* Passkeys (WebAuthn) */}
       <PasskeysSection />
@@ -1303,6 +1254,122 @@ function RecoveryKitSection() {
           </div>
         )}
       </div>
+    </section>
+  );
+}
+
+// ─── Cambiar contraseña maestra ──────────────────────────────────
+// Re-cifra (re-envuelve) todas las claves con una MK nueva. Zero-knowledge: el
+// cliente ya tiene las vault keys en memoria, solo cambia el envoltorio. La
+// contraseña actual se exige para probar identidad (firma del challenge).
+
+function ChangePasswordSection() {
+  const [open, setOpen] = useState(false);
+  const [current, setCurrent] = useState('');
+  const [next, setNext] = useState('');
+  const [confirm, setConfirm] = useState('');
+  const [working, setWorking] = useState(false);
+
+  function reset() {
+    setCurrent(''); setNext(''); setConfirm('');
+  }
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    if (next.length < 8) { toast.error('La nueva contraseña debe tener al menos 8 caracteres'); return; }
+    if (next !== confirm) { toast.error('Las contraseñas nuevas no coinciden'); return; }
+    if (next === current) { toast.error('La nueva contraseña debe ser distinta de la actual'); return; }
+    setWorking(true);
+    try {
+      await changeMasterPassword(current, next);
+      toast.success('Contraseña maestra cambiada. Las sesiones en otros dispositivos se han cerrado.');
+      reset();
+      setOpen(false);
+    } catch (err: any) {
+      const msg = err?.message ?? '';
+      toast.error(/incorrecta|invalid|401/i.test(msg)
+        ? 'La contraseña actual es incorrecta'
+        : (msg || 'No se pudo cambiar la contraseña'));
+    } finally {
+      setWorking(false);
+    }
+  }
+
+  return (
+    <section className="mb-8">
+      <div className="flex items-center gap-2 mb-4">
+        <Lock className="size-4 text-violet-300" />
+        <h2 className="text-sm font-semibold uppercase tracking-wider text-text-secondary">
+          Seguridad
+        </h2>
+      </div>
+
+      <div className="flex items-center gap-4 p-4 rounded-xl border border-border-faint bg-bg-surface">
+        <div className="size-10 rounded-lg bg-violet-500/10 border border-violet-500/20 grid place-items-center shrink-0">
+          <Lock className="size-4 text-violet-300" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <h3 className="text-sm font-medium">Cambiar contraseña maestra</h3>
+          <p className="text-xs text-text-tertiary mt-0.5">
+            Re-cifra todas tus claves con una contraseña nueva. Tus archivos no se vuelven a subir.
+          </p>
+        </div>
+        <Button size="sm" variant="outline" onClick={() => setOpen(true)}>Cambiar</Button>
+      </div>
+
+      {open && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+          onClick={() => !working && setOpen(false)}
+        >
+          <form
+            onSubmit={submit}
+            className="w-full max-w-sm rounded-2xl border border-border-subtle bg-bg-surface p-6 shadow-[0_20px_60px_-12px_rgba(0,0,0,0.7)] space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div>
+              <h3 className="font-display text-lg font-medium">Cambiar contraseña maestra</h3>
+              <p className="text-xs text-text-tertiary mt-1 leading-relaxed">
+                Se re-cifran tus claves localmente. El servidor nunca ve ninguna de las dos contraseñas.
+              </p>
+            </div>
+            <Input
+              label="Contraseña actual"
+              type="password"
+              value={current}
+              onChange={(e) => setCurrent(e.target.value)}
+              leftIcon={<Lock className="size-4" />}
+              required
+              autoFocus
+            />
+            <Input
+              label="Nueva contraseña"
+              type="password"
+              value={next}
+              onChange={(e) => setNext(e.target.value.slice(0, 128))}
+              leftIcon={<KeyRound className="size-4" />}
+              required
+            />
+            <Input
+              label="Repetir nueva contraseña"
+              type="password"
+              value={confirm}
+              onChange={(e) => setConfirm(e.target.value.slice(0, 128))}
+              leftIcon={<KeyRound className="size-4" />}
+              required
+              error={confirm.length > 0 && next !== confirm ? 'No coincide' : undefined}
+            />
+            <div className="flex gap-2 justify-end pt-1">
+              <Button type="button" variant="ghost" size="sm" disabled={working} onClick={() => setOpen(false)}>
+                Cancelar
+              </Button>
+              <Button type="submit" variant="primary" size="sm" loading={working}>
+                {working ? 'Re-cifrando…' : 'Cambiar contraseña'}
+              </Button>
+            </div>
+          </form>
+        </div>
+      )}
     </section>
   );
 }
