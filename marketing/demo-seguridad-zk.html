@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Noctcom — Prueba de seguridad zero-knowledge</title>
+<!--
+  Presentación tipo vídeo, 100% autocontenida (sin red, sin dependencias).
+  Ábrela en el navegador y se reproduce sola (~84 s, 16:9).
+  Controles: ESPACIO play/pausa · ← → saltar escena · R reiniciar · clic en la barra para buscar.
+  Los algoritmos, endpoints y columnas que aparecen son los REALES del código
+  (ver docs/CRYPTO_SPEC.md) — la demo no enseña nada que no haga el producto.
+-->
+<style>
+  :root {
+    --bg: #0b0a14;
+    --surface: #14121f;
+    --surface-2: #1b1828;
+    --border: #2a2640;
+    --violet: #8b5cf6;
+    --violet-soft: #c4b5fd;
+    --text: #ece9f7;
+    --text-2: #a8a3c0;
+    --text-3: #6e6990;
+    --green: #34d399;
+    --amber: #fbbf24;
+    --red: #f87171;
+    --mono: 'Cascadia Code', 'Consolas', 'SF Mono', monospace;
+    --sans: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; background: #000; overflow: hidden; font-family: var(--sans); }
+
+  /* ─── Escenario 16:9 escalado a la ventana ─── */
+  #stage-wrap { position: fixed; inset: 0; display: grid; place-items: center; }
+  #stage {
+    width: 1920px; height: 1080px; position: relative; overflow: hidden;
+    background:
+      radial-gradient(ellipse 60% 50% at 50% -10%, rgba(139,92,246,.14), transparent),
+      radial-gradient(ellipse 50% 40% at 80% 110%, rgba(139,92,246,.07), transparent),
+      var(--bg);
+    color: var(--text);
+    transform-origin: center center;
+  }
+  #stage::before { /* rejilla sutil */
+    content: ''; position: absolute; inset: 0; pointer-events: none; opacity: .35;
+    background-image:
+      linear-gradient(rgba(139,92,246,.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(139,92,246,.05) 1px, transparent 1px);
+    background-size: 64px 64px;
+  }
+  #stage::after { /* viñeta */
+    content: ''; position: absolute; inset: 0; pointer-events: none;
+    box-shadow: inset 0 0 280px rgba(0,0,0,.55);
+  }
+
+  /* ─── Marca de agua ─── */
+  .brand {
+    position: absolute; top: 44px; left: 56px; display: flex; align-items: center; gap: 14px;
+    font-size: 26px; letter-spacing: .14em; color: var(--text-2); z-index: 5;
+  }
+  .brand .dot { width: 14px; height: 14px; border-radius: 50%; background: var(--violet);
+    box-shadow: 0 0 18px var(--violet); }
+  .brand b { color: var(--text); font-weight: 600; }
+
+  /* ─── Escenas ─── */
+  .scene { position: absolute; inset: 0; padding: 140px 120px 120px; display: none; }
+  .scene.active { display: block; }
+
+  /* Elementos animados por la línea de tiempo */
+  [data-at] { opacity: 0; transform: translateY(14px); transition: opacity .55s ease, transform .55s ease; }
+  [data-at].on { opacity: 1; transform: none; }
+  [data-at].off { opacity: 0 !important; transform: translateY(-8px) !important; }
+
+  .kicker {
+    display: inline-block; font-family: var(--mono); font-size: 22px; letter-spacing: .28em;
+    color: var(--violet-soft); border: 1px solid rgba(139,92,246,.45); border-radius: 999px;
+    padding: 12px 28px; background: rgba(139,92,246,.08); text-transform: uppercase;
+  }
+  h1 { font-size: 88px; font-weight: 300; letter-spacing: -.01em; line-height: 1.08; margin-top: 36px; }
+  h1 .hl { color: var(--violet-soft); }
+  h2.testname { font-size: 30px; font-family: var(--mono); letter-spacing: .22em; color: var(--text-3);
+    text-transform: uppercase; margin-bottom: 44px; }
+  h2.testname b { color: var(--violet-soft); font-weight: 600; }
+  .sub { font-size: 34px; color: var(--text-2); margin-top: 28px; max-width: 1100px; line-height: 1.5; }
+  .chips { display: flex; gap: 18px; margin-top: 52px; flex-wrap: wrap; }
+  .chip { font-family: var(--mono); font-size: 24px; color: var(--text-2);
+    border: 1px solid var(--border); background: var(--surface); border-radius: 12px; padding: 14px 26px; }
+
+  /* Tarjetas / paneles */
+  .panel {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 18px;
+    padding: 34px 40px; box-shadow: 0 18px 60px rgba(0,0,0,.45);
+  }
+  .panel .ptitle { font-family: var(--mono); font-size: 21px; letter-spacing: .18em;
+    text-transform: uppercase; color: var(--text-3); margin-bottom: 22px; display: flex; align-items: center; gap: 12px; }
+  .ptitle .lamp { width: 10px; height: 10px; border-radius: 50%; background: var(--violet); box-shadow: 0 0 10px var(--violet); }
+
+  pre.code {
+    font-family: var(--mono); font-size: 26px; line-height: 1.65; color: var(--text);
+    white-space: pre-wrap; word-break: break-all;
+  }
+  pre.code .c-key { color: var(--violet-soft); }
+  pre.code .c-dim { color: var(--text-3); }
+  pre.code .c-green { color: var(--green); }
+  pre.code .c-hex { color: var(--amber); }
+
+  .typing-caret::after { content: '▋'; color: var(--violet-soft); animation: blink 1s steps(1) infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  .flow { display: flex; align-items: stretch; gap: 28px; }
+  .flow .col { flex: 1; min-width: 0; }
+  .arrow-down { text-align: center; font-size: 40px; color: var(--violet); margin: 18px 0; }
+
+  .verdict {
+    display: flex; align-items: center; gap: 22px; margin-top: 44px;
+    background: rgba(52,211,153,.07); border: 1px solid rgba(52,211,153,.4);
+    border-radius: 16px; padding: 26px 34px; font-size: 32px; color: #d3f7e9;
+  }
+  .verdict .tick {
+    width: 52px; height: 52px; border-radius: 50%; flex: none; display: grid; place-items: center;
+    background: rgba(52,211,153,.15); border: 2px solid var(--green); color: var(--green); font-size: 30px;
+  }
+  .note { font-size: 26px; color: var(--text-2); margin-top: 26px; line-height: 1.5; }
+  .note b { color: var(--amber); font-weight: 600; }
+
+  /* Capas plaintext/ciphertext del test 2 */
+  .layers { position: relative; min-height: 320px; }
+  .layers .layer { position: absolute; inset: 0; }
+
+  .chunkrow { display: flex; gap: 22px; margin-top: 30px; }
+  .chunk {
+    flex: 1; border: 1px dashed rgba(139,92,246,.5); border-radius: 14px; padding: 20px 24px;
+    font-family: var(--mono); font-size: 22px; color: var(--text-2); background: rgba(139,92,246,.05);
+  }
+  .chunk b { color: var(--violet-soft); }
+  .chunk .aad { color: var(--green); }
+
+  /* Terminal del test 4 */
+  .term {
+    background: #0a0912; border: 1px solid var(--border); border-radius: 16px; overflow: hidden;
+    box-shadow: 0 18px 60px rgba(0,0,0,.5);
+  }
+  .term .bar { display: flex; gap: 10px; padding: 16px 20px; background: var(--surface-2);
+    border-bottom: 1px solid var(--border); align-items: center; }
+  .term .bar i { width: 16px; height: 16px; border-radius: 50%; display: block; }
+  .term .bar i:nth-child(1){ background: #f87171; } .term .bar i:nth-child(2){ background: #fbbf24; }
+  .term .bar i:nth-child(3){ background: #34d399; }
+  .term .bar span { font-family: var(--mono); font-size: 20px; color: var(--text-3); margin-left: 14px; }
+  .term pre.code { padding: 28px 34px; font-size: 25px; }
+
+  /* Resumen final */
+  .summary { display: grid; grid-template-columns: 1fr 1fr; gap: 26px; margin-top: 54px; max-width: 1500px; }
+  .sumitem { display: flex; gap: 18px; align-items: center; background: var(--surface);
+    border: 1px solid var(--border); border-radius: 14px; padding: 24px 28px; font-size: 28px; color: var(--text-2); }
+  .sumitem .tick { width: 42px; height: 42px; font-size: 24px; border-radius: 50%; flex: none;
+    display: grid; place-items: center; background: rgba(52,211,153,.15); border: 2px solid var(--green); color: var(--green); }
+  .closing { font-size: 64px; font-weight: 300; margin-top: 70px; line-height: 1.25; }
+  .closing .hl { color: var(--violet-soft); }
+  .cta { margin-top: 44px; font-family: var(--mono); font-size: 30px; color: var(--text-2); }
+  .cta b { color: var(--violet-soft); }
+
+  /* ─── Controles ─── */
+  #controls {
+    position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%);
+    display: flex; align-items: center; gap: 16px; z-index: 50;
+    background: rgba(20,18,31,.88); border: 1px solid var(--border); border-radius: 999px;
+    padding: 10px 18px; backdrop-filter: blur(8px);
+    font-family: var(--mono); color: var(--text-2); user-select: none;
+    transition: opacity .4s; opacity: .25;
+  }
+  #controls:hover, body.paused #controls { opacity: 1; }
+  #controls button {
+    background: none; border: none; color: var(--text); font-size: 18px; cursor: pointer;
+    width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center;
+  }
+  #controls button:hover { background: rgba(139,92,246,.18); }
+  #bar { position: relative; width: 420px; height: 8px; background: var(--surface-2);
+    border-radius: 999px; cursor: pointer; }
+  #bar .fill { position: absolute; inset: 0 auto 0 0; width: 0; background: var(--violet);
+    border-radius: 999px; box-shadow: 0 0 12px rgba(139,92,246,.6); }
+  #bar .mark { position: absolute; top: -3px; width: 2px; height: 14px; background: var(--text-3); opacity: .6; }
+  #time { font-size: 15px; min-width: 88px; text-align: center; }
+</style>
+</head>
+<body>
+
+<div id="stage-wrap"><div id="stage">
+
+  <div class="brand"><span class="dot"></span><span><b>NOCTCOM</b> · PRUEBA DE SEGURIDAD</span></div>
+
+  <!-- ═══ ESCENA 0 · Intro ═══ -->
+  <section class="scene" data-from="0" data-to="9000" style="padding-top: 280px;">
+    <span class="kicker" data-at="500">Prueba de seguridad · en vivo</span>
+    <h1 data-at="1400">¿Qué ve <span class="hl">realmente</span><br>el servidor?</h1>
+    <p class="sub" data-at="3200">Un test del cifrado zero-knowledge de Noctcom, paso a paso.
+      Sin trucos: estos son los algoritmos reales del código abierto.</p>
+    <div class="chips" data-at="5600">
+      <span class="chip">Argon2id</span>
+      <span class="chip">XChaCha20-Poly1305</span>
+      <span class="chip">BLAKE2b</span>
+      <span class="chip">Ed25519 · X25519</span>
+      <span class="chip">AGPL-3.0</span>
+    </div>
+  </section>
+
+  <!-- ═══ ESCENA 1 · La contraseña nunca viaja ═══ -->
+  <section class="scene" data-from="9000" data-to="24000">
+    <h2 class="testname" data-at="9300"><b>Test 1</b> — la contraseña</h2>
+    <div class="flow">
+      <div class="col">
+        <div class="panel" data-at="9700">
+          <div class="ptitle"><span class="lamp"></span> Tu navegador</div>
+          <pre class="code"><span class="c-dim">contraseña:</span> <span data-type data-at="10300" data-cps="14">S3creta·Periodista!</span></pre>
+        </div>
+        <div class="arrow-down" data-at="12600">▼</div>
+        <div class="panel" data-at="12900">
+          <div class="ptitle"><span class="lamp"></span> Derivación local · Argon2id</div>
+          <pre class="code"><span class="c-dim">256 MiB · 3 iteraciones · ~1 s</span>
+<span class="c-key">MK</span> = <span class="c-hex" data-type data-at="14400" data-cps="42">7f3a 91c2 e4d8 0b6f a219 c7e3 55d0 8a1c …</span>
+<span class="c-green" data-at="16400">// Master Key: derivada y usada SOLO en tu dispositivo</span></pre>
+        </div>
+      </div>
+      <div class="col">
+        <div class="panel" data-at="17400" style="margin-top: 90px;">
+          <div class="ptitle"><span class="lamp"></span> Lo que sale hacia la red</div>
+          <pre class="code"><span class="c-dim">POST</span> /api/v1/auth/login/finalize
+{
+  <span class="c-key">"challenge"</span>:  <span class="c-hex">"Zku7…"</span>,
+  <span class="c-key">"signature"</span>:  <span class="c-hex">"MEUCIQDk…"</span>   <span class="c-dim">// firma Ed25519</span>
+}</pre>
+          <p class="note" data-at="19400">Ni la contraseña ni la MK aparecen en la petición:
+            se firma un reto con una clave que <b>solo existe si conoces la contraseña</b>.</p>
+        </div>
+      </div>
+    </div>
+    <div class="verdict" data-at="21400"><span class="tick">✓</span>
+      El servidor nunca recibe tu contraseña. No puede ni intentar descifrarte.</div>
+  </section>
+
+  <!-- ═══ ESCENA 2 · El archivo se cifra antes de salir ═══ -->
+  <section class="scene" data-from="24000" data-to="42000">
+    <h2 class="testname" data-at="24300"><b>Test 2</b> — el archivo</h2>
+    <div class="panel" data-at="24700">
+      <div class="ptitle"><span class="lamp"></span> fuentes-investigacion.pdf · 2,4 MB</div>
+      <div class="layers">
+        <div class="layer" data-at="25600" data-out="30400">
+          <pre class="code"><span class="c-dim">— CONFIDENCIAL —</span>
+Entrevista con la fuente A. (12 de mayo)
+"Los documentos muestran transferencias entre…
+…la cuenta del intermediario y la sociedad pantalla
+registrada en…"</pre>
+        </div>
+        <div class="layer" data-at="30400">
+          <pre class="code c-hex" data-type data-at="30600" data-cps="220">9f 3a c1 77 0e b2 5d 84 fa 21 6c d9 03 4e b7 58 e1 92 7a cf 44 08 d6 31 ab 5e 90 1f 73 c8 26 ed 4b a7 39 f2 80 15 ce 6a d4 b1 07 9e 52 e8 3c 61 fd 28 95 4a 0d 76 c3 1b 8f e4 57 a2 39 d0 6e 82 fb 14 c9 47 0a 75 b8 23 ef 5c 91 36 da 68 01 ae 53 c7 1d 89 f4 2e 60 bd 49 07 96 e3 5a 2f 78 cb</pre>
+        </div>
+      </div>
+    </div>
+    <div class="flow" style="margin-top: 30px;">
+      <div class="col">
+        <div class="panel" data-at="28600">
+          <div class="ptitle"><span class="lamp"></span> Cifrado en tu navegador</div>
+          <pre class="code"><span class="c-key">file_key</span> = aleatoria(32)         <span class="c-dim">// única por archivo</span>
+<span class="c-key">cifrado</span>  = XChaCha20-Poly1305   <span class="c-dim">// AEAD, tag 16 B</span></pre>
+        </div>
+      </div>
+    </div>
+    <div class="chunkrow" data-at="34400">
+      <div class="chunk"><b>chunk 0</b> · 4 MiB · nonce aleatorio · <span class="aad">AAD "chunk:0"</span></div>
+      <div class="chunk"><b>chunk 1</b> · 4 MiB · nonce aleatorio · <span class="aad">AAD "chunk:1"</span></div>
+      <div class="chunk"><b>chunk N</b> · … · <span class="aad">AAD "chunk:N"</span></div>
+    </div>
+    <p class="note" data-at="36000">El AAD ata cada bloque a su posición: ni siquiera quien controle
+      el almacenamiento puede <b>reordenar o mezclar</b> bloques sin romper la verificación.</p>
+    <div class="verdict" data-at="38600"><span class="tick">✓</span>
+      El cifrado ocurre antes de que un solo byte salga de tu dispositivo.</div>
+  </section>
+
+  <!-- ═══ ESCENA 3 · Lo que viaja por la red ═══ -->
+  <section class="scene" data-from="42000" data-to="54000">
+    <h2 class="testname" data-at="42300"><b>Test 3</b> — la red</h2>
+    <div class="panel" data-at="42700" style="max-width: 1500px;">
+      <div class="ptitle"><span class="lamp"></span> Captura de la petición real</div>
+      <pre class="code"><span class="c-dim">POST</span> /api/v1/uploads/init
+{
+  <span class="c-key">"nameEncrypted"</span>:  <span class="c-hex" data-type data-at="43600" data-cps="60">"mUz4kQ9rT2…"</span>,   <span class="c-dim">// hasta el NOMBRE va cifrado</span>
+  <span class="c-key">"metadataEncrypted"</span>: <span class="c-hex" data-type data-at="44800" data-cps="60">"8wXc3PfA1N…"</span>, <span class="c-dim">// mime, tamaño, etiquetas</span>
+  <span class="c-key">"fileKeyWrapped"</span>: <span class="c-hex" data-type data-at="46000" data-cps="60">"9hTqVb27Lm…"</span>,  <span class="c-dim">// la clave, envuelta con TU clave</span>
+  <span class="c-key">"chunks"</span>: [ { <span class="c-key">"index"</span>: 0, <span class="c-key">"nonce"</span>: <span class="c-hex">"Rk31…"</span> }, … ]
+}</pre>
+    </div>
+    <p class="note" data-at="48200" style="max-width: 1400px;">No hay un solo campo legible.
+      El servidor recibe sobres cerrados y los guarda <b>sin poder abrirlos</b>.</p>
+    <div class="verdict" data-at="50600"><span class="tick">✓</span>
+      Solo ciphertext cruza la red — incluso con TLS roto, no habría nada que leer.</div>
+  </section>
+
+  <!-- ═══ ESCENA 4 · La prueba de fuego: la base de datos ═══ -->
+  <section class="scene" data-from="54000" data-to="72000">
+    <h2 class="testname" data-at="54300"><b>Test 4</b> — el propio servidor</h2>
+    <div class="term" data-at="54700" style="max-width: 1620px;">
+      <div class="bar"><i></i><i></i><i></i><span>psql — noctcom_prod (acceso de operador)</span></div>
+      <pre class="code"><span class="c-green">noctcom_prod=></span> <span data-type data-at="55400" data-cps="34">SELECT name_encrypted, file_key_wrapped FROM nodes LIMIT 2;</span>
+<span data-at="58200"><span class="c-hex">\x6d533a4b…9f21</span>  |  <span class="c-hex">\x39685471…b203</span>
+<span class="c-hex">\x82f1c04d…77ae</span>  |  <span class="c-hex">\xd4501be9…3c6f</span>
+<span class="c-dim">(2 rows — bytes opacos, sin clave posible)</span></span>
+
+<span class="c-green">noctcom_prod=></span> <span data-type data-at="60800" data-cps="34">SELECT email, password FROM users; -- ¿y los datos personales?</span>
+<span data-at="63400"><span class="c-dim">ERROR:  column "email" does not exist</span>
+<span class="c-dim">ERROR:  column "password" does not exist</span>
+<span class="c-dim">-- solo existen email_hash (BLAKE2b) y un verificador OPAQUE</span></span></pre>
+    </div>
+    <p class="note" data-at="65600" style="max-width: 1500px;">Esto es lo que vería el operador de Noctcom,
+      un atacante que robase la base de datos entera… o cualquiera con una orden de entrega:
+      <b>no existe ninguna clave en el servidor</b> con la que descifrar nada.</p>
+    <div class="verdict" data-at="68600"><span class="tick">✓</span>
+      Acceso del servidor a tu contenido: 0 bytes legibles.</div>
+  </section>
+
+  <!-- ═══ ESCENA 5 · Cierre ═══ -->
+  <section class="scene" data-from="72000" data-to="84000" style="padding-top: 200px;">
+    <span class="kicker" data-at="72300">Resultado del test</span>
+    <div class="summary">
+      <div class="sumitem" data-at="73000"><span class="tick">✓</span> La contraseña nunca sale del dispositivo</div>
+      <div class="sumitem" data-at="73600"><span class="tick">✓</span> Los archivos se cifran antes de subir</div>
+      <div class="sumitem" data-at="74200"><span class="tick">✓</span> Nombres y metadatos: también cifrados</div>
+      <div class="sumitem" data-at="74800"><span class="tick">✓</span> El servidor no puede leer nada — ni queriendo</div>
+    </div>
+    <h1 class="closing" data-at="76600">Zero-knowledge no es una promesa.<br><span class="hl">Es matemática.</span></h1>
+    <p class="cta" data-at="79400"><b>noctcom.com</b> · código abierto (AGPL-3.0) · audítalo tú mismo</p>
+  </section>
+
+</div></div>
+
+<!-- ─── Controles ─── -->
+<div id="controls">
+  <button id="btn-restart" title="Reiniciar (R)">↺</button>
+  <button id="btn-play" title="Play/Pausa (espacio)">⏸</button>
+  <div id="bar"><div class="fill"></div></div>
+  <div id="time">0:00 / 1:24</div>
+</div>
+
+<script>
+(() => {
+  'use strict';
+  const T_TOTAL = 84000;
+
+  const stage = document.getElementById('stage');
+  const scenes = [...document.querySelectorAll('.scene')].map(el => ({
+    el, from: +el.dataset.from, to: +el.dataset.to,
+  }));
+  // Elementos con entrada (data-at) y salida opcional (data-out)
+  const items = [...document.querySelectorAll('[data-at]')].map(el => ({
+    el, at: +el.dataset.at, out: el.dataset.out ? +el.dataset.out : null,
+  }));
+  // Elementos "tecleados": se revela el texto en función del tiempo (scrubbable)
+  const typed = [...document.querySelectorAll('[data-type]')].map(el => {
+    const full = el.textContent;
+    el.textContent = '';
+    return { el, full, at: +el.dataset.at, cps: +(el.dataset.cps || 28) };
+  });
+
+  // Escalar el escenario 1920x1080 a la ventana
+  function fit() {
+    const s = Math.min(innerWidth / 1920, innerHeight / 1080);
+    stage.style.transform = `scale(${s})`;
+  }
+  addEventListener('resize', fit); fit();
+
+  // ─── Reloj ───
+  let t = 0, playing = true, last = performance.now();
+  const fill = document.querySelector('#bar .fill');
+  const timeEl = document.getElementById('time');
+  const btnPlay = document.getElementById('btn-play');
+
+  const fmt = ms => {
+    const s = Math.floor(ms / 1000);
+    return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+  };
+
+  function render() {
+    for (const sc of scenes) sc.el.classList.toggle('active', t >= sc.from && t < sc.to);
+    for (const it of items) {
+      it.el.classList.toggle('on', t >= it.at);
+      if (it.out !== null) it.el.classList.toggle('off', t >= it.out);
+    }
+    for (const ty of typed) {
+      const n = t < ty.at ? 0 : Math.floor((t - ty.at) / 1000 * ty.cps);
+      const shown = ty.full.slice(0, Math.min(n, ty.full.length));
+      if (ty.el.textContent !== shown) ty.el.textContent = shown;
+      ty.el.classList.toggle('typing-caret', n > 0 && n < ty.full.length);
+    }
+    fill.style.width = (t / T_TOTAL * 100) + '%';
+    timeEl.textContent = `${fmt(t)} / ${fmt(T_TOTAL)}`;
+  }
+
+  function tick(now) {
+    if (playing) {
+      t = Math.min(T_TOTAL, t + (now - last));
+      if (t >= T_TOTAL) setPlaying(false);
+    }
+    last = now;
+    render();
+    requestAnimationFrame(tick);
+  }
+
+  function setPlaying(p) {
+    playing = p;
+    btnPlay.textContent = p ? '⏸' : '▶';
+    document.body.classList.toggle('paused', !p);
+  }
+
+  // ─── Controles ───
+  btnPlay.addEventListener('click', () => {
+    if (!playing && t >= T_TOTAL) t = 0;
+    setPlaying(!playing);
+  });
+  document.getElementById('btn-restart').addEventListener('click', () => { t = 0; setPlaying(true); });
+
+  const bar = document.getElementById('bar');
+  bar.addEventListener('click', e => {
+    const r = bar.getBoundingClientRect();
+    t = Math.max(0, Math.min(T_TOTAL, (e.clientX - r.left) / r.width * T_TOTAL));
+    render();
+  });
+  // Marcas de escena en la barra
+  for (const sc of scenes) {
+    if (sc.from === 0) continue;
+    const m = document.createElement('div');
+    m.className = 'mark';
+    m.style.left = (sc.from / T_TOTAL * 100) + '%';
+    bar.appendChild(m);
+  }
+
+  addEventListener('keydown', e => {
+    if (e.code === 'Space') { e.preventDefault(); btnPlay.click(); }
+    else if (e.key === 'r' || e.key === 'R') { t = 0; setPlaying(true); }
+    else if (e.key === 'ArrowRight') {
+      const next = scenes.find(s => s.from > t);
+      t = next ? next.from : T_TOTAL; render();
+    } else if (e.key === 'ArrowLeft') {
+      const prev = [...scenes].reverse().find(s => s.from < t - 800);
+      t = prev ? prev.from : 0; render();
+    }
+  });
+
+  requestAnimationFrame(now => { last = now; tick(now); });
+})();
+</script>
+</body>
+</html>
