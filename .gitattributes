@@ -1,0 +1,9 @@
+# Los shell scripts SIEMPRE con LF: se sirven por raw.githubusercontent y se
+# ejecutan en Linux (un .sh con CRLF rompe con "bad interpreter").
+*.sh text eol=lf
+install.sh text eol=lf
+
+# Otros ficheros sensibles a saltos de línea en contenedores Linux.
+Dockerfile text eol=lf
+*.Caddyfile text eol=lf
+Caddyfile text eol=lf
