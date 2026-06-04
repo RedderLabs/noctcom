@@ -7,6 +7,15 @@ El servidor no puede leer ni nombres de archivo, ni contenido, ni metadatos.
 
 ## Self-Host (5 minutos)
 
+**Un comando** — descarga el instalador, te pregunta el dominio, genera los
+secretos y lo arranca todo:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/RedderLabs/noctcom/main/install.sh | bash
+```
+
+**O a mano**, si prefieres controlar cada paso:
+
 ```bash
 git clone https://github.com/RedderLabs/noctcom.git
 cd noctcom

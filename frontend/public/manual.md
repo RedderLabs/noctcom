@@ -233,7 +233,15 @@ En cada disco verás el botón **Usar este disco**. Al pulsarlo, Noctcom crea un
 
 ## Móntalo en tu servidor (avanzado)
 
-Noctcom es 100% código abierto (licencia AGPL-3.0). Si te manejas con la tecnología, puedes tenerlo en tu propio servidor:
+Noctcom es 100% código abierto (licencia AGPL-3.0). Si te manejas con la tecnología, puedes tenerlo en tu propio servidor.
+
+**La forma rápida — un solo comando.** Descarga el instalador, te pregunta el dominio, genera las contraseñas por ti y lo arranca todo:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/RedderLabs/noctcom/main/install.sh | bash
+```
+
+**A mano**, si prefieres controlar cada paso:
 
 ```bash
 git clone https://github.com/RedderLabs/noctcom.git
@@ -278,6 +286,14 @@ Noctcom encuentra solo los discos que montes en el servidor. Desde **Configuraci
 
 Usa los botones de tamaño de texto (A, A+, A++). Están en el menú lateral cuando estás dentro, y en la barra de arriba en las pantallas de entrada. Se guarda tu preferencia automáticamente.
 
+### Tema claro u oscuro
+
+Pulsa el botón de tema (sol/luna), junto al de tamaño de texto y al de idioma. Si no eliges, Noctcom respeta lo que tenga tu sistema. Tu preferencia se recuerda.
+
+### Español o inglés
+
+Pulsa el selector de idioma (ES/EN) para cambiar toda la web y la app entre español e inglés. El inglés vive bajo `/en` (por ejemplo `noctcom.com/en`); el español conserva las direcciones de siempre.
+
 ### Menú lateral plegable
 
 Pulsa el botón de plegar en la parte de arriba del menú para dejarlo en modo "solo iconos". Va genial en pantallas pequeñas o si usas texto grande.
@@ -300,4 +316,4 @@ Pulsa el botón de plegar en la parte de arriba del menú para dejarlo en modo "
 
 ---
 
-*Última actualización: v0.10.0 · Junio 2026*
+*Última actualización: v0.12.1 · Junio 2026*
