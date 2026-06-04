@@ -372,6 +372,10 @@
       "light-dark-theme": {
         "title": "Light and dark theme",
         "desc": "Choose the look you like best, with accessibility improvements."
+      },
+      "i18n": {
+        "title": "Spanish and English",
+        "desc": "The whole website and app in two languages, with their own per-language URLs. Switch between Spanish and English whenever you want."
       }
     },
     "cta": {
@@ -1487,5 +1491,8 @@
       "closing": "Zero-knowledge isn't a promise.<br></br><hl>It's mathematics.</hl>",
       "cta": "<b>noctcom.com</b> · open source (AGPL-3.0) · audit it yourself"
     }
+  },
+  "meta": {
+    "description": "Your private vault. Encrypted on your device. No one else can open it. Open source and self-hostable, made by Redder Labs."
   }
 }

@@ -372,6 +372,10 @@
       "light-dark-theme": {
         "title": "Tema claro y oscuro",
         "desc": "Elige el aspecto que más te guste, con mejoras de accesibilidad."
+      },
+      "i18n": {
+        "title": "Español e inglés",
+        "desc": "Toda la web y la aplicación en dos idiomas, con URLs propias por idioma. Cambia entre español e inglés cuando quieras."
       }
     },
     "cta": {
@@ -1487,5 +1491,8 @@
       "closing": "Zero-knowledge no es una promesa.<br></br><hl>Es matemática.</hl>",
       "cta": "<b>noctcom.com</b> · código abierto (AGPL-3.0) · audítalo tú mismo"
     }
+  },
+  "meta": {
+    "description": "Tu bóveda privada. Cifrada en tu dispositivo. Nadie más puede abrirla. Open source y self-hosteable, hecho por Redder Labs."
   }
 }

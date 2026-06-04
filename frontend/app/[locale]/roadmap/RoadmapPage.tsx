@@ -22,6 +22,8 @@ const MILESTONES: { status: Status; key: string }[] = [
   { status: 'done', key: 'own-disks' },
   { status: 'done', key: 'ops-reliability' },
   { status: 'done', key: 'legal-privacy' },
+  { status: 'done', key: 'light-dark-theme' },
+  { status: 'done', key: 'i18n' },
   // ─── En marcha ───
   { status: 'progress', key: 'storage-plans' },
   // ─── Más adelante ───
@@ -29,7 +31,6 @@ const MILESTONES: { status: Status; key: string }[] = [
   { status: 'next', key: 'evidence-mode' },
   { status: 'next', key: 'mobile-app' },
   { status: 'next', key: 'desktop-app' },
-  { status: 'next', key: 'light-dark-theme' },
 ];
 
 const GROUPS: { status: Status; icon: typeof Check; accent: string; iconBox: string; dot: string }[] = [
