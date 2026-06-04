@@ -33,6 +33,21 @@ function publicPlans() {
 const billingRoutes: FastifyPluginAsync = async (app) => {
   const FRONTEND = env.FRONTEND_URL ?? 'https://noctcom.com';
 
+  // Devuelve un customer VÁLIDO en la cuenta de Stripe actual. Si el guardado no
+  // existe (p. ej. se cambió de cuenta de Stripe), crea uno nuevo y lo persiste,
+  // en vez de fallar con "No such customer".
+  async function ensureCustomer(userId: string, storedId: string | null): Promise<string> {
+    if (storedId) {
+      try {
+        const c = await stripe!.customers.retrieve(storedId);
+        if (!(c as { deleted?: boolean }).deleted) return storedId;
+      } catch { /* no existe en esta cuenta → se recrea abajo */ }
+    }
+    const customer = await stripe!.customers.create({ metadata: { userId } });
+    await db.query('UPDATE users SET stripe_customer_id = $1 WHERE id = $2', [customer.id, userId]);
+    return customer.id;
+  }
+
   // ─── GET /plans (público) ─────────────────────────────────
   app.get('/plans', async (_req, reply) => {
     return reply.send({ plans: publicPlans(), billingEnabled: !!stripe });
@@ -95,13 +110,7 @@ const billingRoutes: FastifyPluginAsync = async (app) => {
       return reply.send({ updated: true });
     }
 
-    // Reutiliza el customer de Stripe del usuario si ya existe (no duplicar).
-    let customerId: string | undefined = row.stripe_customer_id ?? undefined;
-    if (!customerId) {
-      const customer = await stripe.customers.create({ metadata: { userId: req.user.sub } });
-      customerId = customer.id;
-      await db.query('UPDATE users SET stripe_customer_id = $1 WHERE id = $2', [customerId, req.user.sub]);
-    }
+    const customerId = await ensureCustomer(req.user.sub, row.stripe_customer_id);
 
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
