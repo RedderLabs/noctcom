@@ -61,3 +61,5 @@ NOCTCOM_vs_NEXTCLOUD_INTERNAL.md
 NOCTCOM_vs_SELFHOSTED_INTERNAL.md
 backend/firebase-service-account.b64.txt
 url.txt
+
+grant-attachments/
