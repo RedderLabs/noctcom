@@ -29,13 +29,16 @@ export async function fetchBillingStatus(): Promise<BillingStatus> {
   return apiFetch('/api/v1/billing/status');
 }
 
-// Inicia el pago de un plan: redirige a Stripe Checkout.
-export async function startCheckout(planId: string): Promise<void> {
-  const { url } = await apiFetch<{ url: string }>('/api/v1/billing/checkout', {
-    method: 'POST',
-    body: JSON.stringify({ planId }),
-  });
-  if (url) window.location.href = url;
+// Inicia el cambio de plan. Para la PRIMERA compra redirige a Stripe Checkout
+// (devuelve url). Si ya hay suscripción, el backend la actualiza con prorrateo
+// y devuelve { updated: true } (sin redirección). El llamador distingue ambos.
+export async function startCheckout(planId: string): Promise<{ url?: string; updated?: boolean; unchanged?: boolean }> {
+  const res = await apiFetch<{ url?: string; updated?: boolean; unchanged?: boolean }>(
+    '/api/v1/billing/checkout',
+    { method: 'POST', body: JSON.stringify({ planId }) },
+  );
+  if (res.url) window.location.href = res.url;
+  return res;
 }
 
 // Abre el portal de cliente de Stripe (gestionar/cancelar).

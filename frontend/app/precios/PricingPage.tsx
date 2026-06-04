@@ -98,7 +98,14 @@ export default function PricingPage() {
     if (!isAuthenticated) { router.push('/signup'); return; }
     setBusy(plan.id);
     try {
-      await startCheckout(plan.id);
+      const res = await startCheckout(plan.id);
+      // Cambio de plan sobre una suscripción ya activa (sin redirección a Stripe).
+      if (res.updated) {
+        toast.success(res.unchanged ? 'Ya tienes este plan' : `Plan actualizado a ${plan.label}`);
+        router.push('/vault/settings');
+        return;
+      }
+      // Si había url, el navegador ya está redirigiendo a Stripe.
     } catch (err: any) {
       toast.error(err?.message ?? 'No se pudo iniciar el pago');
       setBusy(null);

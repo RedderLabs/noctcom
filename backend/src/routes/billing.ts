@@ -69,10 +69,34 @@ const billingRoutes: FastifyPluginAsync = async (app) => {
     const priceId = stripePriceId(plan);
     if (!priceId) return reply.badRequest('plan no disponible para compra');
 
-    // Reutiliza el customer de Stripe del usuario si ya existe (no duplicar).
-    const u = await db.query('SELECT stripe_customer_id FROM users WHERE id = $1', [req.user.sub]);
+    const u = await db.query(
+      'SELECT stripe_customer_id, stripe_subscription_id, subscription_status FROM users WHERE id = $1',
+      [req.user.sub],
+    );
     if (u.rowCount === 0) return reply.notFound();
-    let customerId: string | undefined = u.rows[0].stripe_customer_id ?? undefined;
+    const row = u.rows[0];
+
+    // Si YA tiene una suscripción activa, NO se crea otra (seria doble cobro):
+    // se ACTUALIZA la existente al nuevo precio, con prorrateo. Cambio
+    // instantaneo; el webhook customer.subscription.updated ajusta la cuota.
+    const hasActive = row.stripe_subscription_id
+      && (row.subscription_status === 'active' || row.subscription_status === 'trialing');
+    if (hasActive) {
+      const sub = await stripe.subscriptions.retrieve(row.stripe_subscription_id);
+      const itemId = sub.items.data[0]?.id;
+      if (!itemId) return reply.badRequest('la suscripción no tiene líneas');
+      if (sub.items.data[0]?.price.id === priceId) {
+        return reply.send({ updated: true, unchanged: true }); // ya está en ese plan
+      }
+      await stripe.subscriptions.update(row.stripe_subscription_id, {
+        items: [{ id: itemId, price: priceId }],
+        proration_behavior: 'create_prorations',
+      });
+      return reply.send({ updated: true });
+    }
+
+    // Reutiliza el customer de Stripe del usuario si ya existe (no duplicar).
+    let customerId: string | undefined = row.stripe_customer_id ?? undefined;
     if (!customerId) {
       const customer = await stripe.customers.create({ metadata: { userId: req.user.sub } });
       customerId = customer.id;
