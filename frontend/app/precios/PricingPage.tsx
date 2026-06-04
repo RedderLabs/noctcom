@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   Check, ArrowRight, Server, Lock, EyeOff, Share2, Smartphone,
-  Download, Github, ShieldCheck, Sparkles,
+  Download, Github, ShieldCheck, Sparkles, Code2, Fingerprint, KeyRound,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/Button';
@@ -25,6 +25,26 @@ const INCLUDED = [
   { icon: Smartphone, text: 'Multidispositivo y sincronización en tiempo real' },
   { icon: Download, text: 'Exporta tu bóveda completa cuando quieras' },
   { icon: ShieldCheck, text: '2FA: passkeys y código por email' },
+];
+
+// Franja de confianza — solo afirmaciones verdaderas.
+const TRUST = [
+  { icon: Code2, label: 'Open Source · AGPL-3.0' },
+  { icon: Lock, label: 'XChaCha20-Poly1305' },
+  { icon: Fingerprint, label: 'Argon2id' },
+  { icon: ShieldCheck, label: 'Zero-Knowledge' },
+];
+
+// Especificaciones técnicas — IDÉNTICAS en todos los planes (ese es el punto).
+const SPECS: [string, string][] = [
+  ['Derivación de clave', 'Argon2id · 256 MiB'],
+  ['Cifrado de archivos', 'XChaCha20-Poly1305 (AEAD)'],
+  ['Firmas', 'Ed25519'],
+  ['Compartir', 'X25519 · sealed boxes'],
+  ['Hash', 'BLAKE2b-256'],
+  ['Recuperación', 'Frase BIP39 (128 bits)'],
+  ['2FA', 'Passkeys (WebAuthn) + email'],
+  ['Licencia', 'AGPL-3.0 · auditable'],
 ];
 
 const FAQ = [
@@ -99,17 +119,19 @@ export default function PricingPage() {
         </section>
 
         {/* ─── Planes ───────────────────────────────────────── */}
-        <section className="max-w-6xl mx-auto px-6 pb-10">
+        <section className="max-w-6xl mx-auto px-6 pb-4">
           {loading ? (
             <div className="grid place-items-center py-20">
               <div className="size-6 rounded-full border-2 border-border-subtle border-t-violet-500 animate-spin" />
             </div>
           ) : (
             <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-3 items-stretch">
-              {plans.map((plan) => {
+              {plans.map((plan, i) => {
                 const free = plan.priceEurMonth === 0;
                 const soon = !free && !plan.available;
                 const featured = plan.id === FEATURED;
+                // Relleno de la barra: escalera visual por nivel (no literal).
+                const fill = Math.round(((i + 1) / plans.length) * 100);
                 return (
                   <div
                     key={plan.id}
@@ -125,21 +147,34 @@ export default function PricingPage() {
                         Recomendado
                       </div>
                     )}
-                    <div className="mb-4">
-                      <h3 className="text-xs font-medium text-text-tertiary uppercase tracking-wide">{plan.label}</h3>
-                      <div className="mt-2 flex items-baseline gap-1">
-                        <span className={cn('font-display text-3xl font-light', featured && 'text-violet-200')}>
-                          {free ? '0€' : `${plan.priceEurMonth}€`}
+                    <h3 className="text-xs font-medium text-text-tertiary uppercase tracking-wide">{plan.label}</h3>
+                    <div className="mt-2 mb-4 flex items-baseline gap-1">
+                      <span className={cn('font-mono text-4xl font-bold tracking-tight', featured ? 'text-violet-200' : 'text-text-primary')}>
+                        {free ? '0€' : `${plan.priceEurMonth}€`}
+                      </span>
+                      <span className="text-xs text-text-tertiary">/mes</span>
+                    </div>
+
+                    {/* Indicador de almacenamiento */}
+                    <div className="mb-5 p-3 rounded-lg bg-bg-surface-2 border border-border-faint">
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-[10px] font-mono uppercase tracking-wider text-text-tertiary">Almacenamiento</span>
+                        <span className={cn('text-xs font-mono font-bold', featured ? 'text-violet-200' : 'text-text-primary')}>
+                          {formatBytes(plan.quotaBytes)}
                         </span>
-                        <span className="text-xs text-text-tertiary">/mes</span>
+                      </div>
+                      <div className="h-1 rounded-full bg-bg-surface-3 overflow-hidden">
+                        <div
+                          className={cn('h-full rounded-full', featured ? 'bg-violet-400' : 'bg-violet-600/70')}
+                          style={{ width: `${fill}%` }}
+                        />
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2 text-sm font-medium mb-1">
-                      <Check className={cn('size-4 shrink-0', featured ? 'text-violet-300' : 'text-emerald-400')} />
-                      {formatBytes(plan.quotaBytes)}
+                    <div className="flex items-center gap-2 text-xs text-text-tertiary mb-5">
+                      <Check className="size-3.5 text-emerald-400 shrink-0" />
+                      Cifrado zero-knowledge
                     </div>
-                    <p className="text-xs text-text-tertiary mb-5 pl-6">cifrados zero-knowledge</p>
 
                     <div className="mt-auto">
                       <Button
@@ -165,12 +200,27 @@ export default function PricingPage() {
             </p>
           )}
           <p className="text-center text-xs text-text-tertiary mt-6">
-            Sin permanencia · Cambia o cancela cuando quieras · Impuestos aplicables según tu país
+            Facturación mensual · Sin permanencia · Impuestos aplicables según tu país
           </p>
         </section>
 
+        {/* ─── Franja de confianza ──────────────────────────── */}
+        <section className="max-w-5xl mx-auto px-6 py-10">
+          <p className="text-center text-sm text-text-tertiary mb-6">
+            Tus claves nunca salen de tu dispositivo. Todo el código es público y verificable.
+          </p>
+          <div className="flex flex-wrap justify-center items-center gap-x-10 gap-y-4">
+            {TRUST.map((t) => (
+              <div key={t.label} className="flex items-center gap-2 text-text-secondary">
+                <t.icon className="size-4 text-violet-300" />
+                <span className="text-xs font-mono uppercase tracking-wider">{t.label}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+
         {/* ─── Incluido en todos los planes ─────────────────── */}
-        <section className="max-w-4xl mx-auto px-6 py-12">
+        <section className="max-w-4xl mx-auto px-6 py-8">
           <div className="rounded-2xl border border-border-faint bg-bg-surface p-7 md:p-9">
             <h2 className="font-display text-2xl font-light tracking-tight text-center mb-2">
               Incluido en <span className="text-gradient-violet font-normal">todos</span> los planes
@@ -191,8 +241,33 @@ export default function PricingPage() {
           </div>
         </section>
 
+        {/* ─── Especificaciones técnicas (iguales para todos) ─ */}
+        <section className="max-w-3xl mx-auto px-6 py-8">
+          <h2 className="font-display text-2xl font-light tracking-tight text-center mb-2">
+            Especificaciones técnicas
+          </h2>
+          <p className="text-sm text-text-tertiary text-center mb-7">
+            La misma criptografía, pagues lo que pagues.{' '}
+            <Link href="/security" className="text-violet-300 hover:text-violet-200">Ver la spec completa</Link>.
+          </p>
+          <div className="overflow-hidden rounded-xl border border-border-faint bg-bg-surface">
+            {SPECS.map(([k, v], i) => (
+              <div
+                key={k}
+                className={cn(
+                  'flex items-center justify-between gap-4 px-5 py-3.5 hover:bg-bg-surface-2 transition-colors',
+                  i !== SPECS.length - 1 && 'border-b border-border-faint',
+                )}
+              >
+                <span className="text-sm text-text-secondary">{k}</span>
+                <span className="text-xs font-mono text-violet-200 text-right">{v}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+
         {/* ─── Self-host ────────────────────────────────────── */}
-        <section className="max-w-4xl mx-auto px-6 pb-12">
+        <section className="max-w-4xl mx-auto px-6 py-8">
           <div className="relative overflow-hidden rounded-2xl border border-emerald-500/20 bg-bg-surface p-7 md:p-8">
             <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 via-transparent to-transparent pointer-events-none" />
             <div className="relative flex flex-col md:flex-row items-start md:items-center gap-5">
@@ -214,7 +289,7 @@ export default function PricingPage() {
         </section>
 
         {/* ─── FAQ ──────────────────────────────────────────── */}
-        <section className="max-w-3xl mx-auto px-6 pb-16">
+        <section className="max-w-3xl mx-auto px-6 py-8">
           <h2 className="font-display text-2xl font-light tracking-tight text-center mb-8">
             Preguntas frecuentes
           </h2>
@@ -232,18 +307,42 @@ export default function PricingPage() {
               </details>
             ))}
           </div>
+        </section>
 
-          <div className="mt-10 text-center">
-            <Link href="/signup">
-              <Button variant="primary" size="lg" rightIcon={<ArrowRight className="size-4" />}>
-                Empezar gratis con 1 GB
-              </Button>
-            </Link>
-            <p className="text-xs text-text-tertiary mt-3">
-              Sin tarjeta. Lee los{' '}
-              <Link href={'/terminos' as any} className="text-violet-300 hover:text-violet-200">Términos</Link>{' '}y la{' '}
-              <Link href={'/privacidad' as any} className="text-violet-300 hover:text-violet-200">Privacidad</Link>.
-            </p>
+        {/* ─── CTA final ────────────────────────────────────── */}
+        <section className="max-w-5xl mx-auto px-6 pb-16">
+          <div className="relative overflow-hidden rounded-2xl border border-violet-500/20 p-10 md:p-14 text-center">
+            <div className="absolute inset-0 pointer-events-none" style={{
+              background:
+                'radial-gradient(ellipse 60% 60% at 50% 0%, rgba(139,92,246,0.18), transparent 70%),' +
+                'radial-gradient(ellipse 50% 50% at 80% 100%, rgba(124,58,237,0.12), transparent 70%),' +
+                'var(--color-bg-surface)',
+            }} />
+            <div className="relative">
+              <h3 className="font-display text-3xl md:text-4xl font-light tracking-tight mb-4">
+                Empieza hoy con <span className="text-gradient-violet font-normal">1 GB gratis</span>.
+              </h3>
+              <p className="text-text-secondary mb-8 max-w-lg mx-auto">
+                Sin tarjeta, sin trucos. Cifrado en tu dispositivo desde el primer archivo.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                <Link href="/signup">
+                  <Button variant="primary" size="lg" rightIcon={<ArrowRight className="size-4" />}>
+                    Crear cuenta gratis
+                  </Button>
+                </Link>
+                <Link href="/security">
+                  <Button variant="outline" size="lg" leftIcon={<KeyRound className="size-4" />}>
+                    Cómo funciona el cifrado
+                  </Button>
+                </Link>
+              </div>
+              <p className="text-xs text-text-tertiary mt-5">
+                Al crear la cuenta aceptas los{' '}
+                <Link href={'/terminos' as any} className="text-violet-300 hover:text-violet-200">Términos</Link>{' '}y la{' '}
+                <Link href={'/privacidad' as any} className="text-violet-300 hover:text-violet-200">Privacidad</Link>.
+              </p>
+            </div>
           </div>
         </section>
       </div>
