@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { Lock, Shield, EyeOff, AtSign, Share2, ArrowRight, Server, Download, Github, Newspaper, Megaphone, Scale, FileSignature } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Navbar } from '@/components/ui/Navbar';
+import { SecurityDemo } from '@/components/landing/SecurityDemo';
 
 export default function LandingPage() {
   return (
@@ -63,6 +64,22 @@ export default function LandingPage() {
               <p className="text-sm text-text-tertiary leading-relaxed">{f.body}</p>
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* ─── Demo en vídeo: la prueba de seguridad ──────────── */}
+      <section className="px-6 pb-24">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-8">
+            <h2 className="font-display text-2xl md:text-3xl font-light tracking-tight mb-3">
+              No nos creas: <span className="text-gradient-violet font-normal">míralo</span>.
+            </h2>
+            <p className="text-text-secondary max-w-2xl mx-auto leading-relaxed">
+              La prueba de seguridad completa en 84 segundos: qué pasa con tu contraseña,
+              qué viaja por la red y qué ve (y qué no puede ver) nuestro propio servidor.
+            </p>
+          </div>
+          <SecurityDemo />
         </div>
       </section>
 
