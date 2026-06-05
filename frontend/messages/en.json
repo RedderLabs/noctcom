@@ -797,6 +797,36 @@
       "resendError": "Failed to resend"
     }
   },
+  "onboarding": {
+    "skip": "Skip",
+    "back": "Back",
+    "next": "Next",
+    "start": "Go to my vault",
+    "stepOf": "Step {current} of {total}",
+    "steps": {
+      "welcome": {
+        "title": "Welcome to your vault",
+        "body": "Everything you upload is encrypted on this device, with your password, before it ever leaves it. Only locked boxes reach our servers: we cannot read your files — not even their names.\n\nIt isn't a promise to behave — it's built so that looking is impossible."
+      },
+      "phrase": {
+        "title": "Your 12-word phrase",
+        "body": "The recovery phrase you saved when signing up is the only way back in if you forget your password.",
+        "hint": "There is no \"reset by email\": we keep no copy of your password or your phrase. Store it away from this device (on paper, for example). You can verify it anytime in Settings → Recovery kit."
+      },
+      "upload": {
+        "title": "Upload your first file",
+        "body": "Use the \"New\" button in the sidebar or drag files into the vault. Each file is chunked and encrypted in your browser before uploading — you'll see encryption and upload progress in real time."
+      },
+      "security": {
+        "title": "Extra protection (optional)",
+        "body": "You can add a second factor to your login: a passkey (fingerprint, Windows Hello…) or an email code. Enable it in Settings → Security.\n\nYou can also review and revoke devices with open sessions."
+      },
+      "ready": {
+        "title": "All set",
+        "body": "You have 1 GB free to get started. If anything is unclear, the manual is always in the sidebar.\n\nYour files, your keys, your vault."
+      }
+    }
+  },
   "vault": {
     "toolbar": {
       "newFolder": "New folder",

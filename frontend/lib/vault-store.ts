@@ -49,6 +49,8 @@ interface VaultState {
   uploads: Record<string, UploadTask>;
   storageUsed: number;
   storageQuota: number;
+  // null = aún no sabemos (no llegó /me); false = primer login → mostrar tour
+  onboarded: boolean | null;
 }
 
 interface VaultActions {
@@ -75,6 +77,7 @@ interface VaultActions {
   logActivity: (event: { type: string; description: string; target?: string }) => Promise<void>;
   loadActivity: (limit?: number, offset?: number) => Promise<{ events: any[]; total: number }>;
   refreshStorage: () => Promise<void>;
+  completeOnboarding: () => Promise<void>;
   reset: () => void;
 }
 
@@ -142,6 +145,7 @@ const initial: VaultState = {
   uploads: {},
   storageUsed: 0,
   storageQuota: 10_737_418_240,
+  onboarded: null,
 };
 
 export const useVault = create<VaultState & VaultActions>((set, get) => ({
@@ -642,11 +646,24 @@ export const useVault = create<VaultState & VaultActions>((set, get) => ({
   // ─── Storage ───────────────────────────────────────────────
   refreshStorage: async () => {
     try {
-      const me = await apiFetch<{ storageUsedBytes: number; storageQuotaBytes: number }>(
+      const me = await apiFetch<{ storageUsedBytes: number; storageQuotaBytes: number; onboarded?: boolean }>(
         '/api/v1/auth/me',
       );
-      set({ storageUsed: me.storageUsedBytes, storageQuota: me.storageQuotaBytes });
+      set({
+        storageUsed: me.storageUsedBytes,
+        storageQuota: me.storageQuotaBytes,
+        // Solo se fija la primera vez: si el usuario cierra el tour, el estado
+        // local pasa a true y un refresh posterior no debe re-abrirlo.
+        onboarded: get().onboarded === true ? true : (me.onboarded ?? true),
+      });
     } catch { /* ignore */ }
+  },
+
+  completeOnboarding: async () => {
+    set({ onboarded: true }); // optimista: el tour se cierra ya
+    try {
+      await apiFetch('/api/v1/auth/onboarding/complete', { method: 'POST' });
+    } catch { /* sin red no pasa nada: se reintentará en el próximo login */ }
   },
 
   reset: () => set(initial),

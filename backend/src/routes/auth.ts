@@ -516,7 +516,7 @@ const authRoutes: FastifyPluginAsync = async (app) => {
     const r = await db.query(
       `SELECT u.id, u.username, u.storage_quota_bytes, u.storage_used_bytes,
               u.identity_public_key, u.exchange_public_key, u.is_admin,
-              u.plan, u.subscription_status, u.current_period_end,
+              u.plan, u.subscription_status, u.current_period_end, u.onboarded_at,
               COALESCE((
                 SELECT SUM(total_bytes) FROM storage_volumes
                  WHERE active = true AND (user_id = u.id OR user_id IS NULL)
@@ -542,7 +542,18 @@ const authRoutes: FastifyPluginAsync = async (app) => {
       currentPeriodEnd: u.current_period_end ?? null,
       identityPublicKey: toB64(u.identity_public_key),
       exchangePublicKey: toB64(u.exchange_public_key),
+      onboarded: u.onboarded_at != null,
     });
+  });
+
+  // ─── POST /onboarding/complete ─ marca visto el tour de bienvenida ──
+  // Idempotente: solo escribe la primera vez (onboarded_at IS NULL).
+  app.post('/onboarding/complete', { onRequest: [app.authenticate] }, async (req, reply) => {
+    await db.query(
+      `UPDATE users SET onboarded_at = now() WHERE id = $1 AND onboarded_at IS NULL`,
+      [req.user.sub],
+    );
+    return reply.send({ ok: true });
   });
 
   // ─── POST /verify ─ verificar email con código ────────────

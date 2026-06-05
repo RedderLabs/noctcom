@@ -49,6 +49,8 @@ CREATE TABLE IF NOT EXISTS users (
     totp_verified_at     TIMESTAMPTZ,
     storage_quota_bytes  BIGINT NOT NULL DEFAULT 1073741824,
     storage_used_bytes   BIGINT NOT NULL DEFAULT 0,
+    -- NULL = aún no vio el tour de bienvenida (onboarding de primer login)
+    onboarded_at         TIMESTAMPTZ,
     created_at           TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at           TIMESTAMPTZ NOT NULL DEFAULT now(),
     last_login_at        TIMESTAMPTZ
@@ -61,6 +63,13 @@ ALTER TABLE users
     ADD COLUMN IF NOT EXISTS login_otp_hash       BYTEA,
     ADD COLUMN IF NOT EXISTS login_otp_expires    TIMESTAMPTZ,
     ADD COLUMN IF NOT EXISTS login_otp_attempts   SMALLINT NOT NULL DEFAULT 0;
+
+-- Migración idempotente: onboarding de primer login. El DEFAULT now() marca a
+-- los usuarios EXISTENTES como ya onboardeados (no molestarles con el tour);
+-- el DROP DEFAULT inmediato hace que los signups nuevos entren con NULL y sí
+-- lo vean. En BD nueva la columna ya existe (sin default) y ambos son no-op.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS onboarded_at TIMESTAMPTZ DEFAULT now();
+ALTER TABLE users ALTER COLUMN onboarded_at DROP DEFAULT;
 
 -- ─── DEVICES ───────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS devices (

@@ -797,6 +797,36 @@
       "resendError": "Error al reenviar"
     }
   },
+  "onboarding": {
+    "skip": "Saltar",
+    "back": "Atrás",
+    "next": "Siguiente",
+    "start": "Ir a mi bóveda",
+    "stepOf": "Paso {current} de {total}",
+    "steps": {
+      "welcome": {
+        "title": "Bienvenido a tu bóveda",
+        "body": "Todo lo que subas se cifra en este dispositivo, con tu contraseña, antes de salir de él. A nuestros servidores solo llegan cajas cerradas: no podemos leer tus archivos, ni siquiera sus nombres.\n\nNo es una promesa de buen comportamiento — está construido para que mirar sea imposible."
+      },
+      "phrase": {
+        "title": "Tu frase de 12 palabras",
+        "body": "La frase de recuperación que guardaste al registrarte es la única forma de volver a entrar si olvidas tu contraseña.",
+        "hint": "No existe «restablecer por email»: no guardamos ninguna copia de tu contraseña ni de tu frase. Guárdala fuera de este dispositivo (en papel, por ejemplo). Puedes verificarla cuando quieras en Ajustes → Kit de recuperación."
+      },
+      "upload": {
+        "title": "Sube tu primer archivo",
+        "body": "Usa el botón «Nuevo» del menú lateral o arrastra archivos a la bóveda. Cada archivo se trocea y se cifra en tu navegador antes de subirse — verás el progreso de cifrado y subida en tiempo real."
+      },
+      "security": {
+        "title": "Blindaje extra (opcional)",
+        "body": "Puedes añadir un segundo factor al login: una passkey (huella, Windows Hello…) o un código por email. Se activa en Ajustes → Seguridad.\n\nTambién puedes revisar y revocar los dispositivos con sesión abierta."
+      },
+      "ready": {
+        "title": "Todo listo",
+        "body": "Tienes 1 GB gratis para empezar. Si algo no cuadra, el manual está siempre en el menú lateral.\n\nTus archivos, tus claves, tu bóveda."
+      }
+    }
+  },
   "vault": {
     "toolbar": {
       "newFolder": "Nueva carpeta",

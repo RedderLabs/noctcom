@@ -21,6 +21,7 @@ import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher';
 import { useFontScale } from '@/lib/font-scale';
 import { useSync } from '@/lib/sync';
 import { syncPushToken, onForegroundMessage } from '@/lib/firebase';
+import { OnboardingTour } from '@/components/vault/OnboardingTour';
 
 function formatStorageSize(bytes: number): string {
   if (bytes === 0) return '0 B';
@@ -321,6 +322,9 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
         <main className="flex-1 overflow-y-auto">{children}</main>
       </div>
+
+      {/* Tour de bienvenida (solo primer login de la cuenta) */}
+      <OnboardingTour />
     </div>
   );
 }
