@@ -34,6 +34,60 @@ const adminRoutes: FastifyPluginAsync = async (app) => {
     })));
   });
 
+  // ─── GET /metrics ── métricas agregadas (solo admin) ──────
+  // Respetuosas con la privacidad POR DISEÑO: solo agregados SQL sobre datos
+  // que ya existen (nada de trackers, cookies ni eventos por usuario). Ningún
+  // dato individual sale de aquí.
+  app.get('/metrics', { onRequest: [app.authenticate] }, async (req, reply) => {
+    if (!(await requireAdmin(req, reply))) return;
+
+    const [users, storage, content, plans] = await Promise.all([
+      db.query(
+        `SELECT count(*)::int                                                          AS total,
+                count(*) FILTER (WHERE created_at    > now() - interval '7 days')::int  AS new_7d,
+                count(*) FILTER (WHERE created_at    > now() - interval '30 days')::int AS new_30d,
+                count(*) FILTER (WHERE last_login_at > now() - interval '7 days')::int  AS active_7d,
+                count(*) FILTER (WHERE last_login_at > now() - interval '30 days')::int AS active_30d,
+                count(*) FILTER (WHERE email_verified)::int                             AS verified,
+                count(*) FILTER (WHERE two_factor_email_enabled
+                                 OR EXISTS (SELECT 1 FROM webauthn_credentials c
+                                            WHERE c.user_id = users.id
+                                              AND c.revoked_at IS NULL))::int           AS with_2fa
+         FROM users`,
+      ),
+      db.query(
+        `SELECT COALESCE(SUM(storage_used_bytes), 0)::bigint AS used_bytes FROM users`,
+      ),
+      db.query(
+        `SELECT (SELECT count(*) FROM nodes  WHERE kind = 'file' AND deleted_at IS NULL)::int AS files,
+                (SELECT count(*) FROM shares WHERE revoked_at IS NULL)::int                    AS shares,
+                (SELECT count(*) FROM agents WHERE revoked_at IS NULL)::int                    AS agents`,
+      ),
+      db.query(
+        `SELECT COALESCE(plan, 'free') AS plan, count(*)::int AS n
+         FROM users GROUP BY 1 ORDER BY 2 DESC`,
+      ),
+    ]);
+
+    const u = users.rows[0];
+    return reply.send({
+      users: {
+        total: u.total,
+        new7d: u.new_7d,
+        new30d: u.new_30d,
+        active7d: u.active_7d,
+        active30d: u.active_30d,
+        verified: u.verified,
+        with2fa: u.with_2fa,
+      },
+      storageUsedBytes: Number(storage.rows[0].used_bytes),
+      files: content.rows[0].files,
+      shares: content.rows[0].shares,
+      agents: content.rows[0].agents,
+      plans: Object.fromEntries(plans.rows.map((p) => [p.plan, p.n])),
+    });
+  });
+
   // ─── PATCH /users/:id/role ── promover / revocar admin ────
   app.patch<{ Params: { id: string } }>(
     '/users/:id/role',

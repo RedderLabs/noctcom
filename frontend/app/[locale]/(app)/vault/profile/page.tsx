@@ -6,7 +6,7 @@ import { Link } from '@/i18n/navigation';
 import {
   User, Shield, ShieldCheck, Monitor, Smartphone, HardDrive,
   Clock, Calendar, Settings, KeyRound, Fingerprint, Mail, MailCheck,
-  Users, Crown,
+  Users, Crown, BarChart3,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/Button';
@@ -49,6 +49,19 @@ interface AdminUser {
   isAdmin: boolean;
   createdAt: string;
   lastLoginAt: string | null;
+}
+
+// Agregados del servidor — nunca datos individuales (privacy by design).
+interface AdminMetrics {
+  users: {
+    total: number; new7d: number; new30d: number;
+    active7d: number; active30d: number; verified: number; with2fa: number;
+  };
+  storageUsedBytes: number;
+  files: number;
+  shares: number;
+  agents: number;
+  plans: Record<string, number>;
 }
 
 type TFn = (key: string, values?: Record<string, string | number>) => string;
@@ -108,6 +121,7 @@ export default function ProfilePage() {
   const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [togglingUserId, setTogglingUserId] = useState<string | null>(null);
+  const [metrics, setMetrics] = useState<AdminMetrics | null>(null);
 
   useEffect(() => {
     apiFetch<MeData>('/api/v1/auth/me')
@@ -147,6 +161,13 @@ export default function ProfilePage() {
   }, [me?.isAdmin]);
 
   useEffect(() => { fetchAdminUsers(); }, [fetchAdminUsers]);
+
+  useEffect(() => {
+    if (!me?.isAdmin) return;
+    apiFetch<AdminMetrics>('/api/v1/admin/metrics')
+      .then(setMetrics)
+      .catch(() => {});
+  }, [me?.isAdmin]);
 
   const toggleAdmin = async (userId: string, current: boolean) => {
     setTogglingUserId(userId);
@@ -319,6 +340,60 @@ export default function ProfilePage() {
           </div>
         </div>
       </section>
+
+      {/* Admin: métricas agregadas (privacy-first: solo totales, nada individual) */}
+      {isAdmin && metrics && (
+        <section className="mb-8">
+          <div className="flex items-center gap-2 mb-1">
+            <BarChart3 className="size-4 text-amber-300" />
+            <h2 className="text-sm font-semibold uppercase tracking-wider text-text-secondary">
+              {t('metricsHeading')}
+            </h2>
+          </div>
+          <p className="text-[11px] text-text-muted mb-4">{t('metricsPrivacyNote')}</p>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="p-4 rounded-xl border border-border-faint bg-bg-surface">
+              <p className="text-2xl font-display font-semibold">{metrics.users.total}</p>
+              <p className="text-[11px] text-text-tertiary mt-0.5">{t('metricsUsers')}</p>
+              <p className="text-[10px] font-mono text-emerald-400 mt-1">
+                +{metrics.users.new7d} · 7d &nbsp; +{metrics.users.new30d} · 30d
+              </p>
+            </div>
+            <div className="p-4 rounded-xl border border-border-faint bg-bg-surface">
+              <p className="text-2xl font-display font-semibold">{metrics.users.active7d}</p>
+              <p className="text-[11px] text-text-tertiary mt-0.5">{t('metricsActive7d')}</p>
+              <p className="text-[10px] font-mono text-text-muted mt-1">
+                {metrics.users.active30d} · 30d
+              </p>
+            </div>
+            <div className="p-4 rounded-xl border border-border-faint bg-bg-surface">
+              <p className="text-2xl font-display font-semibold">{fmtSize(metrics.storageUsedBytes)}</p>
+              <p className="text-[11px] text-text-tertiary mt-0.5">{t('metricsStorage')}</p>
+              <p className="text-[10px] font-mono text-text-muted mt-1">
+                {t('metricsFiles', { count: metrics.files })}
+              </p>
+            </div>
+            <div className="p-4 rounded-xl border border-border-faint bg-bg-surface">
+              <p className="text-2xl font-display font-semibold">{metrics.users.with2fa}</p>
+              <p className="text-[11px] text-text-tertiary mt-0.5">{t('metrics2fa')}</p>
+              <p className="text-[10px] font-mono text-text-muted mt-1">
+                {t('metricsVerified', { count: metrics.users.verified })}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-4 mt-3 px-1 flex-wrap text-[11px] text-text-muted">
+            <span>{t('metricsShares', { count: metrics.shares })}</span>
+            <span>·</span>
+            <span>{t('metricsAgents', { count: metrics.agents })}</span>
+            <span>·</span>
+            <span>
+              {Object.entries(metrics.plans)
+                .map(([plan, n]) => `${plan}: ${n}`)
+                .join(' · ')}
+            </span>
+          </div>
+        </section>
+      )}
 
       {/* Admin: user management */}
       {isAdmin && (
