@@ -193,6 +193,38 @@ jobs:
           cosign attest --yes --predicate sbom.json --type spdxjson "${IMAGE_LC}"
 
   # ═══════════════════════════════════════════════════════════════
+  # Deploy: avisar a Render de que hay imágenes nuevas
+  # Render despliega DESDE imagen (GHCR), no construye el repo: sin este
+  # aviso, los pushes no llegan a producción hasta un deploy manual.
+  # Requiere los secrets RENDER_DEPLOY_HOOK_BACKEND / _FRONTEND (la URL de
+  # Settings → Deploy Hook de cada servicio). Si faltan, solo avisa y no falla.
+  # ═══════════════════════════════════════════════════════════════
+  deploy:
+    name: Deploy to Render
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Render deploy hooks
+        env:
+          HOOK_BACKEND: ${{ secrets.RENDER_DEPLOY_HOOK_BACKEND }}
+          HOOK_FRONTEND: ${{ secrets.RENDER_DEPLOY_HOOK_FRONTEND }}
+        run: |
+          fail=0
+          for svc in BACKEND FRONTEND; do
+            hook_var="HOOK_${svc}"
+            hook="${!hook_var}"
+            if [ -z "$hook" ]; then
+              echo "::warning::Secret RENDER_DEPLOY_HOOK_${svc} no configurado — deploy de ${svc} omitido (hazlo a mano en Render)."
+              continue
+            fi
+            code=$(curl -s -o /dev/null -w '%{http_code}' "$hook")
+            echo "Render ${svc}: HTTP ${code}"
+            case "$code" in 2*) ;; *) fail=1 ;; esac
+          done
+          exit $fail
+
+  # ═══════════════════════════════════════════════════════════════
   # Release: empaquetar todo para publicación
   # ═══════════════════════════════════════════════════════════════
   release:
