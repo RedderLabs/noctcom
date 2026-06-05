@@ -49,6 +49,10 @@
 3. Si has activado la verificación en dos pasos, te pediremos también un código rápido.
 4. ¿Prefieres tu huella o tu cara? También puedes entrar con una Passkey.
 
+### Tu primera vez dentro
+
+La primera vez que entres en tu bóveda te recibirá un pequeño tour de bienvenida: cinco pasos cortos que repasan lo importante (qué significa el cifrado, por qué tu frase de 12 palabras es tan valiosa, cómo subir tu primer archivo y cómo activar la verificación en dos pasos). Puedes saltarlo cuando quieras — no vuelve a aparecer.
+
 ---
 
 ## Tus archivos, a tu manera
@@ -227,7 +231,7 @@ En cada disco verás el botón **Usar este disco**. Al pulsarlo, Noctcom crea un
 | `.\noctcom-connector.exe run` | Lo pone en marcha (deja la ventana abierta) |
 | `.\noctcom-connector.exe --help` | Te lista todo lo que puede hacer |
 
-> Lo que viene pronto: guardar de verdad tus archivos en ese disco a través del programa, y poder formatear discos vacíos desde la web.
+> Tus archivos ya viajan cifrados hasta ese disco a través del programa, y puedes formatear discos vacíos desde la web (con confirmación doble). Lo que viene pronto: versiones para macOS y Linux, y que funcione en segundo plano sin terminal.
 
 ---
 
@@ -322,4 +326,4 @@ Pulsa el botón de plegar en la parte de arriba del menú para dejarlo en modo "
 
 ---
 
-*Última actualización: v0.12.1 · Junio 2026*
+*Última actualización: v0.13.0 · 5 de junio de 2026*

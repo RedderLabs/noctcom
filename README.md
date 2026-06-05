@@ -63,9 +63,9 @@ Lo que ve el servidor: tamaño del ciphertext, timestamps, estructura del arbol 
 - **Previsualizacion de archivos** — imagenes (con zoom), video, audio, PDF, codigo fuente, texto
 - **Drag & drop** — arrastra archivos o muevalos entre carpetas
 - **Compartir E2E** — sealed box con la pubkey del destinatario
-- **2FA (TOTP)** — codigo de 6 digitos con app autenticadora
-- **Passkeys (WebAuthn)** — huella digital o Face ID
-- **Recuperacion** — frase de 12 palabras (BIP39)
+- **2FA** — passkeys (WebAuthn: huella digital o Face ID) o codigo de un solo uso por email
+- **Recuperacion** — frase de 12 palabras (BIP39) que restaura cuenta y archivos
+- **Onboarding guiado** — tour de bienvenida en el primer login (ES/EN)
 - **Multi-dispositivo** — registro, gestion y revocacion de dispositivos
 - **Perfil de usuario** — panel admin, gestion de roles, sesiones activas
 - **Almacenamiento externo** — discos USB/SATA detectados y registrados desde la UI
@@ -75,7 +75,8 @@ Lo que ve el servidor: tamaño del ciphertext, timestamps, estructura del arbol 
 - **Destacados** — archivos favoritos
 - **Sync real-time** — Redis pub/sub + WebSocket + BroadcastChannel
 - **Notificaciones push** — FCM (Firebase Cloud Messaging)
-- **Accesibilidad** — escala de fuente, sidebar colapsable
+- **Accesibilidad** — escala de fuente, sidebar colapsable, tema claro/oscuro
+- **Bilingue** — espanol e ingles en web, app, emails y agente
 - **Manual integrado** — documentacion dentro de la app
 
 ## Stack

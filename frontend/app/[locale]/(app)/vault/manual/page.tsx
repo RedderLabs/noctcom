@@ -1,23 +1,24 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { BookOpen } from 'lucide-react';
 
 export default function ManualPage() {
   const t = useTranslations('manual');
+  const locale = useLocale();
   const [html, setHtml] = useState('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/manual.md')
+    fetch(locale === 'en' ? '/manual.en.md' : '/manual.md')
       .then((r) => r.text())
       .then((md) => {
         setHtml(renderMarkdown(md));
         setLoading(false);
       })
       .catch(() => setLoading(false));
-  }, []);
+  }, [locale]);
 
   if (loading) {
     return (
