@@ -416,6 +416,38 @@ async function query(text: string, params: any[] = []): Promise<QueryResult> {
     return u ? { rows: [{ id: u.id }], rowCount: 1 } : { rows: [], rowCount: 0 };
   }
 
+  // /login/finalize: fila completa del usuario por email_hash.
+  if (sql.includes('u.identity_private_key_wrapped') && sql.includes('u.email_hash = $1')) {
+    const eh = asBuf(params[0]);
+    const u = [...store.users.values()].find((x) => x.email_hash.equals(eh));
+    if (!u) return { rows: [], rowCount: 0 };
+    return {
+      rows: [{
+        id: u.id,
+        identity_public_key: u.identity_public_key,
+        identity_private_key_wrapped: u.identity_private_key_wrapped,
+        identity_private_key_nonce: u.identity_private_key_nonce,
+        exchange_private_key_wrapped: u.exchange_private_key_wrapped,
+        exchange_private_key_nonce: u.exchange_private_key_nonce,
+        exchange_public_key: u.exchange_public_key,
+      }],
+      rowCount: 1,
+    };
+  }
+
+  // /login/finalize: gating de 2FA (¿passkey o email-OTP activos?).
+  if (sql.includes('AS has_passkey')) {
+    const u = store.users.get(params[0]);
+    if (!u) return { rows: [], rowCount: 0 };
+    const hasPasskey = store.credentials.some(
+      (c) => c.user_id === u.id && c.revoked_at === null,
+    );
+    return {
+      rows: [{ two_factor_email_enabled: u.two_factor_email_enabled, has_passkey: hasPasskey }],
+      rowCount: 1,
+    };
+  }
+
   if (sql.includes('SELECT identity_public_key FROM users WHERE id = $1')) {
     const u = store.users.get(params[0]);
     return u ? { rows: [{ identity_public_key: u.identity_public_key }], rowCount: 1 } : { rows: [], rowCount: 0 };

@@ -664,7 +664,8 @@
       "login": "Couldn't sign in",
       "passkey": "Couldn't verify the passkey",
       "sendCode": "Couldn't send the code",
-      "wrongCode": "Incorrect code"
+      "wrongCode": "Incorrect code",
+      "locked": "Too many failed attempts. Account temporarily locked — try again in {minutes, plural, one {# minute} other {# minutes}}."
     }
   },
   "signup": {

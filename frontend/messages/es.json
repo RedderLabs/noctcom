@@ -664,7 +664,8 @@
       "login": "Error al iniciar sesión",
       "passkey": "No se pudo verificar la passkey",
       "sendCode": "No se pudo enviar el código",
-      "wrongCode": "Código incorrecto"
+      "wrongCode": "Código incorrecto",
+      "locked": "Demasiados intentos fallidos. Cuenta bloqueada temporalmente — vuelve a intentarlo en {minutes, plural, one {# minuto} other {# minutos}}."
     }
   },
   "signup": {

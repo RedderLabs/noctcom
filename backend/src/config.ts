@@ -35,6 +35,14 @@ const envSchema = z.object({
   // % del tope a partir del cual el janitor avisa (log + GlitchTip). Default 80%.
   GLOBAL_STORAGE_ALERT_PCT: z.coerce.number().default(80),
 
+  // Lockout por cuenta tras logins fallidos (ver login-lockout.ts). Tras
+  // MAX_FAILS fallos en la ventana, bloqueo de BASE_LOCK_S segundos que se
+  // duplica en bloqueos consecutivos hasta MAX_LOCK_S. Requiere Redis.
+  LOGIN_LOCKOUT_MAX_FAILS: z.coerce.number().int().min(2).default(5),
+  LOGIN_LOCKOUT_WINDOW_S: z.coerce.number().int().min(60).default(900),      // 15 min
+  LOGIN_LOCKOUT_BASE_LOCK_S: z.coerce.number().int().min(60).default(900),   // 15 min
+  LOGIN_LOCKOUT_MAX_LOCK_S: z.coerce.number().int().min(60).default(14400),  // 4 h
+
   // Última versión publicada del agente "Noctcom Connector". Se incrementa al
   // subir un binario nuevo a B2 (scripts/upload-agent-release.ts) para que los
   // agentes ya instalados detecten que hay actualización.

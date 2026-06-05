@@ -17,6 +17,22 @@ vi.mock('../db/pool.js', async () => {
   const f = await import('./fake-db.js');
   return { db: f.db, tx: f.tx };
 });
+// auth.ts importa login-lockout.ts, que arrastra config.ts (valida process.env
+// entero) y db/redis.js. Mock mínimo: sin Redis el lockout es no-op.
+vi.mock('../config.js', () => ({
+  env: {
+    LOGIN_LOCKOUT_MAX_FAILS: 5,
+    LOGIN_LOCKOUT_WINDOW_S: 900,
+    LOGIN_LOCKOUT_BASE_LOCK_S: 900,
+    LOGIN_LOCKOUT_MAX_LOCK_S: 14400,
+  },
+}));
+vi.mock('../db/redis.js', () => ({
+  redis: () => null,
+  initRedis: vi.fn(async () => null),
+  createSubscriber: vi.fn(async () => null),
+  publishChange: vi.fn(async () => {}),
+}));
 vi.mock('../mail.js', () => ({ sendVerificationEmail: vi.fn(async () => {}), normalizeLocale: () => 'es' }));
 vi.mock('../storage/s3.js', () => ({ deleteBlob: vi.fn(async () => {}) }));
 vi.mock('../storage/disk.js', () => ({ deleteFromDisk: vi.fn(async () => {}) }));

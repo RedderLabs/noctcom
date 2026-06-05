@@ -6,6 +6,7 @@ import { sendVerificationEmail, normalizeLocale } from '../mail.js';
 import { deleteBlob } from '../storage/s3.js';
 import { deleteFromDisk } from '../storage/disk.js';
 import { issueSession, hashIp, newRefreshToken } from '../session.js';
+import { lockedSeconds, recordLoginFailure, clearLoginFailures } from '../login-lockout.js';
 
 // ─────────────────────────────────────────────────────────────────
 // Schemas
@@ -258,6 +259,21 @@ const authRoutes: FastifyPluginAsync = async (app) => {
   }, async (req, reply) => {
     const body = loginFinalizeSchema.parse(req.body);
 
+    // ─── Lockout por cuenta (login-lockout.ts) ───────────────
+    // Antes de tocar la BD: si la cuenta está bloqueada por fallos repetidos,
+    // 429 con Retry-After. Se evalúa por email_hash exista o no la cuenta
+    // (mismo comportamiento → sin enumeración) y complementa el rate-limit
+    // por IP, que un atacante distribuido esquiva.
+    const lockLeft = await lockedSeconds(body.emailHash);
+    if (lockLeft > 0) {
+      reply.header('retry-after', String(lockLeft));
+      return reply.code(429).send({
+        error: 'account_locked',
+        message: 'too many failed attempts, try again later',
+        retryAfterSeconds: lockLeft,
+      });
+    }
+
     const r = await db.query(
       `SELECT u.id, u.identity_public_key,
               u.identity_private_key_wrapped, u.identity_private_key_nonce,
@@ -266,7 +282,10 @@ const authRoutes: FastifyPluginAsync = async (app) => {
        FROM users u WHERE u.email_hash = $1`,
       [fromB64(body.emailHash)],
     );
-    if (r.rowCount === 0) return reply.unauthorized('invalid credentials');
+    if (r.rowCount === 0) {
+      await recordLoginFailure(body.emailHash);
+      return reply.unauthorized('invalid credentials');
+    }
 
     const row = r.rows[0];
 
@@ -280,7 +299,13 @@ const authRoutes: FastifyPluginAsync = async (app) => {
       fromB64(body.challenge),
       row.identity_public_key,
     );
-    if (!ok) return reply.unauthorized('invalid credentials');
+    if (!ok) {
+      await recordLoginFailure(body.emailHash);
+      return reply.unauthorized('invalid credentials');
+    }
+
+    // Contraseña correcta: limpia el contador de fallos y la racha de bloqueos.
+    await clearLoginFailures(body.emailHash);
 
     // ─── Gating de 2FA ──────────────────────────────────────
     // La contraseña ya se verificó. Si el usuario tiene un segundo factor

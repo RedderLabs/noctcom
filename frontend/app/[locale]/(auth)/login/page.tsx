@@ -170,7 +170,13 @@ export default function LoginPage() {
 
       await completeLogin(finalize as SessionPayload, mk, kp.publicKey);
     } catch (err: any) {
-      toast.error(err.message ?? t('errors.login'));
+      // Lockout por cuenta (429 del backend): mensaje claro con el tiempo restante.
+      if (err?.status === 429 && err?.detail?.error === 'account_locked') {
+        const minutes = Math.max(1, Math.ceil((err.detail.retryAfterSeconds ?? 60) / 60));
+        toast.error(t('errors.locked', { minutes }));
+      } else {
+        toast.error(err.message ?? t('errors.login'));
+      }
       setLoading(false);
     }
   }
