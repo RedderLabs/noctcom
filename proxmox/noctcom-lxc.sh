@@ -77,7 +77,8 @@ say "${DIM}   LXC #$CTID · $CORES vCPU · ${RAM}MiB RAM · ${DISK}GB ($STORAGE)
 say ""
 say "${B}2. Plantilla Debian 13…${N}"
 pveam update >/dev/null 2>&1 || true
-TEMPLATE="$(pveam available --section system 2>/dev/null | awk '{print $2}' | grep -E '^debian-13-standard' | sort -V | tail -1)"
+# '|| true': con pipefail, un grep sin resultados mataría el script sin mensaje.
+TEMPLATE="$(pveam available --section system 2>/dev/null | awk '{print $2}' | grep -E '^debian-13-standard' | sort -V | tail -1 || true)"
 [ -n "$TEMPLATE" ] || die "No encuentro la plantilla debian-13-standard ('pveam available')."
 if pveam list "$TPL_STORAGE" 2>/dev/null | grep -q "$TEMPLATE"; then
   ok "Plantilla ya descargada: $TEMPLATE"

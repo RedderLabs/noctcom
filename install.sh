@@ -105,7 +105,10 @@ else
     # Modo LAN: sin dominio. Caddy sirve HTTP plano por IP (Caddyfile.lan):
     # la app en http://<IP> y la API en http://<IP>:3000, visibles en la red.
     LAN_IP="${NOCTCOM_LAN_IP:-auto}"
-    [ "$LAN_IP" = "auto" ] && LAN_IP="$(hostname -I 2>/dev/null | awk '{print $1}')"
+    if [ "$LAN_IP" = "auto" ]; then
+      # '|| true': con pipefail, un 'hostname -I' que falle mataría el script.
+      LAN_IP="$(hostname -I 2>/dev/null | awk '{print $1}' || true)"
+    fi
     [ -z "$LAN_IP" ] && LAN_IP="127.0.0.1"
     DOMAIN="localhost"; EMAIL="${EMAIL:-admin@localhost}"
     FRONT="http://$LAN_IP"; API="http://$LAN_IP:3000"; FROM="noreply@localhost"
@@ -145,9 +148,9 @@ $DC up -d --build
 ok "Contenedores en marcha"
 
 # ─── Resumen ────────────────────────────────────────────────────
-DOM="$(grep -E '^CADDY_DOMAIN=' .env | cut -d= -f2-)"
-FRONT_URL="$(grep -E '^FRONTEND_URL=' .env | cut -d= -f2-)"
-API_URL="$(grep -E '^PUBLIC_API_URL=' .env | cut -d= -f2-)"
+DOM="$(grep -E '^CADDY_DOMAIN=' .env | cut -d= -f2- || true)"
+FRONT_URL="$(grep -E '^FRONTEND_URL=' .env | cut -d= -f2- || true)"
+API_URL="$(grep -E '^PUBLIC_API_URL=' .env | cut -d= -f2- || true)"
 say ""
 hr
 printf "${G}${B}  ¡Noctcom está arrancando!${N}\n"
