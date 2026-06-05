@@ -114,7 +114,8 @@ services:
     environment:
       NODE_ENV: ${NODE_ENV:-production}
       PORT: 3000
-      DATABASE_URL: postgres://${POSTGRES_USER:-noctcom}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-noctcom}
+      # sslmode=disable: el postgres del stack no habla TLS (red interna).
+      DATABASE_URL: postgres://${POSTGRES_USER:-noctcom}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-noctcom}?sslmode=disable
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
       S3_ENDPOINT: http://minio:9000
       S3_ACCESS_KEY: ${MINIO_ROOT_USER}

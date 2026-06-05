@@ -10,7 +10,14 @@ const { Pool } = pg;
 // todo lo que guardamos en Postgres ya va cifrado en el cliente (zero-knowledge),
 // así que un MITM en el enlace a la BD solo vería ciphertext y metadatos.
 // TODO: endurecer a verify-full con la CA de Neon cuando toque.
-const useTls = !/localhost|127\.0\.0\.1/.test(env.DATABASE_URL);
+//
+// Self-host (docker compose): el postgres del stack no habla TLS y el host es
+// `postgres` (nombre del servicio), no localhost — sin esto el arranque moría
+// con "The server does not support SSL connections". También se respeta un
+// `?sslmode=disable` explícito en la URL.
+const useTls =
+  !/sslmode=disable/.test(env.DATABASE_URL) &&
+  !/@(localhost|127\.0\.0\.1|postgres)[:/]/.test(env.DATABASE_URL);
 
 export const db = new Pool({
   connectionString: env.DATABASE_URL,
