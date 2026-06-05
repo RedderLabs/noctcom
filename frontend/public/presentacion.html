@@ -1,0 +1,321 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Noctcom · Presentación</title>
+<meta name="description" content="Tu bóveda privada, cifrada en tu dispositivo. Conoce Noctcom en 11 diapositivas." />
+<meta property="og:title" content="Noctcom · Presentación" />
+<meta property="og:description" content="Tu bóveda privada, cifrada en tu dispositivo. Conoce Noctcom en 11 diapositivas." />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://www.noctcom.com/presentacion.html" />
+<meta property="og:image" content="https://www.noctcom.com/es/opengraph-image" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta name="twitter:card" content="summary_large_image" />
+<!--
+  Presentación de Noctcom para atraer usuarios.
+  Autocontenida (sin dependencias). Navega con ← → / espacio, clic en los lados,
+  o swipe en móvil. Pulsa F para pantalla completa. Todas las afirmaciones son
+  reales (criptografía verificable en el código abierto); no hay auditoría externa
+  todavía — se dice abiertamente.
+-->
+<style>
+  :root{
+    --deep:#0a0a0f; --base:#0f0f17; --surface:#15151f; --surface2:#1c1c28;
+    --faint:#2a2a3d; --subtle:#363650;
+    --text:#f0f0f6; --text2:#b8b8ce; --text3:#8e8ea8; --muted:#6e6e8a;
+    --v300:#c4b5fd; --v400:#a78bfa; --v500:#8b5cf6; --v600:#7c3aed; --v700:#6d28d9;
+    --green:#34d399; --amber:#fbbf24;
+    --maxw:920px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    background:
+      radial-gradient(ellipse 80% 50% at 20% -10%, rgba(124,58,237,.10), transparent 70%),
+      radial-gradient(ellipse 70% 60% at 110% 50%, rgba(139,92,246,.06), transparent 70%),
+      var(--base);
+    color:var(--text);
+    font-family:'Inter','Segoe UI',system-ui,-apple-system,sans-serif;
+    -webkit-font-smoothing:antialiased; overflow:hidden;
+    font-feature-settings:"ss01","cv11";
+  }
+  /* textura grain */
+  body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:60;opacity:.018;
+    background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");}
+
+  .deck{position:fixed;inset:0}
+  .slide{
+    position:absolute;inset:0;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;
+    padding:clamp(24px,5vw,72px); text-align:center;
+    opacity:0;visibility:hidden;transform:translateY(14px) scale(.99);
+    transition:opacity .5s ease, transform .5s ease, visibility .5s;
+  }
+  .slide.active{opacity:1;visibility:visible;transform:none}
+  .inner{max-width:var(--maxw);width:100%;display:flex;flex-direction:column;align-items:center;gap:clamp(14px,2.4vw,26px)}
+
+  .kicker{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:clamp(11px,1.4vw,13px);
+    letter-spacing:.18em;text-transform:uppercase;color:var(--v300);
+    display:inline-flex;align-items:center;gap:10px;}
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--v400);box-shadow:0 0 0 0 rgba(139,92,246,.5);animation:pulse 2.4s infinite}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(139,92,246,.45)}70%{box-shadow:0 0 0 10px rgba(139,92,246,0)}100%{box-shadow:0 0 0 0 rgba(139,92,246,0)}}
+
+  h1{font-weight:300;letter-spacing:-.025em;line-height:1.04;font-size:clamp(34px,6.6vw,68px)}
+  h2{font-weight:300;letter-spacing:-.02em;line-height:1.08;font-size:clamp(28px,5vw,50px)}
+  .grad{background:linear-gradient(135deg,#c4b5fd 0%,#8b5cf6 50%,#6d28d9 100%);
+    -webkit-background-clip:text;background-clip:text;color:transparent;font-weight:400}
+  .lead{font-size:clamp(16px,2.3vw,22px);color:var(--text2);line-height:1.6;max-width:720px}
+  .small{font-size:clamp(13px,1.6vw,15px);color:var(--text3);line-height:1.6;max-width:680px}
+  strong{color:var(--text);font-weight:600}
+  em{color:var(--v300);font-style:normal}
+
+  .grid{display:grid;gap:14px;width:100%}
+  .g2{grid-template-columns:repeat(2,1fr)}
+  .g3{grid-template-columns:repeat(3,1fr)}
+  .g4{grid-template-columns:repeat(4,1fr)}
+  .card{background:var(--surface);border:1px solid var(--faint);border-radius:16px;
+    padding:clamp(16px,2.2vw,22px);text-align:left;display:flex;flex-direction:column;gap:8px;
+    transition:border-color .2s, transform .2s}
+  .card:hover{border-color:var(--subtle);transform:translateY(-2px)}
+  .card .ic{width:38px;height:38px;border-radius:10px;background:rgba(139,92,246,.10);
+    border:1px solid rgba(139,92,246,.22);display:grid;place-items:center;color:var(--v300);font-size:18px}
+  .card h3{font-size:clamp(15px,1.9vw,18px);font-weight:600;letter-spacing:-.01em}
+  .card p{font-size:clamp(12.5px,1.5vw,14px);color:var(--text3);line-height:1.55}
+
+  .pills{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
+  .pill{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:clamp(11px,1.4vw,13px);
+    color:var(--text2);background:var(--surface);border:1px solid var(--faint);
+    border-radius:999px;padding:8px 14px}
+  .pill b{color:var(--v300);font-weight:600}
+
+  .badge{display:inline-flex;align-items:center;gap:9px;border:1px solid rgba(139,92,246,.22);
+    background:rgba(139,92,246,.06);border-radius:999px;padding:8px 16px;font-size:13px;color:var(--v300)}
+  .badge.green{border-color:rgba(52,211,153,.25);background:rgba(52,211,153,.06);color:var(--green)}
+
+  .cta{display:inline-flex;align-items:center;gap:10px;background:linear-gradient(135deg,#8b5cf6,#7c3aed);
+    color:#fff;font-weight:600;font-size:clamp(15px,2vw,18px);text-decoration:none;
+    padding:14px 30px;border-radius:12px;box-shadow:0 8px 28px -8px rgba(124,58,237,.5)}
+  .url{font-family:'JetBrains Mono',ui-monospace,monospace;color:var(--v300);font-size:clamp(15px,2.2vw,20px)}
+
+  .terminal{background:var(--deep);border:1px solid var(--faint);border-radius:12px;
+    padding:18px 20px;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:clamp(12px,1.6vw,15px);
+    text-align:left;width:100%;max-width:680px;line-height:1.7;color:var(--text2)}
+  .terminal .c{color:var(--muted)}
+  .terminal .v{color:var(--v300)}
+
+  .logo{width:64px;height:64px;border-radius:16px;display:grid;place-items:center;
+    background:linear-gradient(135deg,rgba(139,92,246,.18),rgba(124,58,237,.08));
+    border:1px solid rgba(139,92,246,.25);font-size:30px}
+
+  .quote{font-size:clamp(20px,3.2vw,32px);font-weight:300;line-height:1.35;letter-spacing:-.015em;max-width:780px}
+  .quote .grad{font-weight:400}
+
+  /* chrome: progreso, contador, marca */
+  .brand{position:fixed;top:22px;left:26px;display:flex;align-items:center;gap:9px;z-index:50;
+    font-weight:600;letter-spacing:.2px;font-size:14px;color:var(--text2)}
+  .brand .b{width:22px;height:22px;border-radius:7px;background:linear-gradient(135deg,#8b5cf6,#6d28d9)}
+  .count{position:fixed;top:24px;right:26px;z-index:50;font-family:'JetBrains Mono',monospace;
+    font-size:12px;color:var(--muted)}
+  .progress{position:fixed;top:0;left:0;height:2px;background:linear-gradient(90deg,#8b5cf6,#c4b5fd);z-index:50;transition:width .4s ease;width:0}
+  .dots{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);display:flex;gap:8px;z-index:50}
+  .dots button{width:8px;height:8px;border-radius:50%;border:0;background:var(--subtle);cursor:pointer;padding:0;transition:background .2s,transform .2s}
+  .dots button.on{background:var(--v400);transform:scale(1.3)}
+  .hint{position:fixed;bottom:18px;right:26px;z-index:50;font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace}
+  .nav{position:fixed;top:0;bottom:0;width:18%;z-index:40;cursor:pointer}
+  .nav.prev{left:0}.nav.next{right:0}
+
+  @media (max-width:720px){
+    .g2,.g3,.g4{grid-template-columns:1fr}
+    .brand .label{display:none}
+    .hint{display:none}
+  }
+</style>
+</head>
+<body>
+  <div class="progress" id="bar"></div>
+  <div class="brand"><span class="b"></span><span class="label">Noctcom</span></div>
+  <div class="count" id="count">01 / 11</div>
+
+  <div class="deck" id="deck">
+
+    <!-- 1 · Portada -->
+    <section class="slide active">
+      <div class="inner">
+        <div class="logo">🔒</div>
+        <div class="kicker"><span class="dot"></span> Zero-Knowledge real · Open Source</div>
+        <h1>Tu bóveda privada.<br><span class="grad">Cifrada antes de salir de tu dispositivo.</span></h1>
+        <p class="lead">Almacenamiento en la nube donde ni nosotros podemos leer tus archivos. Cifrado en tu dispositivo, con tu contraseña, antes de que nada salga de él.</p>
+        <div class="url">noctcom.com</div>
+      </div>
+    </section>
+
+    <!-- 2 · El problema -->
+    <section class="slide">
+      <div class="inner">
+        <div class="kicker">El problema</div>
+        <h2>«Prometemos no mirar tus archivos.»</h2>
+        <p class="lead">Casi toda la nube funciona con esa promesa. Y una promesa es tan buena como las personas que la hacen, las leyes que las obligan… y el día que alguien entra sin permiso.</p>
+        <p class="small">Si manejas algo que <strong>no puede filtrarse</strong> —una investigación, una fuente, un expediente— necesitas algo más que una promesa.</p>
+      </div>
+    </section>
+
+    <!-- 3 · La diferencia -->
+    <section class="slide">
+      <div class="inner">
+        <div class="kicker">La diferencia</div>
+        <h2>No es una promesa de <span class="grad">no mirar</span>.<br>Está hecho para que <span class="grad">no podamos</span>.</h2>
+        <p class="lead">Tus archivos se cierran con candado en tu propio dispositivo, con una clave que nace y se queda en él. Al servidor solo le llega cifrado que no sabe abrir. Aunque quisiéramos, no hay nada legible que leer, filtrar o entregar.</p>
+        <div class="badge green">● No es confianza. Es imposibilidad técnica.</div>
+      </div>
+    </section>
+
+    <!-- 4 · Cómo, en simple -->
+    <section class="slide">
+      <div class="inner">
+        <div class="kicker">Cómo funciona, en simple</div>
+        <h2>Cuatro cosas que <span class="grad">nadie más</span> hace por defecto</h2>
+        <div class="grid g4">
+          <div class="card"><div class="ic">🔐</div><h3>Zero-Knowledge por defecto</h3><p>No es una opción que activas: es la única forma en que funciona.</p></div>
+          <div class="card"><div class="ic">🙈</div><h3>Ni los metadatos</h3><p>Nombres, tamaños y etiquetas también van cifrados. No solo el contenido.</p></div>
+          <div class="card"><div class="ic">@</div><h3>Sin tu email en claro</h3><p>Solo guardamos un hash. Un volcado de la base de datos no revela quién eres.</p></div>
+          <div class="card"><div class="ic">📤</div><h3>Compartir anónimo</h3><p>Sealed boxes: solo el destinatario abre el archivo. Ni nosotros, ni nadie con acceso al servidor.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5 · Para quién -->
+    <section class="slide">
+      <div class="inner">
+        <div class="kicker">Para quién</div>
+        <h2>Para quien la privacidad <span class="grad">no es opcional</span>.</h2>
+        <div class="grid g4">
+          <div class="card"><div class="ic">📰</div><h3>Periodismo de investigación</h3><p>Material sensible cifrado antes de salir de tu equipo. Ni nosotros podemos abrirlo.</p></div>
+          <div class="card"><div class="ic">📣</div><h3>Fuentes y denuncia</h3><p>Comparte con tu redacción de extremo a extremo: solo el destinatario lo abre.</p></div>
+          <div class="card"><div class="ic">⚖️</div><h3>Secreto profesional</h3><p>Abogados, médicos, periodistas: datos de clientes con cifrado que el proveedor no puede romper.</p></div>
+          <div class="card"><div class="ic">🌐</div><h3>Control y jurisdicción</h3><p>Self-host: tus datos en tu propio hardware, fuera de jurisdicciones ajenas.</p></div>
+        </div>
+        <p class="small">Y, más callado, cualquiera harto de que sus archivos sean el negocio de otro.</p>
+      </div>
+    </section>
+
+    <!-- 6 · La criptografía real -->
+    <section class="slide">
+      <div class="inner">
+        <div class="kicker">Sin humo</div>
+        <h2>Criptografía real, <span class="grad">verificable</span>.</h2>
+        <p class="lead">No inventamos las matemáticas: usamos piezas estudiadas y contrastadas. Y todo está en abierto para que no tengas que creernos.</p>
+        <div class="pills">
+          <span class="pill"><b>Argon2id</b> · clave desde tu contraseña</span>
+          <span class="pill"><b>XChaCha20-Poly1305</b> · cifrado de archivos</span>
+          <span class="pill"><b>X25519</b> · compartir sellado</span>
+          <span class="pill"><b>Ed25519</b> · firmas</span>
+          <span class="pill"><b>BLAKE2b</b> · integridad</span>
+        </div>
+        <p class="small">Honestidad ante todo: <strong>aún no hay una auditoría externa</strong>. Está en la hoja de ruta y, cuando se haga, el informe se publicará entero. Mientras tanto, el código es 100% auditable.</p>
+      </div>
+    </section>
+
+    <!-- 7 · No nos creas -->
+    <section class="slide">
+      <div class="inner">
+        <div class="kicker">Transparencia</div>
+        <p class="quote">No nos creas: <span class="grad">míralo</span>. En la web hay una prueba de seguridad de 84 segundos que muestra qué pasa con tu contraseña, qué viaja por la red y qué ve —y qué no puede ver— nuestro propio servidor.</p>
+        <div class="badge">● Código abierto · AGPL-3.0 · audítalo tú mismo</div>
+      </div>
+    </section>
+
+    <!-- 8 · Recuperación -->
+    <section class="slide">
+      <div class="inner">
+        <div class="kicker">Recuperación</div>
+        <h2>12 palabras que te devuelven<br>tu cuenta <span class="grad">y tus archivos</span>.</h2>
+        <p class="lead">Si olvidas la contraseña, tu frase de recuperación no solo te devuelve el acceso: re-cifra tus archivos con tu nueva contraseña. Sin copias de tus claves en nuestro poder.</p>
+        <p class="small">El reverso de la moneda, dicho sin letra pequeña: si pierdes la frase <strong>y</strong> la contraseña, no hay puerta trasera. Es el precio del zero-knowledge real.</p>
+      </div>
+    </section>
+
+    <!-- 9 · Tuyo de verdad -->
+    <section class="slide">
+      <div class="inner">
+        <div class="kicker">Tuyo de verdad</div>
+        <h2>Open source. <span class="grad">Self-host en un comando.</span></h2>
+        <div class="terminal">
+          <div class="c"># Tu servidor, tus reglas</div>
+          <div class="v">curl -fsSL noctcom.com/install.sh | bash</div>
+          <div class="c"># Listo, con HTTPS automático, en tu dominio</div>
+        </div>
+        <div class="grid g3">
+          <div class="card"><div class="ic">🗝️</div><h3>Pagas por espacio</h3><p>Nunca por tus datos. Tus archivos siguen siendo ilegibles para nosotros.</p></div>
+          <div class="card"><div class="ic">🔁</div><h3>Multidispositivo</h3><p>Sincronización en tiempo real; tus claves se reconstruyen desde tu contraseña.</p></div>
+          <div class="card"><div class="ic">🎨</div><h3>A tu gusto</h3><p>Tema claro u oscuro · Español e inglés · vista previa sin descargar.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 10 · Precios -->
+    <section class="slide">
+      <div class="inner">
+        <div class="kicker">Precios honestos</div>
+        <h2>Empieza <span class="grad">gratis</span>. Amplía si lo necesitas.</h2>
+        <div class="grid g3">
+          <div class="card"><div class="ic">✦</div><h3>1 GB gratis</h3><p>Cifrado zero-knowledge completo. Sin tarjeta, sin trucos.</p></div>
+          <div class="card"><div class="ic">↑</div><h3>Planes mensuales</h3><p>Amplía espacio cuando lo necesites. Cambia o cancela cuando quieras.</p></div>
+          <div class="card"><div class="ic">∞</div><h3>Self-host gratis</h3><p>Para siempre, bajo AGPL-3.0. Mismo cifrado, capacidad ilimitada.</p></div>
+        </div>
+        <p class="small">El mismo cifrado en todos los planes. Solo cambia cuánto guardas — nunca quién puede leerlo.</p>
+      </div>
+    </section>
+
+    <!-- 11 · CTA -->
+    <section class="slide">
+      <div class="inner">
+        <div class="logo">🔒</div>
+        <h1>Prueba la idea,<br><span class="grad">no la promesa.</span></h1>
+        <p class="lead">1 GB gratis con cifrado zero-knowledge. Cifrado en tu dispositivo desde el primer archivo.</p>
+        <a class="cta" href="https://noctcom.com/signup">Empezar gratis · 1 GB →</a>
+        <div class="url">noctcom.com</div>
+        <p class="small">Open source · AGPL-3.0 · hecho por Redder Labs · para quien no puede equivocarse sobre quién lee sus archivos.</p>
+      </div>
+    </section>
+
+  </div>
+
+  <div class="nav prev" id="prev" aria-label="Anterior"></div>
+  <div class="nav next" id="next" aria-label="Siguiente"></div>
+  <div class="dots" id="dots"></div>
+  <div class="hint">← →  ·  espacio  ·  F pantalla completa</div>
+
+<script>
+  const slides=[...document.querySelectorAll('.slide')];
+  const dotsWrap=document.getElementById('dots');
+  const bar=document.getElementById('bar');
+  const count=document.getElementById('count');
+  let i=0;
+  slides.forEach((_,k)=>{const b=document.createElement('button');b.onclick=()=>go(k);dotsWrap.appendChild(b);});
+  const dots=[...dotsWrap.children];
+  function go(n){
+    i=Math.max(0,Math.min(slides.length-1,n));
+    slides.forEach((s,k)=>s.classList.toggle('active',k===i));
+    dots.forEach((d,k)=>d.classList.toggle('on',k===i));
+    bar.style.width=((i+1)/slides.length*100)+'%';
+    count.textContent=String(i+1).padStart(2,'0')+' / '+String(slides.length).padStart(2,'0');
+  }
+  function next(){go(i+1)} function prev(){go(i-1)}
+  document.getElementById('next').onclick=next;
+  document.getElementById('prev').onclick=prev;
+  addEventListener('keydown',e=>{
+    if(e.key==='ArrowRight'||e.key===' '||e.key==='PageDown'){e.preventDefault();next()}
+    else if(e.key==='ArrowLeft'||e.key==='PageUp'){e.preventDefault();prev()}
+    else if(e.key==='Home'){go(0)} else if(e.key==='End'){go(slides.length-1)}
+    else if(e.key==='f'||e.key==='F'){document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen()}
+  });
+  // swipe
+  let x0=null;
+  addEventListener('touchstart',e=>x0=e.touches[0].clientX,{passive:true});
+  addEventListener('touchend',e=>{if(x0===null)return;const dx=e.changedTouches[0].clientX-x0;if(Math.abs(dx)>50)dx<0?next():prev();x0=null});
+  go(0);
+</script>
+</body>
+</html>

@@ -25,7 +25,10 @@ export async function generateMetadata({
 }
 
 const baseMetadata: Metadata = {
-  metadataBase: new URL('https://noctcom.com'),
+  // www: es el host canónico real (el apex hace 301 a www). Los bots de
+  // WhatsApp/Telegram/X no siguen redirects para og:image — la URL de la
+  // imagen debe responder 200 a la primera.
+  metadataBase: new URL('https://www.noctcom.com'),
   title: {
     default: 'Noctcom — Zero-Knowledge Storage',
     template: '%s | Noctcom',
