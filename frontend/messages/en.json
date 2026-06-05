@@ -85,11 +85,12 @@
     "selfhost": {
       "badge": "Self-Hosted",
       "title": "Your server, your rules.",
-      "body": "Noctcom is 100% open source (AGPL-3.0). Deploy it on your own hardware with a single Docker command. Same encryption, no third parties. Your cloud, your hardware, real zero-knowledge.",
+      "body": "Noctcom is 100% open source (AGPL-3.0). Deploy it on your own hardware with a single command: Docker on any Linux, or an LXC on Proxmox VE. Same encryption, no third parties. Your cloud, your hardware, real zero-knowledge.",
       "download": "Download v{version}",
       "github": "View on GitHub",
-      "deployComment": "# Quick deploy",
-      "readyComment": "# Ready at https://your-domain.com"
+      "deployComment": "# Linux + Docker",
+      "proxmoxComment": "# Proxmox VE (creates an LXC)",
+      "readyComment": "# With a domain: automatic TLS · without one: http://<IP> on your LAN"
     },
     "whySelfhost": {
       "title": "Why self-host?",

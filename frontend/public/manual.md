@@ -235,10 +235,16 @@ En cada disco verás el botón **Usar este disco**. Al pulsarlo, Noctcom crea un
 
 Noctcom es 100% código abierto (licencia AGPL-3.0). Si te manejas con la tecnología, puedes tenerlo en tu propio servidor.
 
-**La forma rápida — un solo comando.** Descarga el instalador, te pregunta el dominio, genera las contraseñas por ti y lo arranca todo:
+**La forma rápida — un solo comando.** Descarga el instalador, te pregunta el dominio, genera las contraseñas por ti y lo arranca todo. Con dominio tendrás el candado HTTPS automático; sin dominio funciona igualmente en tu red local (`http://<IP-del-servidor>`):
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/RedderLabs/noctcom/main/install.sh | bash
+```
+
+**¿Usas Proxmox?** Este comando (como root, en el host Proxmox) crea un contenedor LXC y lo deja todo funcionando dentro:
+
+```bash
+bash <(curl -fsSL https://raw.githubusercontent.com/RedderLabs/noctcom/main/proxmox/noctcom-lxc.sh)
 ```
 
 **A mano**, si prefieres controlar cada paso:
@@ -253,9 +259,9 @@ docker compose up -d
 
 ### Qué necesitas
 
-- Docker y Docker Compose.
+- Docker y Docker Compose (o un Proxmox VE si usas la vía del LXC).
 - Al menos 2 GB de RAM (una parte la usa el cifrado).
-- Un dominio apuntando a tu servidor (para que el candado de seguridad HTTPS se configure solo).
+- Un dominio apuntando a tu servidor para el candado HTTPS automático — opcional: sin dominio funciona en tu red local por IP, sin candado.
 
 ### Añadir más discos en tu servidor
 

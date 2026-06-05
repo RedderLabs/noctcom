@@ -8,10 +8,18 @@ El servidor no puede leer ni nombres de archivo, ni contenido, ni metadatos.
 ## Self-Host (5 minutos)
 
 **Un comando** — descarga el instalador, te pregunta el dominio, genera los
-secretos y lo arranca todo:
+secretos y lo arranca todo. Con dominio: TLS automático; sin dominio: modo LAN
+(`http://<IP>` en tu red, ideal para homelab):
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/RedderLabs/noctcom/main/install.sh | bash
+```
+
+**En Proxmox VE** — crea un LXC Debian, instala Docker dentro y lo levanta todo
+(ejecutar como root en el host Proxmox; ver [`proxmox/`](proxmox/)):
+
+```bash
+bash <(curl -fsSL https://raw.githubusercontent.com/RedderLabs/noctcom/main/proxmox/noctcom-lxc.sh)
 ```
 
 **O a mano**, si prefieres controlar cada paso:
@@ -29,9 +37,10 @@ Tu instancia estará en `https://app.tu-dominio.com`.
 
 ### Requisitos
 
-- Docker y Docker Compose
+- Docker y Docker Compose (o un host Proxmox VE para la vía LXC)
 - 2 GB de RAM (Argon2id usa 256 MiB)
-- Dominio con DNS apuntando al servidor
+- Dominio con DNS apuntando al servidor — opcional: sin dominio funciona en
+  modo LAN por IP (sin TLS)
 
 ## Garantías criptográficas
 
