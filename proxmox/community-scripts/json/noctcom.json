@@ -1,0 +1,54 @@
+{
+    "name": "Noctcom",
+    "slug": "noctcom",
+    "categories": [
+        11,
+        6
+    ],
+    "date_created": "2026-06-05",
+    "type": "ct",
+    "updateable": true,
+    "privileged": false,
+    "has_arm": false,
+    "interface_port": 80,
+    "documentation": "https://github.com/RedderLabs/noctcom#readme",
+    "website": "https://noctcom.com/",
+    "logo": "https://raw.githubusercontent.com/RedderLabs/noctcom/main/frontend/public/logo.png",
+    "description": "Noctcom is an open-source, zero-knowledge encrypted file storage platform. All files are encrypted in the browser before upload — the server only ever stores ciphertext, and the encryption password never leaves your device. Self-hosting is free forever (AGPL-3.0). The stack runs on Docker Compose: PostgreSQL, Redis, MinIO (S3-compatible blob storage), a Fastify API, a Next.js frontend and Caddy.",
+    "install_methods": [
+        {
+            "type": "default",
+            "script": "ct/noctcom.sh",
+            "config_path": "/opt/noctcom/.env",
+            "resources": {
+                "cpu": 2,
+                "ram": 4096,
+                "hdd": 20,
+                "os": "Debian",
+                "version": "13"
+            }
+        }
+    ],
+    "default_credentials": {
+        "username": null,
+        "password": null
+    },
+    "notes": [
+        {
+            "text": "Zero-knowledge by design: the encryption password is NOT recoverable. If a user loses it, their files cannot be decrypted by anyone.",
+            "type": "warning"
+        },
+        {
+            "text": "The container is installed in LAN mode (HTTP, no TLS): app on http://<IP>, API on http://<IP>:3000. Reserve the container's IP in your DHCP server — the API URL is baked into the frontend build. If the IP changes, edit the URLs in /opt/noctcom/.env and run 'docker compose up -d --build'.",
+            "type": "info"
+        },
+        {
+            "text": "To serve it on a real domain with automatic TLS (Let's Encrypt via Caddy), edit /opt/noctcom/.env (CADDY_DOMAIN, PUBLIC_URL, PUBLIC_API_URL, FRONTEND_URL, COMPOSE_FILE=docker-compose.yml) and run 'docker compose up -d --build'.",
+            "type": "info"
+        },
+        {
+            "text": "Email verification/OTP is disabled by default. Add RESEND_API_KEY or SMTP_* settings to /opt/noctcom/.env to enable it.",
+            "type": "info"
+        }
+    ]
+}

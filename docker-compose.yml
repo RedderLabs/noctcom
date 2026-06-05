@@ -165,6 +165,11 @@ services:
     image: caddy:2-alpine
     container_name: noctcom-caddy
     restart: unless-stopped
+    environment:
+      # El Caddyfile interpola {$CADDY_DOMAIN}/{$CADDY_EMAIL}: deben llegar
+      # al proceso de Caddy (compose no pasa el .env a los contenedores solo).
+      CADDY_DOMAIN: ${CADDY_DOMAIN:-localhost}
+      CADDY_EMAIL: ${CADDY_EMAIL:-admin@localhost}
     ports:
       - "80:80"
       - "443:443"

@@ -1,0 +1,36 @@
+# Caddyfile para el modo LAN/IP (instalación sin dominio: homelab, LXC de
+# Proxmox, pruebas). HTTP plano, sin TLS: la app se sirve en :80 y la API en
+# :3000, accesibles por la IP de la máquina desde toda la red local.
+#
+# Lo monta docker-compose.lan.yml (COMPOSE_FILE en .env, escrito por
+# install.sh). El modo con dominio usa ./Caddyfile (TLS automático).
+
+{
+	auto_https off
+}
+
+# ─── Frontend ───────────────────────────────────────────────────
+:80 {
+	encode zstd gzip
+	reverse_proxy frontend:3000
+
+	header {
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "no-referrer"
+		Permissions-Policy "geolocation=(), microphone=(), camera=()"
+		-Server
+	}
+}
+
+# ─── API ────────────────────────────────────────────────────────
+:3000 {
+	encode zstd gzip
+	reverse_proxy backend:3000
+
+	header {
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "no-referrer"
+		-Server
+	}
+}

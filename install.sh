@@ -12,8 +12,12 @@
 #   NOCTCOM_DIR=noctcom         carpeta destino
 #   NOCTCOM_DOMAIN=example.com  dominio base (usa app.<dominio> y api.<dominio>)
 #   NOCTCOM_EMAIL=you@mail.com  email para los certificados Let's Encrypt
-#   NOCTCOM_NONINTERACTIVE=1    no preguntar; requiere NOCTCOM_DOMAIN
+#   NOCTCOM_LAN_IP=auto         modo LAN sin dominio: IP a usar ('auto' = detectar)
+#   NOCTCOM_NONINTERACTIVE=1    no preguntar; sin NOCTCOM_DOMAIN usa modo LAN
 #   NOCTCOM_NO_START=1          solo prepara .env, no arranca los contenedores
+#
+# Sin dominio → modo LAN: HTTP plano por IP (app en :80, API en :3000), ideal
+# para homelab/LXC. Con dominio → Caddy emite TLS automático (Let's Encrypt).
 #
 set -euo pipefail
 
@@ -82,21 +86,31 @@ say ""
 say "${B}3. Configuración…${N}"
 if [ -f .env ]; then
   warn ".env ya existe — conservo tus secretos y no lo toco."
+  if ! grep -q '^COMPOSE_FILE=' .env; then
+    printf '\n# Fijado por install.sh: evita cargar docker-compose.override.yml (solo desarrollo).\nCOMPOSE_FILE=docker-compose.yml\n' >> .env
+    warn "Añadido COMPOSE_FILE a .env (el override de desarrollo publicaba puertos de postgres/redis/minio al host)."
+  fi
 else
   [ -f .env.example ] || die "No encuentro .env.example en el repo."
 
   DOMAIN="${NOCTCOM_DOMAIN:-}"
-  [ -z "$DOMAIN" ] && ask "   Dominio base (vacío = solo localhost, sin TLS):" "" DOMAIN
+  [ -z "$DOMAIN" ] && ask "   Dominio base (vacío = modo LAN por IP, sin TLS):" "" DOMAIN
   EMAIL="${NOCTCOM_EMAIL:-}"
   [ -z "$EMAIL" ] && [ -n "$DOMAIN" ] && ask "   Email para los certificados TLS:" "admin@$DOMAIN" EMAIL
 
+  COMPOSE_FILES="docker-compose.yml"
   if [ -n "$DOMAIN" ]; then
     FRONT="https://app.$DOMAIN"; API="https://api.$DOMAIN"; FROM="noreply@$DOMAIN"
   else
-    # Modo local: Caddy no obtiene TLS para localhost; útil para probar.
+    # Modo LAN: sin dominio. Caddy sirve HTTP plano por IP (Caddyfile.lan):
+    # la app en http://<IP> y la API en http://<IP>:3000, visibles en la red.
+    LAN_IP="${NOCTCOM_LAN_IP:-auto}"
+    [ "$LAN_IP" = "auto" ] && LAN_IP="$(hostname -I 2>/dev/null | awk '{print $1}')"
+    [ -z "$LAN_IP" ] && LAN_IP="127.0.0.1"
     DOMAIN="localhost"; EMAIL="${EMAIL:-admin@localhost}"
-    FRONT="http://localhost"; API="http://localhost:3000"; FROM="noreply@localhost"
-    warn "Sin dominio: modo localhost (sin TLS válido). Para producción, relanza con un dominio."
+    FRONT="http://$LAN_IP"; API="http://$LAN_IP:3000"; FROM="noreply@localhost"
+    COMPOSE_FILES="docker-compose.yml:docker-compose.lan.yml"
+    warn "Sin dominio: modo LAN por IP ($LAN_IP), sin TLS. Para producción, relanza con un dominio."
   fi
 
   cp .env.example .env
@@ -111,6 +125,9 @@ else
   sed_i '^PUBLIC_API_URL=.*'      "PUBLIC_API_URL=$API"
   sed_i '^FRONTEND_URL=.*'        "FRONTEND_URL=$FRONT"
   sed_i '^SMTP_FROM=.*'           "SMTP_FROM=$FROM"
+  # COMPOSE_FILE fija qué ficheros usa 'docker compose' desde esta carpeta:
+  # nunca el override de desarrollo; en modo LAN añade docker-compose.lan.yml.
+  printf '\n# Ficheros compose (escrito por install.sh).\nCOMPOSE_FILE=%s\n' "$COMPOSE_FILES" >> .env
   chmod 600 .env
   ok "Generado .env con secretos aleatorios (chmod 600)"
   say "${DIM}   Email (verificación/OTP) desactivado por defecto: añade RESEND_API_KEY o SMTP_* en .env.${N}"
@@ -129,13 +146,17 @@ ok "Contenedores en marcha"
 
 # ─── Resumen ────────────────────────────────────────────────────
 DOM="$(grep -E '^CADDY_DOMAIN=' .env | cut -d= -f2-)"
+FRONT_URL="$(grep -E '^FRONTEND_URL=' .env | cut -d= -f2-)"
+API_URL="$(grep -E '^PUBLIC_API_URL=' .env | cut -d= -f2-)"
 say ""
 hr
 printf "${G}${B}  ¡Noctcom está arrancando!${N}\n"
 hr
 if [ "$DOM" = "localhost" ]; then
-  say "  App:  ${B}http://localhost${N}   API: ${B}http://localhost:3000${N}"
-  say "  ${DIM}(modo local sin TLS — para producción usa un dominio real)${N}"
+  say "  App:  ${B}${FRONT_URL}${N}   API: ${B}${API_URL}${N}"
+  say "  ${DIM}(modo LAN sin TLS, accesible desde tu red — para producción usa un dominio real)${N}"
+  say "  ${DIM}Si la IP de esta máquina cambia, edita las URLs en .env y relanza:${N}"
+  say "  ${DIM}$DC up -d --build${N}"
 else
   say "  App:  ${B}https://app.$DOM${N}"
   say "  API:  ${B}https://api.$DOM${N}"

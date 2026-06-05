@@ -6,4 +6,4 @@ install.sh text eol=lf
 # Otros ficheros sensibles a saltos de línea en contenedores Linux.
 Dockerfile text eol=lf
 *.Caddyfile text eol=lf
-Caddyfile text eol=lf
+Caddyfile* text eol=lf
