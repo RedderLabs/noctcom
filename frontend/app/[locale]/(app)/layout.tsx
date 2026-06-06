@@ -258,10 +258,15 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                 total: () => formatStorageSize(storageQuota),
               })}
             </p>
+            {/* Versión desplegada (build): así se ve si hay una nueva sin
+                cerrar sesión — basta recargar la página tras un deploy. */}
+            <p className="mt-1.5 text-[10px] text-text-muted font-mono">
+              v{process.env.NEXT_PUBLIC_APP_VERSION}
+            </p>
           </div>
         )}
         {collapsed && (
-          <div className="py-2 border-t border-border-faint flex justify-center" title={`${formatStorageSize(storageUsed)} / ${formatStorageSize(storageQuota)}`}>
+          <div className="py-2 border-t border-border-faint flex justify-center" title={`${formatStorageSize(storageUsed)} / ${formatStorageSize(storageQuota)} — v${process.env.NEXT_PUBLIC_APP_VERSION}`}>
             <HardDrive className="size-4 text-text-tertiary" />
           </div>
         )}
