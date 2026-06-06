@@ -54,6 +54,9 @@ CREATE TABLE IF NOT EXISTS users (
     -- NULL = el periodo de prueba de la beta aún no arrancó (arranca cuando el
     -- usuario ve el modal de bienvenida del trial, no al registrarse)
     trial_started_at     TIMESTAMPTZ,
+    -- TRUE = sin trial (cuentas anteriores al lanzamiento del trial); los
+    -- registros nuevos entran con FALSE y sí pasan por el periodo de prueba
+    trial_exempt         BOOLEAN NOT NULL DEFAULT FALSE,
     created_at           TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at           TIMESTAMPTZ NOT NULL DEFAULT now(),
     last_login_at        TIMESTAMPTZ
@@ -76,9 +79,12 @@ ALTER TABLE users ALTER COLUMN onboarded_at DROP DEFAULT;
 
 -- Migración idempotente: periodo de prueba de la beta (BETA_TRIAL_DAYS días).
 -- NULL = aún no arrancó; se fija la primera vez que el usuario ve el modal de
--- bienvenida del trial. Las cuentas existentes también entran con NULL: verán
--- el modal en su próximo login y su reloj arrancará ahí.
+-- bienvenida del trial. El trial solo aplica a registros NUEVOS: el DEFAULT
+-- TRUE marca a los usuarios EXISTENTES como exentos y el DROP a FALSE hace que
+-- los signups posteriores sí pasen por él (mismo truco que onboarded_at).
 ALTER TABLE users ADD COLUMN IF NOT EXISTS trial_started_at TIMESTAMPTZ;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS trial_exempt BOOLEAN NOT NULL DEFAULT TRUE;
+ALTER TABLE users ALTER COLUMN trial_exempt SET DEFAULT FALSE;
 
 -- ─── DEVICES ───────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS devices (

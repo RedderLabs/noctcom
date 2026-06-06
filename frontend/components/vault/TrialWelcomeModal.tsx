@@ -16,13 +16,14 @@ import { useVault } from '@/lib/vault-store';
  */
 export function TrialWelcomeModal() {
   const t = useTranslations('trialWelcome');
-  const { onboarded, trialStartedAt, trialDays, startTrial } = useVault();
+  const { onboarded, trialStartedAt, trialDays, trialExempt, startTrial } = useVault();
   const [open, setOpen] = useState(false);
 
-  // Se abre cuando /me confirma que NO hay trial (null, no undefined) y el tour
-  // de bienvenida ya no está delante. startTrial es optimista (fija la fecha en
-  // el store), así que el latch local mantiene el modal abierto hasta cerrarlo.
-  const shouldOpen = onboarded === true && trialStartedAt === null;
+  // Se abre cuando /me confirma que NO hay trial (null, no undefined), la
+  // cuenta no está exenta (las anteriores al lanzamiento no tienen trial) y el
+  // tour de bienvenida ya no está delante. startTrial es optimista (fija la
+  // fecha en el store), así que el latch local lo mantiene abierto hasta cerrarlo.
+  const shouldOpen = onboarded === true && !trialExempt && trialStartedAt === null;
   useEffect(() => {
     if (shouldOpen) {
       setOpen(true);

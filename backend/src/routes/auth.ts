@@ -518,7 +518,7 @@ const authRoutes: FastifyPluginAsync = async (app) => {
       `SELECT u.id, u.username, u.storage_quota_bytes, u.storage_used_bytes,
               u.identity_public_key, u.exchange_public_key, u.is_admin,
               u.plan, u.subscription_status, u.current_period_end, u.onboarded_at,
-              u.trial_started_at,
+              u.trial_started_at, u.trial_exempt,
               COALESCE((
                 SELECT SUM(total_bytes) FROM storage_volumes
                  WHERE active = true AND (user_id = u.id OR user_id IS NULL)
@@ -547,8 +547,11 @@ const authRoutes: FastifyPluginAsync = async (app) => {
       onboarded: u.onboarded_at != null,
       // Beta: null = el trial aún no arrancó (arranca al VER el modal de
       // bienvenida, no al registrarse). El frontend calcula los días restantes.
+      // trialExempt: cuentas anteriores al lanzamiento del trial — ni modal ni
+      // cuenta atrás; solo los registros nuevos pasan por el periodo de prueba.
       trialStartedAt: u.trial_started_at ?? null,
       trialDays: env.BETA_TRIAL_DAYS,
+      trialExempt: u.trial_exempt === true,
     });
   });
 
@@ -567,7 +570,8 @@ const authRoutes: FastifyPluginAsync = async (app) => {
   // no lo pospone). Idempotente: solo escribe la primera vez.
   app.post('/trial/start', { onRequest: [app.authenticate] }, async (req, reply) => {
     await db.query(
-      `UPDATE users SET trial_started_at = now() WHERE id = $1 AND trial_started_at IS NULL`,
+      `UPDATE users SET trial_started_at = now()
+       WHERE id = $1 AND trial_started_at IS NULL AND trial_exempt = FALSE`,
       [req.user.sub],
     );
     return reply.send({ ok: true });

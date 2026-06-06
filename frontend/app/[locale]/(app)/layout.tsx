@@ -38,7 +38,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
   const { isAuthenticated, isUnlocked, username, logout, hydrate } = useAuth();
   const { sidebarCollapsed, toggleSidebar, hydrate: hydrateFontScale } = useFontScale();
-  const { storageUsed, storageQuota, trialStartedAt, trialDays, init: initVault, reset: resetVault } = useVault();
+  const { storageUsed, storageQuota, trialStartedAt, trialDays, trialExempt, init: initVault, reset: resetVault } = useVault();
   const [mounted, setMounted] = useState(false);
   // Drawer móvil: el sidebar pasa a off-canvas en pantallas pequeñas.
   const [isMobile, setIsMobile] = useState(false);
@@ -105,8 +105,8 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   }
 
   // Cuenta atrás de la beta: días restantes desde que el usuario vio el modal
-  // del trial. null = sin trial todavía (no se pinta nada en el sidebar).
-  const trialDaysLeft = trialStartedAt
+  // del trial. null = sin trial (cuenta exenta o aún no arrancó): nada en sidebar.
+  const trialDaysLeft = !trialExempt && trialStartedAt
     ? Math.max(0, Math.ceil((new Date(trialStartedAt).getTime() + trialDays * 86_400_000 - Date.now()) / 86_400_000))
     : null;
   const trialLabel = trialDaysLeft === null

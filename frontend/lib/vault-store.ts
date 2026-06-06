@@ -56,6 +56,9 @@ interface VaultState {
   trialStartedAt: string | null | undefined;
   // Duración del trial en días (la decide el backend con BETA_TRIAL_DAYS).
   trialDays: number;
+  // TRUE = cuenta exenta del trial (anteriores al lanzamiento): ni modal ni
+  // cuenta atrás. Default true hasta que /me diga lo contrario (no molestar).
+  trialExempt: boolean;
 }
 
 interface VaultActions {
@@ -154,6 +157,7 @@ const initial: VaultState = {
   onboarded: null,
   trialStartedAt: undefined,
   trialDays: 30,
+  trialExempt: true,
 };
 
 export const useVault = create<VaultState & VaultActions>((set, get) => ({
@@ -656,7 +660,7 @@ export const useVault = create<VaultState & VaultActions>((set, get) => ({
     try {
       const me = await apiFetch<{
         storageUsedBytes: number; storageQuotaBytes: number; onboarded?: boolean;
-        trialStartedAt?: string | null; trialDays?: number;
+        trialStartedAt?: string | null; trialDays?: number; trialExempt?: boolean;
       }>('/api/v1/auth/me');
       set({
         storageUsed: me.storageUsedBytes,
@@ -668,6 +672,7 @@ export const useVault = create<VaultState & VaultActions>((set, get) => ({
         // datos viejos del servidor no debe re-abrir el modal del trial.
         trialStartedAt: get().trialStartedAt ?? (me.trialStartedAt ?? null),
         trialDays: me.trialDays ?? get().trialDays,
+        trialExempt: me.trialExempt ?? true,
       });
     } catch { /* ignore */ }
   },
@@ -681,7 +686,7 @@ export const useVault = create<VaultState & VaultActions>((set, get) => ({
 
   // El reloj de la beta arranca al VER el modal de bienvenida del trial.
   startTrial: async () => {
-    if (get().trialStartedAt) return;
+    if (get().trialExempt || get().trialStartedAt) return;
     set({ trialStartedAt: new Date().toISOString() }); // optimista: el contador sale ya
     try {
       await apiFetch('/api/v1/auth/trial/start', { method: 'POST' });
