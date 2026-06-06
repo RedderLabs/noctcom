@@ -154,7 +154,11 @@ En **Configuración > Notificaciones** puedes activar los avisos del navegador p
 
 ## Tu espacio
 
-Cada cuenta empieza con **1 GB gratis**, cifrado. En el menú lateral ves cuánto llevas usado, y en **Configuración > Plan y uso** tienes tu plan actual con la barra de uso (y en **Configuración > Almacenamiento**, el desglose por tipo de archivo).
+Cada cuenta nueva empieza con un **periodo de prueba de 30 días con 10 GB**, cifrados como todo lo demás. En el menú lateral ves cuánto llevas usado y una **cuenta atrás** con los días de prueba que te quedan; en **Configuración > Plan y uso** tienes tu plan actual con la barra de uso (y en **Configuración > Almacenamiento**, el desglose por tipo de archivo).
+
+### Cuando termina la prueba
+
+Tu cuenta **sigue siendo gratuita para siempre**, con 1 GB de espacio. **No borramos nada**: tus archivos siguen ahí y puedes descargarlos cuando quieras. Eso sí, si al terminar usas más de 1 GB, no podrás subir cosas nuevas hasta que liberes espacio o amplíes el plan.
 
 ### Ampliar tu espacio
 
@@ -174,6 +178,7 @@ Cosas que conviene saber, sin letra pequeña:
 - **El pago lo gestiona Stripe.** Noctcom nunca ve los datos de tu tarjeta.
 - **Cambiar de plan:** es instantáneo y con prorrateo (solo pagas la diferencia).
 - **Cancelar:** desde el botón **Gestionar**. Conservas tu plan hasta el final del periodo que ya pagaste; te avisamos por email de la fecha exacta en que vuelves al plan Gratis. **No borramos nada:** si al volver a 1 GB superas la cuota, tu cuenta queda en solo lectura (puedes descargar y exportar) hasta que liberes espacio o reactives un plan.
+- **Cualquier plan de pago desbloquea el Noctcom Connector** (ver más abajo) para usar tus propios discos.
 - **El self-host es siempre gratis** (ver más abajo): mismo cifrado, capacidad ilimitada, en tu propio servidor.
 
 ---
@@ -191,6 +196,8 @@ Lo importante para ti:
 - **Es solo tuyo.** Está atado a tu cuenta. Nadie más puede ver ni tocar tus discos.
 
 > Por ahora está disponible para **Windows**. Las versiones de Mac y Linux llegan pronto.
+
+> En el cloud de Noctcom, el Connector se desbloquea con **cualquier plan de pago** (desde 1 €/mes). Si cancelas el plan, tus agentes se desvinculan — tus archivos siguen en tus discos, no se borra nada. En el **self-host** el Connector está siempre disponible, sin planes.
 
 ### 1. Descárgalo
 

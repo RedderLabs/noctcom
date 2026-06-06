@@ -154,7 +154,11 @@ In **Settings > Notifications** you can turn on browser alerts to know when some
 
 ## Your space
 
-Every account starts with **1 GB free**, encrypted. In the sidebar you can see how much you've used, and in **Settings > Plan and usage** you have your current plan with the usage bar (and in **Settings > Storage**, the breakdown by file type).
+Every new account starts with a **30-day trial with 10 GB**, encrypted like everything else. In the sidebar you can see how much you've used and a **countdown** with the trial days you have left; in **Settings > Plan and usage** you have your current plan with the usage bar (and in **Settings > Storage**, the breakdown by file type).
+
+### When the trial ends
+
+Your account **stays free forever**, with 1 GB of space. **We delete nothing**: your files are still there and you can download them anytime. That said, if you're using more than 1 GB when it ends, you won't be able to upload anything new until you free up space or upgrade.
 
 ### Growing your space
 
@@ -174,6 +178,7 @@ Things worth knowing, with no fine print:
 - **Payments are handled by Stripe.** Noctcom never sees your card details.
 - **Changing plans:** instant and prorated (you only pay the difference).
 - **Cancelling:** from the **Manage** button. You keep your plan until the end of the period you already paid; we'll email you the exact date you go back to the Free plan. **We delete nothing:** if you're over quota when you return to 1 GB, your account goes read-only (you can download and export) until you free up space or reactivate a plan.
+- **Any paid plan unlocks the Noctcom Connector** (see below) to use your own disks.
 - **Self-hosting is always free** (see below): same encryption, unlimited capacity, on your own server.
 
 ---
@@ -191,6 +196,8 @@ What matters to you:
 - **It's yours alone.** It's tied to your account. Nobody else can see or touch your disks.
 
 > For now it's available for **Windows**. Mac and Linux versions are coming soon.
+
+> On Noctcom's cloud, the Connector unlocks with **any paid plan** (from €1/month). If you cancel your plan, your agents are unlinked — your files stay on your disks, nothing is deleted. On **self-host** the Connector is always available, no plans involved.
 
 ### 1. Download it
 
