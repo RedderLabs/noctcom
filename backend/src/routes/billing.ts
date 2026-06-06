@@ -120,17 +120,33 @@ const billingRoutes: FastifyPluginAsync = async (app) => {
     const hasActive = row.stripe_subscription_id
       && (row.subscription_status === 'active' || row.subscription_status === 'trialing');
     if (hasActive) {
-      const sub = await stripe.subscriptions.retrieve(row.stripe_subscription_id);
-      const itemId = sub.items.data[0]?.id;
-      if (!itemId) return reply.badRequest('la suscripción no tiene líneas');
-      if (sub.items.data[0]?.price.id === priceId) {
-        return reply.send({ updated: true, unchanged: true }); // ya está en ese plan
+      // Resiliente ante cambio de cuenta/modo de Stripe (como ensureCustomer):
+      // si la suscripción guardada no existe aquí (p. ej. era de test y ahora
+      // estamos en live), se limpia el estado y se sigue como compra nueva.
+      let sub: Stripe.Subscription | null = null;
+      try {
+        sub = await stripe.subscriptions.retrieve(row.stripe_subscription_id);
+      } catch {
+        await db.query(
+          `UPDATE users SET plan = 'free', storage_quota_bytes = $1,
+             stripe_subscription_id = NULL, subscription_status = NULL,
+             current_period_end = NULL, cancel_at_period_end = FALSE
+           WHERE id = $2`,
+          [FREE_PLAN.quotaBytes, req.user.sub],
+        );
       }
-      await stripe.subscriptions.update(row.stripe_subscription_id, {
-        items: [{ id: itemId, price: priceId }],
-        proration_behavior: 'create_prorations',
-      });
-      return reply.send({ updated: true });
+      if (sub) {
+        const itemId = sub.items.data[0]?.id;
+        if (!itemId) return reply.badRequest('la suscripción no tiene líneas');
+        if (sub.items.data[0]?.price.id === priceId) {
+          return reply.send({ updated: true, unchanged: true }); // ya está en ese plan
+        }
+        await stripe.subscriptions.update(row.stripe_subscription_id, {
+          items: [{ id: itemId, price: priceId }],
+          proration_behavior: 'create_prorations',
+        });
+        return reply.send({ updated: true });
+      }
     }
 
     const customerId = await ensureCustomer(req.user.sub, row.stripe_customer_id);
