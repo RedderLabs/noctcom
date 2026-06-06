@@ -7,7 +7,7 @@ import Image from 'next/image';
 import {
   FolderTree, Star, Share2, Trash2, Clock, Settings, LogOut,
   Search, Plus, ChevronDown, HardDrive, Activity, PanelLeftClose, PanelLeftOpen,
-  BookOpen, Menu,
+  BookOpen, Menu, Hourglass,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslations } from 'next-intl';
@@ -22,6 +22,7 @@ import { useFontScale } from '@/lib/font-scale';
 import { useSync } from '@/lib/sync';
 import { syncPushToken, onForegroundMessage } from '@/lib/firebase';
 import { OnboardingTour } from '@/components/vault/OnboardingTour';
+import { TrialWelcomeModal } from '@/components/vault/TrialWelcomeModal';
 
 function formatStorageSize(bytes: number): string {
   if (bytes === 0) return '0 B';
@@ -37,7 +38,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
   const { isAuthenticated, isUnlocked, username, logout, hydrate } = useAuth();
   const { sidebarCollapsed, toggleSidebar, hydrate: hydrateFontScale } = useFontScale();
-  const { storageUsed, storageQuota, init: initVault, reset: resetVault } = useVault();
+  const { storageUsed, storageQuota, trialStartedAt, trialDays, init: initVault, reset: resetVault } = useVault();
   const [mounted, setMounted] = useState(false);
   // Drawer móvil: el sidebar pasa a off-canvas en pantallas pequeñas.
   const [isMobile, setIsMobile] = useState(false);
@@ -102,6 +103,15 @@ export default function AppLayout({ children }: { children: ReactNode }) {
       </div>
     );
   }
+
+  // Cuenta atrás de la beta: días restantes desde que el usuario vio el modal
+  // del trial. null = sin trial todavía (no se pinta nada en el sidebar).
+  const trialDaysLeft = trialStartedAt
+    ? Math.max(0, Math.ceil((new Date(trialStartedAt).getTime() + trialDays * 86_400_000 - Date.now()) / 86_400_000))
+    : null;
+  const trialLabel = trialDaysLeft === null
+    ? null
+    : trialDaysLeft > 0 ? t('trialDaysLeft', { days: trialDaysLeft }) : t('trialEnded');
 
   const sidebarW = collapsed ? 'w-16' : 'w-64';
   // En móvil el contenido ocupa todo el ancho; el sidebar va por encima como drawer.
@@ -254,6 +264,28 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           </div>
         )}
 
+        {/* Beta: cuenta atrás del periodo de prueba */}
+        {trialDaysLeft !== null && trialLabel && !collapsed && (
+          <div className="px-4 py-3 border-t border-border-faint">
+            <div className="flex items-center gap-2 text-xs text-text-tertiary mb-2">
+              <Hourglass className="size-3.5 text-amber-400/80" />
+              <span>{t('betaTrial')}</span>
+            </div>
+            <div className="h-1.5 bg-bg-surface-2 rounded-full overflow-hidden mb-1.5">
+              <div
+                className="h-full bg-gradient-to-r from-amber-500 to-amber-400 rounded-full transition-all duration-500"
+                style={{ width: `${trialDays > 0 ? Math.min(100, (trialDaysLeft / trialDays) * 100) : 0}%` }}
+              />
+            </div>
+            <p className="text-[10px] text-text-tertiary">{trialLabel}</p>
+          </div>
+        )}
+        {trialDaysLeft !== null && trialLabel && collapsed && (
+          <div className="py-2 border-t border-border-faint flex justify-center" title={`${t('betaTrial')} — ${trialLabel}`}>
+            <Hourglass className="size-4 text-amber-400/80" />
+          </div>
+        )}
+
         {/* Usuario */}
         <div className={cn('border-t border-border-faint', collapsed ? 'p-2' : 'p-3')}>
           <div className={cn(
@@ -325,6 +357,8 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
       {/* Tour de bienvenida (solo primer login de la cuenta) */}
       <OnboardingTour />
+      {/* Arranque del trial de la beta (sale tras el tour, una sola vez) */}
+      <TrialWelcomeModal />
     </div>
   );
 }

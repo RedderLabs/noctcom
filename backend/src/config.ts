@@ -58,6 +58,11 @@ const envSchema = z.object({
   // leerse antes que este módulo), aquí solo se declara para documentarlo.
   SENTRY_DSN: z.string().optional().or(z.literal('')),
 
+  // Beta: duración del periodo de prueba en días. El reloj arranca cuando el
+  // usuario VE el modal de bienvenida del trial (users.trial_started_at), no al
+  // registrarse. Cambiable en Render sin redesplegar código.
+  BETA_TRIAL_DAYS: z.coerce.number().int().min(1).default(30),
+
   // Billing (Stripe). Vacío = billing inactivo (el endpoint responde 503 y la
   // UI no ofrece upgrade). Los price IDs los lee plans.ts desde process.env.
   STRIPE_SECRET_KEY: z.string().optional().or(z.literal('')),

@@ -2,6 +2,7 @@ import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 import { randomBytes, createHash, timingSafeEqual } from 'node:crypto';
 import { db, tx } from '../db/pool.js';
+import { env } from '../config.js';
 import { sendVerificationEmail, normalizeLocale } from '../mail.js';
 import { deleteBlob } from '../storage/s3.js';
 import { deleteFromDisk } from '../storage/disk.js';
@@ -517,6 +518,7 @@ const authRoutes: FastifyPluginAsync = async (app) => {
       `SELECT u.id, u.username, u.storage_quota_bytes, u.storage_used_bytes,
               u.identity_public_key, u.exchange_public_key, u.is_admin,
               u.plan, u.subscription_status, u.current_period_end, u.onboarded_at,
+              u.trial_started_at,
               COALESCE((
                 SELECT SUM(total_bytes) FROM storage_volumes
                  WHERE active = true AND (user_id = u.id OR user_id IS NULL)
@@ -543,6 +545,10 @@ const authRoutes: FastifyPluginAsync = async (app) => {
       identityPublicKey: toB64(u.identity_public_key),
       exchangePublicKey: toB64(u.exchange_public_key),
       onboarded: u.onboarded_at != null,
+      // Beta: null = el trial aún no arrancó (arranca al VER el modal de
+      // bienvenida, no al registrarse). El frontend calcula los días restantes.
+      trialStartedAt: u.trial_started_at ?? null,
+      trialDays: env.BETA_TRIAL_DAYS,
     });
   });
 
@@ -551,6 +557,17 @@ const authRoutes: FastifyPluginAsync = async (app) => {
   app.post('/onboarding/complete', { onRequest: [app.authenticate] }, async (req, reply) => {
     await db.query(
       `UPDATE users SET onboarded_at = now() WHERE id = $1 AND onboarded_at IS NULL`,
+      [req.user.sub],
+    );
+    return reply.send({ ok: true });
+  });
+
+  // ─── POST /trial/start ─ arranca el periodo de prueba de la beta ──
+  // Se llama en cuanto el usuario VE el modal de bienvenida del trial (cerrarlo
+  // no lo pospone). Idempotente: solo escribe la primera vez.
+  app.post('/trial/start', { onRequest: [app.authenticate] }, async (req, reply) => {
+    await db.query(
+      `UPDATE users SET trial_started_at = now() WHERE id = $1 AND trial_started_at IS NULL`,
       [req.user.sub],
     );
     return reply.send({ ok: true });

@@ -827,6 +827,12 @@
       }
     }
   },
+  "trialWelcome": {
+    "title": "Tu periodo de prueba acaba de empezar",
+    "body": "Tienes {days, plural, one {# día} other {# días}} para probar la beta de Noctcom: sube archivos, explora tu bóveda y los ajustes, y cuéntanos qué tal.\n\nAl completar el periodo podrás desbloquear Noctcom Connector para vincular tus discos duros o USB como almacenamiento propio.",
+    "hint": "En el menú lateral verás una cuenta atrás con los días restantes. Cuando termine, tu cuenta quedará bloqueada y, si no la desbloqueas, acabará eliminándose junto con sus datos.",
+    "cta": "Empezar a probar"
+  },
   "vault": {
     "toolbar": {
       "newFolder": "Nueva carpeta",
@@ -1429,6 +1435,9 @@
     "encryptionActive": "Cifrado activo",
     "storage": "Almacenamiento",
     "storageOf": "<used></used> de <total></total>",
+    "betaTrial": "Prueba de la beta",
+    "trialDaysLeft": "{days, plural, one {Queda # día} other {Quedan # días}}",
+    "trialEnded": "Periodo de prueba finalizado",
     "manual": "Manual",
     "freePlan": "Plan gratuito",
     "userFallback": "Usuario",

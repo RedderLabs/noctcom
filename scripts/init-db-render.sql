@@ -51,6 +51,9 @@ CREATE TABLE IF NOT EXISTS users (
     storage_used_bytes   BIGINT NOT NULL DEFAULT 0,
     -- NULL = aún no vio el tour de bienvenida (onboarding de primer login)
     onboarded_at         TIMESTAMPTZ,
+    -- NULL = el periodo de prueba de la beta aún no arrancó (arranca cuando el
+    -- usuario ve el modal de bienvenida del trial, no al registrarse)
+    trial_started_at     TIMESTAMPTZ,
     created_at           TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at           TIMESTAMPTZ NOT NULL DEFAULT now(),
     last_login_at        TIMESTAMPTZ
@@ -70,6 +73,12 @@ ALTER TABLE users
 -- lo vean. En BD nueva la columna ya existe (sin default) y ambos son no-op.
 ALTER TABLE users ADD COLUMN IF NOT EXISTS onboarded_at TIMESTAMPTZ DEFAULT now();
 ALTER TABLE users ALTER COLUMN onboarded_at DROP DEFAULT;
+
+-- Migración idempotente: periodo de prueba de la beta (BETA_TRIAL_DAYS días).
+-- NULL = aún no arrancó; se fija la primera vez que el usuario ve el modal de
+-- bienvenida del trial. Las cuentas existentes también entran con NULL: verán
+-- el modal en su próximo login y su reloj arrancará ahí.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS trial_started_at TIMESTAMPTZ;
 
 -- ─── DEVICES ───────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS devices (

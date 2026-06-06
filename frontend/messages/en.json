@@ -827,6 +827,12 @@
       }
     }
   },
+  "trialWelcome": {
+    "title": "Your trial period just started",
+    "body": "You have {days, plural, one {# day} other {# days}} to try the Noctcom beta: upload files, explore your vault and settings, and tell us how it goes.\n\nWhen the period is complete you'll be able to unlock Noctcom Connector to link your hard drives or USB sticks as your own storage.",
+    "hint": "The sidebar shows a countdown with the days left. When it ends, your account will be locked and, if you don't unlock it, it will eventually be deleted along with its data.",
+    "cta": "Start exploring"
+  },
   "vault": {
     "toolbar": {
       "newFolder": "New folder",
@@ -1429,6 +1435,9 @@
     "encryptionActive": "Encryption active",
     "storage": "Storage",
     "storageOf": "<used></used> of <total></total>",
+    "betaTrial": "Beta trial",
+    "trialDaysLeft": "{days, plural, one {# day left} other {# days left}}",
+    "trialEnded": "Trial period ended",
     "manual": "Manual",
     "freePlan": "Free plan",
     "userFallback": "User",

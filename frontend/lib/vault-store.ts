@@ -51,6 +51,11 @@ interface VaultState {
   storageQuota: number;
   // null = aún no sabemos (no llegó /me); false = primer login → mostrar tour
   onboarded: boolean | null;
+  // Beta: undefined = aún no llegó /me; null = el trial NO arrancó (→ mostrar
+  // el modal de bienvenida); string ISO = fecha en que arrancó (→ cuenta atrás).
+  trialStartedAt: string | null | undefined;
+  // Duración del trial en días (la decide el backend con BETA_TRIAL_DAYS).
+  trialDays: number;
 }
 
 interface VaultActions {
@@ -78,6 +83,7 @@ interface VaultActions {
   loadActivity: (limit?: number, offset?: number) => Promise<{ events: any[]; total: number }>;
   refreshStorage: () => Promise<void>;
   completeOnboarding: () => Promise<void>;
+  startTrial: () => Promise<void>;
   reset: () => void;
 }
 
@@ -146,6 +152,8 @@ const initial: VaultState = {
   storageUsed: 0,
   storageQuota: 10_737_418_240,
   onboarded: null,
+  trialStartedAt: undefined,
+  trialDays: 30,
 };
 
 export const useVault = create<VaultState & VaultActions>((set, get) => ({
@@ -646,15 +654,20 @@ export const useVault = create<VaultState & VaultActions>((set, get) => ({
   // ─── Storage ───────────────────────────────────────────────
   refreshStorage: async () => {
     try {
-      const me = await apiFetch<{ storageUsedBytes: number; storageQuotaBytes: number; onboarded?: boolean }>(
-        '/api/v1/auth/me',
-      );
+      const me = await apiFetch<{
+        storageUsedBytes: number; storageQuotaBytes: number; onboarded?: boolean;
+        trialStartedAt?: string | null; trialDays?: number;
+      }>('/api/v1/auth/me');
       set({
         storageUsed: me.storageUsedBytes,
         storageQuota: me.storageQuotaBytes,
         // Solo se fija la primera vez: si el usuario cierra el tour, el estado
         // local pasa a true y un refresh posterior no debe re-abrirlo.
         onboarded: get().onboarded === true ? true : (me.onboarded ?? true),
+        // Misma idea: una vez arrancado localmente (optimista), un refresh con
+        // datos viejos del servidor no debe re-abrir el modal del trial.
+        trialStartedAt: get().trialStartedAt ?? (me.trialStartedAt ?? null),
+        trialDays: me.trialDays ?? get().trialDays,
       });
     } catch { /* ignore */ }
   },
@@ -663,6 +676,15 @@ export const useVault = create<VaultState & VaultActions>((set, get) => ({
     set({ onboarded: true }); // optimista: el tour se cierra ya
     try {
       await apiFetch('/api/v1/auth/onboarding/complete', { method: 'POST' });
+    } catch { /* sin red no pasa nada: se reintentará en el próximo login */ }
+  },
+
+  // El reloj de la beta arranca al VER el modal de bienvenida del trial.
+  startTrial: async () => {
+    if (get().trialStartedAt) return;
+    set({ trialStartedAt: new Date().toISOString() }); // optimista: el contador sale ya
+    try {
+      await apiFetch('/api/v1/auth/trial/start', { method: 'POST' });
     } catch { /* sin red no pasa nada: se reintentará en el próximo login */ }
   },
 
