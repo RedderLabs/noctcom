@@ -235,7 +235,12 @@ export default function SignupPage() {
       toast.success(t('toasts.accountCreated'));
       router.push('/verify');
     } catch (err: unknown) {
-      toast.error(sanitizeErrorMessage(err));
+      // Tope de cuentas por IP (anti-abuso del trial): mensaje claro, no el crudo.
+      if (String((err as Error)?.message ?? '').includes('too-many-signups')) {
+        toast.error(t('toasts.tooManySignups'));
+      } else {
+        toast.error(sanitizeErrorMessage(err));
+      }
       setLoading(false);
     }
   }

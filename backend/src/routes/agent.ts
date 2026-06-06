@@ -69,6 +69,16 @@ const agentRoutes: FastifyPluginAsync = async (app) => {
     onRequest: [app.authenticate],
     config: { rateLimit: { max: 10, timeWindow: '1 minute' } },
   }, async (req, reply) => {
+    // En el cloud gestionado, el Connector es de los planes de pago (cualquiera
+    // desde 1€): es lo que el trial promete desbloquear. Admin exento (pruebas).
+    // En self-host (sin Stripe) no hay gate: siempre disponible.
+    if (env.STRIPE_SECRET_KEY) {
+      const g = await db.query('SELECT plan, is_admin FROM users WHERE id = $1', [req.user.sub]);
+      const gu = g.rows[0];
+      if (gu && gu.plan === 'free' && !gu.is_admin) {
+        return reply.code(403).send({ error: 'plan-required' });
+      }
+    }
     const body = pairBeginSchema.parse(req.body);
     const code = generatePairingCode();
     const expires = new Date(Date.now() + 10 * 60 * 1000);

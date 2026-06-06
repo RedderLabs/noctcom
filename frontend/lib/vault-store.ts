@@ -59,6 +59,9 @@ interface VaultState {
   // TRUE = cuenta exenta del trial (anteriores al lanzamiento): ni modal ni
   // cuenta atrás. Default true hasta que /me diga lo contrario (no molestar).
   trialExempt: boolean;
+  // Plan actual ('free' | 'starter' | ...). Con plan de pago no se muestra
+  // nada del trial (ya desbloqueó) y el Connector está disponible.
+  plan: string;
 }
 
 interface VaultActions {
@@ -158,6 +161,7 @@ const initial: VaultState = {
   trialStartedAt: undefined,
   trialDays: 30,
   trialExempt: true,
+  plan: 'free',
 };
 
 export const useVault = create<VaultState & VaultActions>((set, get) => ({
@@ -661,6 +665,7 @@ export const useVault = create<VaultState & VaultActions>((set, get) => ({
       const me = await apiFetch<{
         storageUsedBytes: number; storageQuotaBytes: number; onboarded?: boolean;
         trialStartedAt?: string | null; trialDays?: number; trialExempt?: boolean;
+        plan?: string;
       }>('/api/v1/auth/me');
       set({
         storageUsed: me.storageUsedBytes,
@@ -673,6 +678,7 @@ export const useVault = create<VaultState & VaultActions>((set, get) => ({
         trialStartedAt: get().trialStartedAt ?? (me.trialStartedAt ?? null),
         trialDays: me.trialDays ?? get().trialDays,
         trialExempt: me.trialExempt ?? true,
+        plan: me.plan ?? 'free',
       });
     } catch { /* ignore */ }
   },

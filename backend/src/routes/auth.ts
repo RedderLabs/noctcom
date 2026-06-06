@@ -8,6 +8,7 @@ import { deleteBlob } from '../storage/s3.js';
 import { deleteFromDisk } from '../storage/disk.js';
 import { issueSession, hashIp, newRefreshToken } from '../session.js';
 import { lockedSeconds, recordLoginFailure, clearLoginFailures } from '../login-lockout.js';
+import { signupBlocked, recordSignup } from '../signup-limit.js';
 
 // ─────────────────────────────────────────────────────────────────
 // Schemas
@@ -89,6 +90,13 @@ const authRoutes: FastifyPluginAsync = async (app) => {
     },
   }, async (req, reply) => {
     const body = signupSchema.parse(req.body);
+
+    // Anti-abuso del trial: tope de cuentas por IP (hasheada) en ventana.
+    // Solo cloud; en self-host y sin Redis es no-op (ver signup-limit.ts).
+    const ipHashB64 = hashIp(req.ip).toString('base64url');
+    if (await signupBlocked(ipHashB64)) {
+      return reply.code(429).send({ error: 'too-many-signups' });
+    }
 
     const existing = await db.query(
       'SELECT 1 FROM users WHERE email_hash = $1 OR username = $2 LIMIT 1',
@@ -178,6 +186,9 @@ const authRoutes: FastifyPluginAsync = async (app) => {
        VALUES ($1,$2,$3,$4,$5)`,
       [result.userId, result.deviceId, hash, hashIp(req.ip), expires],
     );
+
+    // Registro completado: cuenta para el tope por IP de la ventana.
+    await recordSignup(ipHashB64);
 
     // Send verification email (fire-and-forget, don't block signup)
     if (body.email) {
@@ -549,9 +560,10 @@ const authRoutes: FastifyPluginAsync = async (app) => {
       // bienvenida, no al registrarse). El frontend calcula los días restantes.
       // trialExempt: cuentas anteriores al lanzamiento del trial — ni modal ni
       // cuenta atrás; solo los registros nuevos pasan por el periodo de prueba.
+      // En self-host (sin Stripe) el trial no existe: exento siempre.
       trialStartedAt: u.trial_started_at ?? null,
       trialDays: env.BETA_TRIAL_DAYS,
-      trialExempt: u.trial_exempt === true,
+      trialExempt: u.trial_exempt === true || !env.STRIPE_SECRET_KEY,
     });
   });
 
@@ -567,12 +579,17 @@ const authRoutes: FastifyPluginAsync = async (app) => {
 
   // ─── POST /trial/start ─ arranca el periodo de prueba de la beta ──
   // Se llama en cuanto el usuario VE el modal de bienvenida del trial (cerrarlo
-  // no lo pospone). Idempotente: solo escribe la primera vez.
+  // no lo pospone). Arranca el reloj Y sube la cuota a la del trial (10 GiB)
+  // mientras dure; el janitor la devuelve a free al expirar. Idempotente: solo
+  // escribe la primera vez. Solo cloud: en self-host el trial no existe.
   app.post('/trial/start', { onRequest: [app.authenticate] }, async (req, reply) => {
+    if (!env.STRIPE_SECRET_KEY) return reply.send({ ok: true });
     await db.query(
-      `UPDATE users SET trial_started_at = now()
-       WHERE id = $1 AND trial_started_at IS NULL AND trial_exempt = FALSE`,
-      [req.user.sub],
+      `UPDATE users SET trial_started_at = now(),
+              storage_quota_bytes = GREATEST(storage_quota_bytes, $2)
+       WHERE id = $1 AND trial_started_at IS NULL AND trial_exempt = FALSE
+         AND plan = 'free'`,
+      [req.user.sub, env.BETA_TRIAL_QUOTA_BYTES],
     );
     return reply.send({ ok: true });
   });

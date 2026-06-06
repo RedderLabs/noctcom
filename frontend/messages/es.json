@@ -720,7 +720,8 @@
     },
     "toasts": {
       "copied": "Copiado al portapapeles (se borrará en 60s)",
-      "accountCreated": "Cuenta creada — revisa tu email para verificar"
+      "accountCreated": "Cuenta creada — revisa tu email para verificar",
+      "tooManySignups": "Se han creado demasiadas cuentas desde esta conexión. Inténtalo de nuevo en unos días."
     },
     "haveAccount": "¿Ya tienes cuenta? <login>Iniciar sesión</login>"
   },
@@ -829,9 +830,16 @@
   },
   "trialWelcome": {
     "title": "Tu periodo de prueba acaba de empezar",
-    "body": "Tienes {days, plural, one {# día} other {# días}} para probar la beta de Noctcom: sube archivos, explora tu bóveda y los ajustes, y cuéntanos qué tal.\n\nAl completar el periodo podrás desbloquear Noctcom Connector para vincular tus discos duros o USB como almacenamiento propio.",
-    "hint": "En el menú lateral verás una cuenta atrás con los días restantes. Cuando termine, tu cuenta quedará bloqueada y, si no la desbloqueas, acabará eliminándose junto con sus datos.",
+    "body": "Tienes {days, plural, one {# día} other {# días}} con 10 GB para probar la beta de Noctcom: sube archivos, explora tu bóveda y los ajustes, y cuéntanos qué tal.\n\nCon cualquier plan de pago (desde 1 €/mes) desbloqueas además Noctcom Connector, para vincular tus discos duros o USB como almacenamiento propio.",
+    "hint": "En el menú lateral verás una cuenta atrás con los días restantes. Al terminar, tu cuenta seguirá siendo gratuita con 1 GB para siempre: no se borra nada, pero si usas más de 1 GB solo podrás descargar o liberar espacio hasta que contrates un plan.",
     "cta": "Empezar a probar"
+  },
+  "trialEnded": {
+    "title": "Tu periodo de prueba ha terminado",
+    "body": "Tu cuenta sigue siendo gratuita, ahora con 1 GB de espacio. No se borra nada: tus archivos siguen aquí y puedes descargarlos cuando quieras.\n\nSi usas más de 1 GB, no podrás subir nada nuevo hasta liberar espacio o ampliar el plan.",
+    "hint": "Con cualquier plan (desde 1 €/mes) recuperas más espacio y desbloqueas Noctcom Connector para vincular tus discos duros o USB.",
+    "stayFree": "Seguir con 1 GB gratis",
+    "seePlans": "Ver planes"
   },
   "vault": {
     "toolbar": {
@@ -1054,6 +1062,7 @@
       "namePrompt": "Nombre para este agente (p. ej. \"PC del salón\"):",
       "nameDefault": "Mi equipo",
       "pairCodeError": "No se pudo generar el código de emparejamiento",
+      "planRequired": "El Noctcom Connector se desbloquea con cualquier plan de pago (desde 1 €/mes)",
       "unlinked": "Agente desvinculado",
       "unlinkError": "No se pudo desvincular el agente"
     },

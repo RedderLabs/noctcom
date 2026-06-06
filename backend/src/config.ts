@@ -60,8 +60,21 @@ const envSchema = z.object({
 
   // Beta: duración del periodo de prueba en días. El reloj arranca cuando el
   // usuario VE el modal de bienvenida del trial (users.trial_started_at), no al
-  // registrarse. Cambiable en Render sin redesplegar código.
+  // registrarse. Cambiable en Render sin redesplegar código. El trial entero
+  // (modal, cuota, contador) SOLO existe en el cloud gestionado (con Stripe);
+  // en self-host /me devuelve trialExempt=true y nada de esto aplica.
   BETA_TRIAL_DAYS: z.coerce.number().int().min(1).default(30),
+  // Cuota durante el trial (default 10 GiB). Al expirar, el janitor baja a los
+  // free a USER_QUOTA_BYTES; lo que exceda queda en solo-lectura (el gate de
+  // cuota de uploads.ts rechaza subidas, descargar/borrar sigue funcionando).
+  BETA_TRIAL_QUOTA_BYTES: z.coerce.number().default(10 * 1024 * 1024 * 1024),
+
+  // Anti-abuso del trial: máximo de registros por IP (hasheada, Redis) en la
+  // ventana. Solo aplica en el cloud (con Stripe): en self-host/LAN muchas
+  // personas legítimas comparten IP. Sin Redis es no-op (queda el rate-limit
+  // por IP de @fastify/rate-limit).
+  SIGNUP_MAX_PER_IP: z.coerce.number().int().min(1).default(2),
+  SIGNUP_IP_WINDOW_S: z.coerce.number().int().min(60).default(604800), // 7 días
 
   // Billing (Stripe). Vacío = billing inactivo (el endpoint responde 503 y la
   // UI no ofrece upgrade). Los price IDs los lee plans.ts desde process.env.

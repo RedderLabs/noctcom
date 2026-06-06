@@ -2055,7 +2055,12 @@ function ConnectorAgentsSection() {
       });
       setPairCode(r.code);
     } catch (err: any) {
-      toast.error(err.message ?? t('connector.pairCodeError'));
+      // En el cloud, el Connector es de los planes de pago (cualquiera).
+      if (String(err.message ?? '').includes('plan-required')) {
+        toast.error(t('connector.planRequired'));
+      } else {
+        toast.error(err.message ?? t('connector.pairCodeError'));
+      }
     } finally {
       setPairing(false);
     }

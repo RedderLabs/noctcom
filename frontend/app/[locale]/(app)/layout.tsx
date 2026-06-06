@@ -23,6 +23,7 @@ import { useSync } from '@/lib/sync';
 import { syncPushToken, onForegroundMessage } from '@/lib/firebase';
 import { OnboardingTour } from '@/components/vault/OnboardingTour';
 import { TrialWelcomeModal } from '@/components/vault/TrialWelcomeModal';
+import { TrialEndedModal, trialDaysLeft as computeTrialDaysLeft } from '@/components/vault/TrialEndedModal';
 
 function formatStorageSize(bytes: number): string {
   if (bytes === 0) return '0 B';
@@ -38,7 +39,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
   const { isAuthenticated, isUnlocked, username, logout, hydrate } = useAuth();
   const { sidebarCollapsed, toggleSidebar, hydrate: hydrateFontScale } = useFontScale();
-  const { storageUsed, storageQuota, trialStartedAt, trialDays, trialExempt, init: initVault, reset: resetVault } = useVault();
+  const { storageUsed, storageQuota, trialStartedAt, trialDays, trialExempt, plan, init: initVault, reset: resetVault } = useVault();
   const [mounted, setMounted] = useState(false);
   // Drawer móvil: el sidebar pasa a off-canvas en pantallas pequeñas.
   const [isMobile, setIsMobile] = useState(false);
@@ -105,9 +106,10 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   }
 
   // Cuenta atrás de la beta: días restantes desde que el usuario vio el modal
-  // del trial. null = sin trial (cuenta exenta o aún no arrancó): nada en sidebar.
-  const trialDaysLeft = !trialExempt && trialStartedAt
-    ? Math.max(0, Math.ceil((new Date(trialStartedAt).getTime() + trialDays * 86_400_000 - Date.now()) / 86_400_000))
+  // del trial. null = sin trial (exento o no arrancó). Con plan de pago tampoco
+  // se muestra: ya desbloqueó y el contador no significa nada para él.
+  const trialDaysLeft = plan === 'free'
+    ? computeTrialDaysLeft(trialStartedAt, trialDays, trialExempt)
     : null;
   const trialLabel = trialDaysLeft === null
     ? null
@@ -264,25 +266,28 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           </div>
         )}
 
-        {/* Beta: cuenta atrás del periodo de prueba */}
+        {/* Beta: cuenta atrás del periodo de prueba (rojo al terminar) */}
         {trialDaysLeft !== null && trialLabel && !collapsed && (
-          <div className="px-4 py-3 border-t border-border-faint">
+          <Link href="/vault/settings" onClick={() => setMobileOpen(false)} className="block px-4 py-3 border-t border-border-faint hover:bg-bg-surface/60 transition-colors">
             <div className="flex items-center gap-2 text-xs text-text-tertiary mb-2">
-              <Hourglass className="size-3.5 text-amber-400/80" />
+              <Hourglass className={cn('size-3.5', trialDaysLeft > 0 ? 'text-amber-400/80' : 'text-red-400/90')} />
               <span>{t('betaTrial')}</span>
             </div>
             <div className="h-1.5 bg-bg-surface-2 rounded-full overflow-hidden mb-1.5">
               <div
-                className="h-full bg-gradient-to-r from-amber-500 to-amber-400 rounded-full transition-all duration-500"
-                style={{ width: `${trialDays > 0 ? Math.min(100, (trialDaysLeft / trialDays) * 100) : 0}%` }}
+                className={cn(
+                  'h-full rounded-full transition-all duration-500 bg-gradient-to-r',
+                  trialDaysLeft > 0 ? 'from-amber-500 to-amber-400' : 'from-red-500 to-red-400',
+                )}
+                style={{ width: `${trialDaysLeft > 0 && trialDays > 0 ? Math.min(100, (trialDaysLeft / trialDays) * 100) : 100}%` }}
               />
             </div>
-            <p className="text-[10px] text-text-tertiary">{trialLabel}</p>
-          </div>
+            <p className={cn('text-[10px]', trialDaysLeft > 0 ? 'text-text-tertiary' : 'text-red-400/90')}>{trialLabel}</p>
+          </Link>
         )}
         {trialDaysLeft !== null && trialLabel && collapsed && (
           <div className="py-2 border-t border-border-faint flex justify-center" title={`${t('betaTrial')} — ${trialLabel}`}>
-            <Hourglass className="size-4 text-amber-400/80" />
+            <Hourglass className={cn('size-4', trialDaysLeft > 0 ? 'text-amber-400/80' : 'text-red-400/90')} />
           </div>
         )}
 
@@ -359,6 +364,8 @@ export default function AppLayout({ children }: { children: ReactNode }) {
       <OnboardingTour />
       {/* Arranque del trial de la beta (sale tras el tour, una sola vez) */}
       <TrialWelcomeModal />
+      {/* Fin del trial: cuota de vuelta a free; reaparece cada sesión */}
+      <TrialEndedModal />
     </div>
   );
 }

@@ -25,6 +25,29 @@ async function checkStorage(log: FastifyBaseLogger): Promise<void> {
   }
 }
 
+// Baja a la cuota free a los usuarios cuyo trial de la beta ya expiró. El trial
+// da BETA_TRIAL_QUOTA_BYTES durante BETA_TRIAL_DAYS; al acabar, los free vuelven
+// a USER_QUOTA_BYTES y lo que exceda queda en solo-lectura (uploads.ts rechaza
+// subidas por cuota; descargar y borrar siguen funcionando). Solo cloud: sin
+// Stripe (self-host) el trial no existe. Los de pago no se tocan (plan != free).
+async function expireTrials(log: FastifyBaseLogger): Promise<void> {
+  if (!env.STRIPE_SECRET_KEY) return;
+  try {
+    const r = await db.query(
+      `UPDATE users SET storage_quota_bytes = $1
+        WHERE plan = 'free' AND trial_exempt = FALSE AND trial_started_at IS NOT NULL
+          AND trial_started_at + make_interval(days => $2) < now()
+          AND storage_quota_bytes > $1`,
+      [env.USER_QUOTA_BYTES, env.BETA_TRIAL_DAYS],
+    );
+    if ((r.rowCount ?? 0) > 0) {
+      log.info({ users: r.rowCount }, 'janitor: trials expirados — cuota devuelta a free');
+    }
+  } catch (err) {
+    log.warn({ err }, 'janitor: expiración de trials falló (se reintentará)');
+  }
+}
+
 // Barrido periódico de filas efímeras ya caducadas. Sin esto, tablas como
 // password_reset_tokens, webauthn_challenges y login_attempts crecen sin
 // límite (un atacante que martillee /recovery/init dejaría miles de tokens
@@ -56,6 +79,7 @@ async function sweep(log: FastifyBaseLogger): Promise<void> {
     log.warn({ err }, 'janitor: barrido falló (se reintentará)');
   }
   await checkStorage(log);
+  await expireTrials(log);
 }
 
 // Arranca el barrido horario. Devuelve el handle para poder pararlo en shutdown.

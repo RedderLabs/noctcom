@@ -720,7 +720,8 @@
     },
     "toasts": {
       "copied": "Copied to clipboard (it'll be cleared in 60s)",
-      "accountCreated": "Account created — check your email to verify"
+      "accountCreated": "Account created — check your email to verify",
+      "tooManySignups": "Too many accounts have been created from this connection. Try again in a few days."
     },
     "haveAccount": "Already have an account? <login>Sign in</login>"
   },
@@ -829,9 +830,16 @@
   },
   "trialWelcome": {
     "title": "Your trial period just started",
-    "body": "You have {days, plural, one {# day} other {# days}} to try the Noctcom beta: upload files, explore your vault and settings, and tell us how it goes.\n\nWhen the period is complete you'll be able to unlock Noctcom Connector to link your hard drives or USB sticks as your own storage.",
-    "hint": "The sidebar shows a countdown with the days left. When it ends, your account will be locked and, if you don't unlock it, it will eventually be deleted along with its data.",
+    "body": "You have {days, plural, one {# day} other {# days}} with 10 GB to try the Noctcom beta: upload files, explore your vault and settings, and tell us how it goes.\n\nAny paid plan (from €1/month) also unlocks Noctcom Connector, to link your hard drives or USB sticks as your own storage.",
+    "hint": "The sidebar shows a countdown with the days left. When it ends, your account stays free with 1 GB forever: nothing gets deleted, but if you use more than 1 GB you'll only be able to download or free up space until you pick a plan.",
     "cta": "Start exploring"
+  },
+  "trialEnded": {
+    "title": "Your trial period has ended",
+    "body": "Your account is still free, now with 1 GB of space. Nothing gets deleted: your files are still here and you can download them anytime.\n\nIf you're using more than 1 GB, you won't be able to upload anything new until you free up space or upgrade.",
+    "hint": "Any plan (from €1/month) gets you more space back and unlocks Noctcom Connector to link your hard drives or USB sticks.",
+    "stayFree": "Stay free with 1 GB",
+    "seePlans": "See plans"
   },
   "vault": {
     "toolbar": {
@@ -1054,6 +1062,7 @@
       "namePrompt": "Name for this agent (e.g. \"Living room PC\"):",
       "nameDefault": "My computer",
       "pairCodeError": "Couldn't generate the pairing code",
+      "planRequired": "Noctcom Connector unlocks with any paid plan (from €1/month)",
       "unlinked": "Agent unlinked",
       "unlinkError": "Couldn't unlink the agent"
     },

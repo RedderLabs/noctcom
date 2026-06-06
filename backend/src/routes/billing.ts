@@ -24,6 +24,7 @@ import {
   sendPaymentFailedEmail, sendPlanEndedEmail,
   normalizeLocale, type MailLocale,
 } from '../mail.js';
+import * as agentRegistry from '../agents/registry.js';
 
 const stripe = env.STRIPE_SECRET_KEY ? new Stripe(env.STRIPE_SECRET_KEY) : null;
 
@@ -241,6 +242,27 @@ const billingRoutes: FastifyPluginAsync = async (app) => {
     p.catch((err) => app.log.warn({ err }, 'email de billing falló'));
   }
 
+  // El Connector es de los planes de pago: al volver a free se revocan los
+  // agentes del usuario (el WS se corta ya; en la reconexión el revoked_at los
+  // rechaza) y se desactivan sus volúmenes (los uploads dejan de ofrecerlos).
+  // Los datos de esos discos siguen en la máquina del usuario — nada se borra.
+  async function revokeAgentsForCustomer(customerId: string): Promise<void> {
+    const u = await db.query(
+      'SELECT id, is_admin FROM users WHERE stripe_customer_id = $1', [customerId],
+    );
+    const user = u.rows[0];
+    if (!user || user.is_admin) return; // admin exento (pruebas)
+    const revoked = await db.query(
+      `UPDATE agents SET revoked_at = now()
+        WHERE user_id = $1 AND revoked_at IS NULL RETURNING id`,
+      [user.id],
+    );
+    await db.query('UPDATE storage_volumes SET active = FALSE WHERE user_id = $1', [user.id]);
+    for (const row of revoked.rows) {
+      agentRegistry.disconnect(row.id, 'plan-canceled');
+    }
+  }
+
   // Aplica el estado de la suscripción de Stripe al usuario: plan + cuota.
   async function handleEvent(event: Stripe.Event): Promise<void> {
     if (!stripe) return;
@@ -266,6 +288,8 @@ const billingRoutes: FastifyPluginAsync = async (app) => {
          WHERE stripe_customer_id = $7`,
         [plan.id, plan.quotaBytes, sub.id, sub.status, periodEndOf(sub), !!sub.cancel_at_period_end, customerId],
       );
+      // Downgrade efectivo a free (p. ej. suscripción impagada): sin Connector.
+      if (plan.id === FREE_PLAN.id) await revokeAgentsForCustomer(customerId);
     }
 
     switch (event.type) {
@@ -325,6 +349,8 @@ const billingRoutes: FastifyPluginAsync = async (app) => {
            WHERE stripe_customer_id = $2`,
           [FREE_PLAN.quotaBytes, customerId],
         );
+        // Sin plan de pago no hay Connector: se revocan sus agentes/volúmenes.
+        await revokeAgentsForCustomer(customerId);
         const { email, locale } = await getCustomerInfo(customerId);
         if (email) mailSafe(sendPlanEndedEmail(email, locale));
         break;
