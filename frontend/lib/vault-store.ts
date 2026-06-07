@@ -12,6 +12,7 @@ import {
   type Bytes,
 } from './crypto';
 import type { FolderIconKey, FolderColorKey } from '@/components/vault/folder-icons';
+import { queueUpload } from './offline-queue';
 
 // ─── Types ───────────────────────────────────────────────────────
 
@@ -35,7 +36,9 @@ export interface DecryptedNode {
 export interface UploadTask {
   fileName: string;
   progress: number;
-  status: 'encrypting' | 'uploading' | 'done' | 'error';
+  // 'queued' = sin red: cifrado y persistido en la cola offline (IndexedDB,
+  // solo ciphertext); se transmite solo al volver la conexión (sync.ts).
+  status: 'encrypting' | 'uploading' | 'queued' | 'done' | 'error';
 }
 
 interface VaultState {
@@ -331,6 +334,54 @@ export const useVault = create<VaultState & VaultActions>((set, get) => ({
         }
         const totalSize = chunkMeta.reduce((sum, c) => sum + c.ciphertextSize, 0);
 
+        // ── Sin conexión: cifrar YA (la vault key está en memoria) y encolar
+        // el ciphertext en IndexedDB. sync.ts vacía la cola al volver online.
+        if (typeof navigator !== 'undefined' && !navigator.onLine) {
+          const hashState = sodium.crypto_generichash_init(null, 32);
+          const authTags: { index: number; authTag: string }[] = [];
+          const chunks: { index: number; ciphertextSize: number; nonce: string; data: ArrayBuffer }[] = [];
+          for (const cm of chunkMeta) {
+            const start = cm.index * CHUNK_SIZE;
+            const end = Math.min(start + CHUNK_SIZE, file.size);
+            const slice = new Uint8Array(await file.slice(start, end).arrayBuffer());
+            const aad = sodium.from_string(`chunk:${cm.index}`);
+            const ct = sodium.crypto_aead_xchacha20poly1305_ietf_encrypt(
+              slice, aad, null, cm.nonce, fileKey,
+            );
+            sodium.crypto_generichash_update(hashState, ct);
+            authTags.push({ index: cm.index, authTag: toB64(ct.slice(ct.length - 16)) });
+            chunks.push({
+              index: cm.index,
+              ciphertextSize: cm.ciphertextSize,
+              nonce: toB64(cm.nonce),
+              data: ct.slice().buffer, // copia exacta: ArrayBuffer limpio para IDB
+            });
+          }
+          const contentHash = toB64(sodium.crypto_generichash_final(hashState, 32));
+          wipe(fileKey);
+          await queueUpload({
+            id: uid,
+            createdAt: Date.now(),
+            vaultId: currentVaultId,
+            parentId,
+            nameEncrypted: toB64(nameEnc.ciphertext),
+            nameNonce: toB64(nameEnc.nonce),
+            metadataEncrypted: toB64(metaEnc.ciphertext),
+            metadataNonce: toB64(metaEnc.nonce),
+            fileKeyWrapped: toB64(fkWrapped.ciphertext),
+            fileKeyNonce: toB64(fkWrapped.nonce),
+            totalSize,
+            chunks,
+            chunkAuthTags: authTags,
+            contentHash,
+          });
+          set((s) => ({
+            uploads: { ...s.uploads, [uid]: { ...s.uploads[uid]!, status: 'queued', progress: 100 } },
+          }));
+          toast.info(rt('toasts.uploadQueued', { name: file.name }));
+          continue;
+        }
+
         const initRes = await apiFetch<{
           nodeId: string;
           versionId: string;
@@ -425,7 +476,7 @@ export const useVault = create<VaultState & VaultActions>((set, get) => ({
     setTimeout(() => {
       set((s) => {
         const u = { ...s.uploads };
-        for (const k of Object.keys(u)) if (u[k]!.status === 'done') delete u[k];
+        for (const k of Object.keys(u)) if (u[k]!.status === 'done' || u[k]!.status === 'queued') delete u[k];
         return { uploads: u };
       });
     }, 3000);

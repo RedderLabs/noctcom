@@ -337,3 +337,21 @@ html.light ::selection { background: rgba(124, 58, 237, 0.18); }
 html.light .prose-noctcom a { color: var(--color-violet-700); }
 html.light .prose-noctcom a:hover { color: var(--color-violet-500); }
 html.light .prose-noctcom code { color: var(--color-violet-700); }
+
+/* ─── PWA standalone (Fase 11) ─────────────────────────────────────
+   Solo cuando corre como app instalada: con viewport-fit=cover el contenido
+   puede quedar bajo el notch/barra — el safe-area lo compensa. El sidebar y
+   el drawer son position:fixed (ignoran el padding del body), por eso el
+   aside lleva el suyo. */
+@media (display-mode: standalone) {
+  body {
+    padding-top: env(safe-area-inset-top);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  aside {
+    padding-top: env(safe-area-inset-top);
+    padding-left: env(safe-area-inset-left);
+  }
+}

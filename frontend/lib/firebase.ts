@@ -60,7 +60,9 @@ export function getPushStatus(): PushStatus {
 async function fetchToken(): Promise<string> {
   const m = getFirebaseMessaging();
   if (!m) throw new Error('Firebase Messaging no está disponible en este navegador');
-  const swReg = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+  // El SW unificado (app-shell + push) — un scope solo admite un SW; el de
+  // FCM se carga dentro de sw.js vía importScripts (ver public/sw.js).
+  const swReg = await navigator.serviceWorker.register('/sw.js');
   let token: string;
   try {
     token = await getToken(m, {

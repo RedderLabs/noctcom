@@ -875,6 +875,7 @@
     },
     "upload": {
       "encrypting": "Cifrando…",
+      "queued": "En cola (sin conexión)",
       "error": "Error"
     },
     "date": {
@@ -1480,10 +1481,23 @@
     "sharedWith": "Compartido con «{name}»",
     "shareRevoked": "Compartido revocado",
     "newDevice": "Nuevo dispositivo conectado a tu cuenta",
-    "deviceRevoked": "Este dispositivo ha sido revocado"
+    "deviceRevoked": "Este dispositivo ha sido revocado",
+    "offline": "Sin conexión — los cambios se sincronizarán al volver",
+    "backOnline": "Conexión recuperada — sincronizando…",
+    "uploadQueued": "«{name}» cifrado y en cola — se subirá al volver la conexión",
+    "offlineUploadsSynced": "{count, plural, one {# archivo pendiente subido} other {# archivos pendientes subidos}}",
+    "offlineUploadRejected": "Una subida en cola fue rechazada por el servidor: {error}"
   },
   "legal": {
     "lastRevised": "Última revisión"
+  },
+  "pwa": {
+    "install": "Instalar app",
+    "installed": "Noctcom instalada — búscala en tu pantalla de inicio",
+    "iosTitle": "Instalar Noctcom en iPhone/iPad",
+    "iosStep1": "Toca el botón Compartir de Safari",
+    "iosStep2": "Elige «Añadir a pantalla de inicio»",
+    "close": "Cerrar"
   },
   "securityDemo": {
     "brand": "<b>NOCTCOM</b> · PRUEBA DE SEGURIDAD",

@@ -174,6 +174,7 @@ function UploadBar({ uploads }: { uploads: Record<string, { fileName: string; pr
             <span className="text-[10px] font-mono text-text-tertiary">
               {u.status === 'encrypting' && t('upload.encrypting')}
               {u.status === 'uploading' && `${u.progress}%`}
+              {u.status === 'queued' && t('upload.queued')}
               {u.status === 'done' && '✓'}
               {u.status === 'error' && t('upload.error')}
             </span>
@@ -182,7 +183,7 @@ function UploadBar({ uploads }: { uploads: Record<string, { fileName: string; pr
             <div
               className={cn(
                 'h-full rounded-full transition-all duration-300',
-                u.status === 'error' ? 'bg-red-500' : 'bg-violet-500',
+                u.status === 'error' ? 'bg-red-500' : u.status === 'queued' ? 'bg-amber-500' : 'bg-violet-500',
               )}
               style={{ width: `${u.progress}%` }}
             />

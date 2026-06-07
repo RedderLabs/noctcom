@@ -22,6 +22,7 @@ import { useFontScale } from '@/lib/font-scale';
 import { useSync } from '@/lib/sync';
 import { syncPushToken, onForegroundMessage } from '@/lib/firebase';
 import { OnboardingTour } from '@/components/vault/OnboardingTour';
+import { InstallAppButton } from '@/components/pwa/InstallAppButton';
 import { TrialWelcomeModal } from '@/components/vault/TrialWelcomeModal';
 import { TrialEndedModal, trialDaysLeft as computeTrialDaysLeft } from '@/components/vault/TrialEndedModal';
 
@@ -237,7 +238,8 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           </Link>
         </div>
 
-
+        {/* Instalar como app (PWA) — solo si es instalable y no está instalada */}
+        <InstallAppButton collapsed={collapsed} />
 
         {/* Cuota */}
         {!collapsed && (

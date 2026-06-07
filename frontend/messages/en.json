@@ -875,6 +875,7 @@
     },
     "upload": {
       "encrypting": "Encrypting…",
+      "queued": "Queued (offline)",
       "error": "Error"
     },
     "date": {
@@ -1480,10 +1481,23 @@
     "sharedWith": "Shared with “{name}”",
     "shareRevoked": "Share revoked",
     "newDevice": "New device connected to your account",
-    "deviceRevoked": "This device has been revoked"
+    "deviceRevoked": "This device has been revoked",
+    "offline": "Offline — your changes will sync when you're back",
+    "backOnline": "Back online — syncing…",
+    "uploadQueued": "“{name}” encrypted and queued — it will upload when you're back online",
+    "offlineUploadsSynced": "{count, plural, one {# pending file uploaded} other {# pending files uploaded}}",
+    "offlineUploadRejected": "A queued upload was rejected by the server: {error}"
   },
   "legal": {
     "lastRevised": "Last revised"
+  },
+  "pwa": {
+    "install": "Install app",
+    "installed": "Noctcom installed — find it on your home screen",
+    "iosTitle": "Install Noctcom on iPhone/iPad",
+    "iosStep1": "Tap Safari's Share button",
+    "iosStep2": "Choose “Add to Home Screen”",
+    "close": "Close"
   },
   "securityDemo": {
     "brand": "<b>NOCTCOM</b> · SECURITY TEST",

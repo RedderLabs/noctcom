@@ -5,7 +5,19 @@ import { notFound } from 'next/navigation';
 import { routing } from '@/i18n/routing';
 import { CookieBanner } from '@/components/ui/CookieBanner';
 import { ThemedToaster } from '@/components/ui/ThemedToaster';
-import type { Metadata } from 'next';
+import { PwaProvider } from '@/components/pwa/PwaProvider';
+import type { Metadata, Viewport } from 'next';
+
+// PWA (Fase 11): theme-color por esquema (la barra del SO sigue al tema) y
+// viewport-fit=cover para poder pintar bajo el notch (el padding lo da el
+// safe-area de globals.css solo en modo standalone).
+export const viewport: Viewport = {
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#f5f5fa' },
+    { media: '(prefers-color-scheme: dark)', color: '#0f0f17' },
+  ],
+  viewportFit: 'cover',
+};
 
 export async function generateMetadata({
   params,
@@ -62,7 +74,36 @@ const baseMetadata: Metadata = {
   creator: 'Redder Labs',
   publisher: 'Redder Labs',
   category: 'technology',
-  icons: { icon: '/logo.png', apple: '/logo.png' },
+  manifest: '/manifest.webmanifest',
+  icons: {
+    icon: [
+      { url: '/favicon.svg', type: 'image/svg+xml' },
+      { url: '/icon-192.png', sizes: '192x192', type: 'image/png' },
+      { url: '/icon-512.png', sizes: '512x512', type: 'image/png' },
+    ],
+    apple: '/apple-touch-icon.png',
+  },
+  // iOS no lee el manifest: estas metas dan el modo standalone, el título y
+  // las splash (generadas desde logo.svg por scripts/generate-pwa-icons.mjs;
+  // iOS elige por media query exacta de puntos CSS × DPR, portrait).
+  appleWebApp: {
+    capable: true,
+    title: 'Noctcom',
+    statusBarStyle: 'black-translucent',
+    startupImage: [
+      { url: '/splash-750x1334.png', media: '(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)' },
+      { url: '/splash-828x1792.png', media: '(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)' },
+      { url: '/splash-1125x2436.png', media: '(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)' },
+      { url: '/splash-1170x2532.png', media: '(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)' },
+      { url: '/splash-1179x2556.png', media: '(device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)' },
+      { url: '/splash-1242x2688.png', media: '(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)' },
+      { url: '/splash-1284x2778.png', media: '(device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)' },
+      { url: '/splash-1290x2796.png', media: '(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)' },
+      { url: '/splash-1536x2048.png', media: '(device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)' },
+      { url: '/splash-1668x2388.png', media: '(device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)' },
+      { url: '/splash-2048x2732.png', media: '(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)' },
+    ],
+  },
   openGraph: {
     siteName: 'Noctcom',
     locale: 'es_ES',
@@ -114,6 +155,7 @@ export default async function LocaleLayout({
       </head>
       <body className="grain">
         <NextIntlClientProvider messages={messages}>
+          <PwaProvider />
           {children}
           <CookieBanner />
           <ThemedToaster />

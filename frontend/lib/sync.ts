@@ -6,6 +6,7 @@ import { rt } from './i18n-runtime';
 import { useAuth } from './auth-store';
 import { useVault } from './vault-store';
 import { loadTokens, setTokens } from './api';
+import { flushQueuedUploads } from './offline-queue';
 
 const WS_URL = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000')
   .replace('http', 'ws');
@@ -74,6 +75,54 @@ export function useSync() {
 
     ws.onerror = () => ws.close();
   }, [isAuthenticated, handleChange]);
+
+  // ── Offline→online (Fase 11 · PWA) ────────────────────────────
+  // Al perder la red: aviso. Al recuperarla: reconectar el WS sin esperar el
+  // retry, refrescar nodos+cuota (lo ocurrido en otros dispositivos mientras
+  // tanto) y vaciar la cola de subidas hechas sin conexión (offline-queue).
+  const resyncOnline = useCallback(async () => {
+    toast.info(rt('toasts.backOnline'));
+    connect();
+    const { initialized: ready, loadNodes: load, parentId: pid, refreshStorage: refresh } = useVault.getState();
+    if (ready) {
+      load(pid);
+      refresh();
+    }
+    const sent = await flushQueuedUploads();
+    if (sent > 0) {
+      toast.success(rt('toasts.offlineUploadsSynced', { count: sent }));
+      const v = useVault.getState();
+      if (v.initialized) {
+        v.loadNodes(v.parentId);
+        v.refreshStorage();
+      }
+    }
+  }, [connect]);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    const onOffline = () => toast.warning(rt('toasts.offline'));
+    window.addEventListener('online', resyncOnline);
+    window.addEventListener('offline', onOffline);
+    return () => {
+      window.removeEventListener('online', resyncOnline);
+      window.removeEventListener('offline', onOffline);
+    };
+  }, [isAuthenticated, resyncOnline]);
+
+  // Cola pendiente de una sesión anterior (la app se cerró sin red): se vacía
+  // al abrir sesión con conexión.
+  useEffect(() => {
+    if (!isAuthenticated || !initialized || !navigator.onLine) return;
+    flushQueuedUploads().then((sent) => {
+      if (sent > 0) {
+        toast.success(rt('toasts.offlineUploadsSynced', { count: sent }));
+        const v = useVault.getState();
+        v.loadNodes(v.parentId);
+        v.refreshStorage();
+      }
+    });
+  }, [isAuthenticated, initialized]);
 
   useEffect(() => {
     if (!isAuthenticated) {
