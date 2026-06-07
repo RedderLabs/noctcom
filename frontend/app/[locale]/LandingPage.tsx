@@ -7,6 +7,7 @@ import { Lock, Shield, EyeOff, AtSign, Share2, ArrowRight, Server, Download, Git
 import { Button } from '@/components/ui/Button';
 import { Navbar } from '@/components/ui/Navbar';
 import { SecurityDemo } from '@/components/landing/SecurityDemo';
+import { HeroInstallHint } from '@/components/pwa/HeroInstallHint';
 
 // Renderers compartidos para los textos con énfasis (t.rich).
 const strong = (c: ReactNode) => <strong className="text-text-primary font-medium">{c}</strong>;
@@ -71,6 +72,9 @@ export default function LandingPage() {
               <Button variant="outline" size="lg">{t('hero.ctaHaveAccount')}</Button>
             </Link>
           </div>
+
+          {/* PWA: mensaje de descarga/instalación bajo las CTAs del hero */}
+          <HeroInstallHint />
         </div>
       </section>
 

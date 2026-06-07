@@ -1497,7 +1497,10 @@
     "iosTitle": "Instalar Noctcom en iPhone/iPad",
     "iosStep1": "Toca el botón Compartir de Safari",
     "iosStep2": "Elige «Añadir a pantalla de inicio»",
-    "close": "Cerrar"
+    "close": "Cerrar",
+    "heroInstall": "Descarga Noctcom como app en tu móvil u ordenador",
+    "heroInstallSub": "Directa desde el navegador, sin tiendas de aplicaciones. Misma bóveda, mismo cifrado.",
+    "heroInstallFallback": "En tu navegador: abre el menú y elige «Instalar aplicación» (Chrome/Edge) o usa Safari en iPhone/iPad."
   },
   "securityDemo": {
     "brand": "<b>NOCTCOM</b> · PRUEBA DE SEGURIDAD",

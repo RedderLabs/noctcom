@@ -75,9 +75,12 @@ const baseMetadata: Metadata = {
   publisher: 'Redder Labs',
   category: 'technology',
   manifest: '/manifest.webmanifest',
+  // Favicon = el logo del candado en todo el sitio (decisión del usuario,
+  // 7 jun): logo.svg escala y los PNG (derivados de logo.png por
+  // scripts/generate-pwa-icons.mjs) son el fallback raster.
   icons: {
     icon: [
-      { url: '/favicon.svg', type: 'image/svg+xml' },
+      { url: '/logo.svg', type: 'image/svg+xml' },
       { url: '/icon-192.png', sizes: '192x192', type: 'image/png' },
       { url: '/icon-512.png', sizes: '512x512', type: 'image/png' },
     ],
