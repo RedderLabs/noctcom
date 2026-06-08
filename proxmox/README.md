@@ -53,17 +53,33 @@ community-scripts/
 4. La instalación es **explícita** (no delega en `install.sh`): `install/noctcom-install.sh`
    ya inlinea los pasos —clonar el repo, generar `.env` con secretos, `docker compose up`—
    replicando el modo LAN del instalador oficial, como esperan los revisores.
-   Al enviar, el JSON va en `frontend/public/json/noctcom.json` (no en `json/`).
+   En ProxmoxVED los tres ficheros van en `ct/`, `install/` y **`json/`** (raíz).
+   Plantillas oficiales: `.github/CONTRIBUTOR_AND_GUIDES/ct/AppName.sh` y `install/AppName-install.sh`.
 
-### Checklist de madurez antes del PR
+### Requisitos OBLIGATORIOS de aplicación (de la plantilla de PR de ProxmoxVED)
 
-- [ ] Versión estable etiquetada (≥ 1.0 o equivalente) y releases regulares
-- [ ] Probado el `ct/noctcom.sh` en un host Proxmox VE real (instalación + update)
-- [ ] Web y docs públicas estables (noctcom.com, README del repo)
-- [ ] `json/noctcom.json`: revisar categorías (11 = Files & Downloads,
-      6 = Authentication & Security) y que el logo cargue bien en su web
-- [ ] Comunidad mínima activa (issues atendidas) — los maintainers valoran
-      que el proyecto esté mantenido
+La sección "Application Requirements" del PR la valida un check **automático**; si no
+se cumple, el PR **se cierra sin revisión**. NO depende de la versión (no exigen 1.0):
+
+- [ ] La aplicación tiene **al menos 6 meses de antigüedad** — ❌ Noctcom es de mayo 2026
+- [ ] **Mantenida activamente** — ✅
+- [ ] **600+ estrellas en GitHub** — ❌ (proyecto nuevo)
+- [ ] Publica **tarballs de release oficiales** — ✅ (GitHub Releases: v0.17.0)
+- [ ] Entender que no todos los scripts se aceptan
+
+> **Conclusión:** hoy Noctcom NO cumple (antigüedad + estrellas). Enviarlo ahora =
+> cierre automático. Los 3 ficheros quedan listos; se envía cuando el repo supere
+> **6 meses y 600 estrellas**. Mientras tanto, `noctcom-lxc.sh` ya da a los usuarios
+> la instalación en Proxmox sin pasar por el catálogo.
+
+### Cómo enviarlo (cuando se cumplan los requisitos)
+
+1. Fork de ProxmoxVED y clónalo; corre su `docs/contribution/setup-fork.sh` (reescribe
+   las URLs raw de `build.func`/`install.func` para que apunten a tu fork al probar).
+2. Copia los 3 ficheros a `ct/noctcom.sh`, `install/noctcom-install.sh`, `json/noctcom.json`.
+3. **Prueba en un Proxmox VE real** desde tu fork: `bash -c "$(curl -fsSL .../<user>/<repo>/refs/heads/<rama>/ct/noctcom.sh)"` (instalación + update).
+4. `shellcheck` limpio en los dos `.sh`.
+5. Abre el PR contra ProxmoxVED, marca "🆕 New script" y rellena la sección de requisitos.
 
 ## Notas técnicas
 
