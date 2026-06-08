@@ -65,7 +65,7 @@ This brings up PostgreSQL, Redis, MinIO, backend, frontend and Caddy (automatic 
 
 ## On a managed PaaS (Render, Railway…)?
 
-It's possible, but it's an **advanced** route: on a PaaS you don't run the full `docker-compose`, you deploy the **images** (`topgambajrjdeveloper/noctcom` and `noctcom-api`) and supply the managed services yourself —PostgreSQL, Redis and S3-compatible storage (e.g. Backblaze B2)— with their environment variables. For most people, a server with Docker (Option 1) is simpler and cheaper. If you still want that path, start from the repo's [docker-compose.yml](https://github.com/RedderLabs/noctcom/blob/main/docker-compose.yml) and [self-hosting guide](https://github.com/RedderLabs/noctcom/blob/main/SELFHOST.md).
+It's possible, but it's an **advanced** route: on a PaaS you don't run the full `docker-compose`, you build and deploy the repo's **images** (`<your-username>/noctcom` and `<your-username>/noctcom-api`) and supply the managed services yourself —PostgreSQL, Redis and S3-compatible storage (e.g. Backblaze B2)— with their environment variables. For most people, a server with Docker (Option 1) is simpler and cheaper. If you still want that path, start from the repo's [docker-compose.yml](https://github.com/RedderLabs/noctcom/blob/main/docker-compose.yml) and [self-hosting guide](https://github.com/RedderLabs/noctcom/blob/main/SELFHOST.md).
 
 ---
 
