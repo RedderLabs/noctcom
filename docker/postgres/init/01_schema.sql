@@ -187,6 +187,12 @@ CREATE TABLE shares (
     -- (libsodium crypto_box_seal). Solo el dueño de la privkey la abre.
     sealed_key           BYTEA NOT NULL,
 
+    -- {name, mime} del archivo, sellado igual con la pubkey del destinatario.
+    -- El nombre va cifrado con la vault key del EMISOR (que el receptor no
+    -- tiene); sin esto el receptor no podría ni mostrar el nombre del archivo.
+    -- NULLable: shares creados antes de esta columna no lo tienen.
+    sealed_meta          BYTEA,
+
     created_at           TIMESTAMPTZ NOT NULL DEFAULT now(),
     expires_at           TIMESTAMPTZ,
     revoked_at           TIMESTAMPTZ,
@@ -194,6 +200,35 @@ CREATE TABLE shares (
 );
 CREATE INDEX shares_with_idx ON shares(shared_with) WHERE revoked_at IS NULL;
 CREATE INDEX shares_by_idx ON shares(shared_by) WHERE revoked_at IS NULL;
+
+-- ───────────────────────────────────────────────────────────────
+-- CONTACTS — consentimiento previo a compartir (anti-spam).
+-- A pide a B; B acepta una vez. Solo entre contactos aceptados se
+-- permite crear shares. Al aceptar se fijan (TOFU) las exchange pubkeys
+-- de ambos: el emisor sella contra la clave acordada, no la que el
+-- servidor pudiera presentar en cada lookup.
+-- ───────────────────────────────────────────────────────────────
+CREATE TYPE contact_status AS ENUM ('pending', 'accepted', 'declined', 'blocked');
+
+CREATE TABLE contacts (
+    id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    requester_id    UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    addressee_id    UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    status          contact_status NOT NULL DEFAULT 'pending',
+
+    -- pubkeys X25519 fijadas: la del requester al pedir, la del addressee
+    -- al aceptar. NULL hasta ese momento.
+    requester_exchange_pk BYTEA,
+    addressee_exchange_pk  BYTEA,
+
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+    responded_at    TIMESTAMPTZ,
+
+    CONSTRAINT contacts_no_self CHECK (requester_id <> addressee_id),
+    UNIQUE (requester_id, addressee_id)
+);
+CREATE INDEX contacts_addressee_idx ON contacts(addressee_id) WHERE status = 'pending';
+CREATE INDEX contacts_pair_idx ON contacts(requester_id, addressee_id);
 
 -- ───────────────────────────────────────────────────────────────
 -- PUBLIC_LINKS — enlaces "públicos" con password (zero-knowledge)

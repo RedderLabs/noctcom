@@ -1,13 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import * as Dialog from '@radix-ui/react-dialog';
-import { X, Search, Share2, Shield, Loader2 } from 'lucide-react';
+import { X, Search, Share2, Shield, UserPlus, Check, Users } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { useVault, type DecryptedNode } from '@/lib/vault-store';
+import { useVault, type DecryptedNode, type Contact } from '@/lib/vault-store';
 import { cn } from '@/lib/utils';
 
 interface Props {
@@ -18,42 +18,63 @@ interface Props {
 
 export function ShareModal({ open, onClose, node }: Props) {
   const t = useTranslations('shareModal');
-  const { createShare, lookupUser } = useVault();
-  const [username, setUsername] = useState('');
+  const { loadContacts, createShare, requestContact } = useVault();
+
+  const [contacts, setContacts] = useState<Contact[]>([]);
+  const [loadingContacts, setLoadingContacts] = useState(true);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [permission, setPermission] = useState<'read' | 'write'>('read');
-  const [loading, setLoading] = useState(false);
-  const [foundUser, setFoundUser] = useState<{ id: string; username: string } | null>(null);
-  const [searched, setSearched] = useState(false);
+  const [sharing, setSharing] = useState(false);
+
+  const [requestUsername, setRequestUsername] = useState('');
+  const [requesting, setRequesting] = useState(false);
+
+  const refresh = useCallback(async () => {
+    setLoadingContacts(true);
+    const { accepted } = await loadContacts();
+    setContacts(accepted);
+    setLoadingContacts(false);
+  }, [loadContacts]);
+
+  useEffect(() => { if (open) refresh(); }, [open, refresh]);
 
   function reset() {
-    setUsername('');
+    setSelectedId(null);
     setPermission('read');
-    setLoading(false);
-    setFoundUser(null);
-    setSearched(false);
-  }
-
-  async function handleLookup() {
-    if (!username.trim()) return;
-    setLoading(true);
-    setSearched(true);
-    const user = await lookupUser(username.trim());
-    setFoundUser(user ? { id: user.id, username: user.username } : null);
-    setLoading(false);
+    setSharing(false);
+    setRequestUsername('');
+    setRequesting(false);
   }
 
   async function handleShare(e: React.FormEvent) {
     e.preventDefault();
-    if (!node || !foundUser) return;
-    setLoading(true);
+    const contact = contacts.find((c) => c.contactId === selectedId);
+    if (!node || !contact) return;
+    setSharing(true);
     try {
-      await createShare(node.id, foundUser.username, permission);
+      await createShare(node.id, contact, permission);
       reset();
       onClose();
     } catch (err: any) {
       toast.error(err.message ?? t('errorShare'));
     } finally {
-      setLoading(false);
+      setSharing(false);
+    }
+  }
+
+  async function handleRequest() {
+    const username = requestUsername.trim();
+    if (!username) return;
+    setRequesting(true);
+    try {
+      const status = await requestContact(username);
+      setRequestUsername('');
+      // Si se auto-aceptó (ya había solicitud inversa), aparece en la lista.
+      if (status === 'accepted') await refresh();
+    } catch (err: any) {
+      toast.error(err.message ?? t('requestError'));
+    } finally {
+      setRequesting(false);
     }
   }
 
@@ -84,68 +105,92 @@ export function ShareModal({ open, onClose, node }: Props) {
               </div>
             )}
 
-            <div className="flex gap-2">
-              <div className="flex-1">
-                <Input
-                  label={t('usernameLabel')}
-                  value={username}
-                  onChange={(e) => { setUsername(e.target.value); setSearched(false); setFoundUser(null); }}
-                  leftIcon={<Search className="size-4" />}
-                  placeholder="username"
-                  autoFocus
-                />
+            {/* ─── Elegir contacto ──────────────────────────── */}
+            <div>
+              <span className="flex items-center gap-1.5 text-xs font-medium text-text-secondary mb-2 tracking-wide uppercase">
+                <Users className="size-3.5" /> {t('contactsLabel')}
+              </span>
+
+              {loadingContacts ? (
+                <p className="text-xs text-text-muted px-1 py-2">{t('loadingContacts')}</p>
+              ) : contacts.length === 0 ? (
+                <p className="text-xs text-text-muted px-1 py-2 leading-relaxed">{t('noContacts')}</p>
+              ) : (
+                <div className="space-y-1 max-h-44 overflow-y-auto pr-1">
+                  {contacts.map((c) => (
+                    <button
+                      key={c.contactId}
+                      type="button"
+                      onClick={() => setSelectedId(c.contactId)}
+                      className={cn(
+                        'w-full flex items-center gap-3 p-2.5 rounded-lg border text-left transition-all',
+                        selectedId === c.contactId
+                          ? 'bg-violet-500/10 border-violet-500/30'
+                          : 'bg-bg-surface-2 border-border-faint hover:border-border-subtle',
+                      )}
+                    >
+                      <div className="size-8 rounded-full bg-gradient-to-br from-violet-400 to-violet-600 grid place-items-center text-xs font-medium shrink-0">
+                        {c.username[0]?.toUpperCase()}
+                      </div>
+                      <span className="flex-1 text-sm font-medium truncate">{c.username}</span>
+                      {selectedId === c.contactId && <Check className="size-4 text-violet-300 shrink-0" />}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {contacts.length > 0 && (
+              <div>
+                <span className="block text-xs font-medium text-text-secondary mb-2 tracking-wide uppercase">
+                  {t('permission')}
+                </span>
+                <div className="flex gap-2">
+                  {(['read', 'write'] as const).map((p) => (
+                    <button
+                      key={p}
+                      type="button"
+                      onClick={() => setPermission(p)}
+                      className={cn(
+                        'flex-1 px-4 py-2.5 rounded-lg text-sm border transition-all',
+                        permission === p
+                          ? 'bg-violet-500/15 border-violet-500/30 text-violet-200'
+                          : 'bg-bg-surface-2 border-border-faint text-text-tertiary hover:border-border-subtle',
+                      )}
+                    >
+                      {p === 'read' ? t('permRead') : t('permWrite')}
+                    </button>
+                  ))}
+                </div>
               </div>
-              <div className="pt-[22px]">
+            )}
+
+            {/* ─── Añadir contacto (enviar solicitud) ───────── */}
+            <div className="pt-1 border-t border-border-faint">
+              <span className="flex items-center gap-1.5 text-xs font-medium text-text-secondary mt-3 mb-2 tracking-wide uppercase">
+                <UserPlus className="size-3.5" /> {t('addContact')}
+              </span>
+              <div className="flex gap-2">
+                <div className="flex-1">
+                  <Input
+                    value={requestUsername}
+                    onChange={(e) => setRequestUsername(e.target.value)}
+                    leftIcon={<Search className="size-4" />}
+                    placeholder="username"
+                  />
+                </div>
                 <Button
                   type="button"
                   variant="secondary"
                   size="md"
-                  onClick={handleLookup}
-                  loading={loading && !foundUser}
-                  disabled={!username.trim()}
+                  onClick={handleRequest}
+                  loading={requesting}
+                  disabled={!requestUsername.trim()}
                 >
-                  {t('search')}
+                  {t('sendRequest')}
                 </Button>
               </div>
-            </div>
-
-            {searched && !loading && !foundUser && (
-              <p className="text-xs text-red-400">{t('userNotFound')}</p>
-            )}
-
-            {foundUser && (
-              <div className="flex items-center gap-3 p-3 rounded-lg bg-emerald-500/5 border border-emerald-500/20">
-                <div className="size-9 rounded-full bg-gradient-to-br from-violet-400 to-violet-600 grid place-items-center text-xs font-medium shrink-0">
-                  {foundUser.username[0]?.toUpperCase()}
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium">{foundUser.username}</p>
-                  <p className="text-[10px] text-emerald-400 font-mono uppercase tracking-wider">{t('found')}</p>
-                </div>
-              </div>
-            )}
-
-            <div>
-              <span className="block text-xs font-medium text-text-secondary mb-2 tracking-wide uppercase">
-                {t('permission')}
-              </span>
-              <div className="flex gap-2">
-                {(['read', 'write'] as const).map((p) => (
-                  <button
-                    key={p}
-                    type="button"
-                    onClick={() => setPermission(p)}
-                    className={cn(
-                      'flex-1 px-4 py-2.5 rounded-lg text-sm border transition-all',
-                      permission === p
-                        ? 'bg-violet-500/15 border-violet-500/30 text-violet-200'
-                        : 'bg-bg-surface-2 border-border-faint text-text-tertiary hover:border-border-subtle',
-                    )}
-                  >
-                    {p === 'read' ? t('permRead') : t('permWrite')}
-                  </button>
-                ))}
-              </div>
+              <p className="text-[10px] text-text-muted mt-1.5 leading-relaxed">{t('requestHint')}</p>
             </div>
 
             <div className="flex items-start gap-2 p-3 rounded-lg bg-violet-500/5 border border-violet-500/20">
@@ -159,7 +204,7 @@ export function ShareModal({ open, onClose, node }: Props) {
               <Button type="button" variant="ghost" size="md" className="flex-1" onClick={() => { reset(); onClose(); }}>
                 {t('cancel')}
               </Button>
-              <Button type="submit" variant="primary" size="md" className="flex-1" loading={loading} disabled={!foundUser}>
+              <Button type="submit" variant="primary" size="md" className="flex-1" loading={sharing} disabled={!selectedId}>
                 {t('share')}
               </Button>
             </div>

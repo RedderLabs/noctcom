@@ -1252,6 +1252,7 @@
     },
     "sharedWith": "Compartido con {name}",
     "receivedFrom": "De {name}",
+    "download": "Descargar",
     "permission": {
       "write": "Editar",
       "read": "Solo ver"
@@ -1330,7 +1331,35 @@
     "securityNote": "La clave del archivo se cifra con la clave pública del destinatario (sealed box). Ni Noctcom ni nadie más puede acceder al contenido.",
     "cancel": "Cancelar",
     "share": "Compartir",
-    "errorShare": "Error al compartir"
+    "errorShare": "Error al compartir",
+    "contactsLabel": "Compartir con un contacto",
+    "loadingContacts": "Cargando contactos…",
+    "noContacts": "Aún no tienes contactos. Envía una solicitud abajo; solo puedes compartir con contactos que te hayan aceptado.",
+    "addContact": "Añadir contacto",
+    "sendRequest": "Enviar solicitud",
+    "requestHint": "El otro usuario debe aceptar tu solicitud antes de que puedas compartirle archivos.",
+    "requestError": "No se pudo enviar la solicitud"
+  },
+  "contacts": {
+    "title": "Contactos",
+    "subtitle": "Solo puedes compartir archivos con contactos que te hayan aceptado.",
+    "addPlaceholder": "Nombre de usuario",
+    "add": "Añadir",
+    "loading": "Cargando contactos…",
+    "sections": {
+      "incoming": "Solicitudes recibidas",
+      "accepted": "Tus contactos",
+      "outgoing": "Solicitudes enviadas"
+    },
+    "acceptedEmpty": "Todavía no tienes contactos. Añade a alguien por su nombre de usuario.",
+    "accept": "Aceptar",
+    "decline": "Rechazar",
+    "remove": "Eliminar contacto",
+    "cancel": "Cancelar solicitud",
+    "pendingTag": "Pendiente",
+    "addError": "No se pudo enviar la solicitud",
+    "actionError": "No se pudo completar la acción",
+    "note": "Compartir requiere consentimiento mutuo: nadie puede colarte archivos sin que lo aceptes primero. Al aceptar, la clave pública del contacto queda fijada."
   },
   "newFolderModal": {
     "title": "Nueva carpeta",
@@ -1462,6 +1491,7 @@
       "recent": "Recientes",
       "starred": "Destacados",
       "shared": "Compartidos",
+      "contacts": "Contactos",
       "activity": "Actividad",
       "trash": "Papelera"
     }
@@ -1486,7 +1516,12 @@
     "backOnline": "Conexión recuperada — sincronizando…",
     "uploadQueued": "«{name}» cifrado y en cola — se subirá al volver la conexión",
     "offlineUploadsSynced": "{count, plural, one {# archivo pendiente subido} other {# archivos pendientes subidos}}",
-    "offlineUploadRejected": "Una subida en cola fue rechazada por el servidor: {error}"
+    "offlineUploadRejected": "Una subida en cola fue rechazada por el servidor: {error}",
+    "contactAdded": "Contacto añadido: {name}",
+    "contactRequested": "Solicitud enviada a {name}",
+    "contactAccepted": "Contacto aceptado",
+    "contactRemoved": "Contacto eliminado",
+    "newContactRequest": "Nueva solicitud de contacto"
   },
   "legal": {
     "lastRevised": "Última revisión"

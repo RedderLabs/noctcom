@@ -1252,6 +1252,7 @@
     },
     "sharedWith": "Shared with {name}",
     "receivedFrom": "From {name}",
+    "download": "Download",
     "permission": {
       "write": "Edit",
       "read": "View only"
@@ -1330,7 +1331,35 @@
     "securityNote": "The file key is encrypted with the recipient's public key (sealed box). Neither Noctcom nor anyone else can access the contents.",
     "cancel": "Cancel",
     "share": "Share",
-    "errorShare": "Error sharing"
+    "errorShare": "Error sharing",
+    "contactsLabel": "Share with a contact",
+    "loadingContacts": "Loading contacts…",
+    "noContacts": "You don't have any contacts yet. Send a request below; you can only share with contacts who have accepted you.",
+    "addContact": "Add contact",
+    "sendRequest": "Send request",
+    "requestHint": "The other user must accept your request before you can share files with them.",
+    "requestError": "Could not send the request"
+  },
+  "contacts": {
+    "title": "Contacts",
+    "subtitle": "You can only share files with contacts who have accepted you.",
+    "addPlaceholder": "Username",
+    "add": "Add",
+    "loading": "Loading contacts…",
+    "sections": {
+      "incoming": "Incoming requests",
+      "accepted": "Your contacts",
+      "outgoing": "Sent requests"
+    },
+    "acceptedEmpty": "You don't have any contacts yet. Add someone by their username.",
+    "accept": "Accept",
+    "decline": "Decline",
+    "remove": "Remove contact",
+    "cancel": "Cancel request",
+    "pendingTag": "Pending",
+    "addError": "Could not send the request",
+    "actionError": "Could not complete the action",
+    "note": "Sharing requires mutual consent: nobody can push files to you without your acceptance first. On accept, the contact's public key is pinned."
   },
   "newFolderModal": {
     "title": "New folder",
@@ -1462,6 +1491,7 @@
       "recent": "Recent",
       "starred": "Starred",
       "shared": "Shared",
+      "contacts": "Contacts",
       "activity": "Activity",
       "trash": "Trash"
     }
@@ -1486,7 +1516,12 @@
     "backOnline": "Back online — syncing…",
     "uploadQueued": "“{name}” encrypted and queued — it will upload when you're back online",
     "offlineUploadsSynced": "{count, plural, one {# pending file uploaded} other {# pending files uploaded}}",
-    "offlineUploadRejected": "A queued upload was rejected by the server: {error}"
+    "offlineUploadRejected": "A queued upload was rejected by the server: {error}",
+    "contactAdded": "Contact added: {name}",
+    "contactRequested": "Request sent to {name}",
+    "contactAccepted": "Contact accepted",
+    "contactRemoved": "Contact removed",
+    "newContactRequest": "New contact request"
   },
   "legal": {
     "lastRevised": "Last revised"

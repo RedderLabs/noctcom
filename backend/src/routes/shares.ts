@@ -28,6 +28,10 @@ const createShareSchema = z.object({
   sharedWithUserId: z.string().uuid(),
   permission: z.enum(['read', 'write']).default('read'),
   sealedKey: bytesB64,
+  // {name, mime} sellado con la pubkey del receptor (crypto_box_seal).
+  // Opcional por compatibilidad, pero el cliente siempre lo envía para
+  // archivos: sin él el receptor no puede mostrar el nombre.
+  sealedMeta: bytesB64.optional(),
   expiresAt: z.string().datetime().optional(),
 });
 
@@ -50,11 +54,25 @@ const shareRoutes: FastifyPluginAsync = async (app) => {
       return reply.badRequest('cannot share with yourself');
     }
 
+    // Consentimiento: solo se comparte con contactos ACEPTADOS (anti-spam).
+    const contact = await db.query(
+      `SELECT 1 FROM contacts
+       WHERE status = 'accepted'
+         AND ((requester_id = $1 AND addressee_id = $2)
+           OR (requester_id = $2 AND addressee_id = $1))
+       LIMIT 1`,
+      [userId, body.sharedWithUserId],
+    );
+    if (contact.rowCount === 0) {
+      return reply.forbidden('not an accepted contact');
+    }
+
     const r = await db.query(
-      `INSERT INTO shares (node_id, shared_by, shared_with, permission, sealed_key, expires_at)
-       VALUES ($1,$2,$3,$4,$5,$6)
+      `INSERT INTO shares (node_id, shared_by, shared_with, permission, sealed_key, sealed_meta, expires_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7)
        ON CONFLICT (node_id, shared_with) DO UPDATE
          SET sealed_key = EXCLUDED.sealed_key,
+             sealed_meta = EXCLUDED.sealed_meta,
              permission = EXCLUDED.permission,
              expires_at = EXCLUDED.expires_at,
              revoked_at = NULL
@@ -62,6 +80,7 @@ const shareRoutes: FastifyPluginAsync = async (app) => {
       [
         body.nodeId, userId, body.sharedWithUserId,
         body.permission, fromB64(body.sealedKey),
+        body.sealedMeta ? fromB64(body.sealedMeta) : null,
         body.expiresAt ?? null,
       ],
     );
@@ -85,7 +104,7 @@ const shareRoutes: FastifyPluginAsync = async (app) => {
   app.get('/incoming', { onRequest: [app.authenticate] }, async (req, reply) => {
     const userId = req.user.sub;
     const r = await db.query(
-      `SELECT s.id, s.node_id, s.permission, s.sealed_key, s.expires_at, s.created_at,
+      `SELECT s.id, s.node_id, s.permission, s.sealed_key, s.sealed_meta, s.expires_at, s.created_at,
               u.username AS shared_by_username, u.identity_public_key AS shared_by_identity_pk,
               n.name_encrypted, n.name_nonce, n.kind, n.metadata_encrypted, n.metadata_nonce,
               n.ciphertext_size, n.current_version_id
@@ -106,6 +125,7 @@ const shareRoutes: FastifyPluginAsync = async (app) => {
         kind: s.kind,
         permission: s.permission,
         sealedKey: toB64(s.sealed_key),
+        sealedMeta: s.sealed_meta ? toB64(s.sealed_meta) : null,
         sharedByUsername: s.shared_by_username,
         sharedByIdentityPublicKey: toB64(s.shared_by_identity_pk),
         nameEncrypted: toB64(s.name_encrypted),

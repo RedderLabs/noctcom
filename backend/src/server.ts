@@ -33,6 +33,7 @@ import vaultRoutes from './routes/vaults.js';
 import nodeRoutes from './routes/nodes.js';
 import uploadRoutes from './routes/uploads.js';
 import shareRoutes from './routes/shares.js';
+import contactRoutes from './routes/contacts.js';
 import wsRoutes from './routes/ws.js';
 import twoFactorRoutes from './routes/two_factor.js';
 import storageRoutes from './routes/storage.js';
@@ -195,6 +196,7 @@ export async function buildServer() {
   await app.register(nodeRoutes,   { prefix: '/api/v1/nodes' });
   await app.register(uploadRoutes, { prefix: '/api/v1/uploads' });
   await app.register(shareRoutes,  { prefix: '/api/v1/shares' });
+  await app.register(contactRoutes, { prefix: '/api/v1/contacts' });
   await app.register(twoFactorRoutes, { prefix: '/api/v1/2fa' });
   await app.register(wsRoutes,     { prefix: '/api/v1/ws' });
   await app.register(storageRoutes, { prefix: '/api/v1/storage' });

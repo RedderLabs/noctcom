@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import {
   Share2, Link2, Users, Clock, MoreVertical, Copy, Trash2,
-  FileText, Image, File, ExternalLink, Shield,
+  FileText, Image, File, ExternalLink, Shield, Download,
   Loader2,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -20,6 +20,7 @@ interface ShareItem {
   kind?: string;
   permission: string;
   sealedKey?: string;
+  sealedMeta?: string | null;
   sharedByUsername?: string;
   sharedWithUsername?: string;
   nameEncrypted?: string;
@@ -45,11 +46,12 @@ function formatDate(iso: string) {
 
 export default function SharedPage() {
   const t = useTranslations('shared');
-  const { loadShares, revokeShare } = useVault();
+  const { loadShares, revokeShare, downloadSharedFile } = useVault();
   const [tab, setTab] = useState<ShareDirection | 'all'>('all');
   const [incoming, setIncoming] = useState<ShareItem[]>([]);
   const [outgoing, setOutgoing] = useState<ShareItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -77,6 +79,15 @@ export default function SharedPage() {
   async function handleRevoke(shareId: string) {
     await revokeShare(shareId);
     setOutgoing((prev) => prev.filter((s) => s.id !== shareId));
+  }
+
+  async function handleDownload(item: ShareItem) {
+    setDownloadingId(item.id);
+    try {
+      await downloadSharedFile(item);
+    } finally {
+      setDownloadingId(null);
+    }
   }
 
   return (
@@ -169,6 +180,19 @@ export default function SharedPage() {
                     <span className="text-[10px] text-text-muted font-mono">
                       {t('expires', { date: formatDate(item.expiresAt) })}
                     </span>
+                  )}
+                  {!isOutgoing && item.kind === 'file' && (
+                    <button
+                      className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs bg-blue-500/10 text-blue-300 hover:bg-blue-500/20 transition-colors disabled:opacity-50"
+                      onClick={() => handleDownload(item)}
+                      disabled={downloadingId === item.id}
+                      title={t('download')}
+                    >
+                      {downloadingId === item.id
+                        ? <Loader2 className="size-3.5 animate-spin" />
+                        : <Download className="size-3.5" />}
+                      <span className="hidden sm:inline">{t('download')}</span>
+                    </button>
                   )}
                   {isOutgoing && (
                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">

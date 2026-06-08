@@ -33,6 +33,34 @@ export interface DecryptedNode {
   deletedAt?: string;
 }
 
+// Share entrante tal como lo devuelve GET /shares/incoming. Solo los campos
+// que el receptor necesita para abrir el archivo.
+export interface IncomingShare {
+  id: string;
+  nodeId: string;
+  currentVersionId?: string;
+  sealedKey?: string;
+  sealedMeta?: string | null;
+  ciphertextSize?: number;
+}
+
+// Contacto aceptado: la exchangePublicKey viene FIJADA (TOFU) por el backend;
+// el emisor sella sus shares contra ella, no contra un lookup fresco.
+export interface Contact {
+  contactId: string;
+  userId: string;
+  username: string;
+  exchangePublicKey: string;
+}
+
+// Solicitud de contacto pendiente (entrante o saliente).
+export interface ContactRequest {
+  contactId: string;
+  userId: string;
+  username: string;
+  createdAt: string;
+}
+
 export interface UploadTask {
   fileName: string;
   progress: number;
@@ -65,6 +93,8 @@ interface VaultState {
   // Plan actual ('free' | 'starter' | ...). Con plan de pago no se muestra
   // nada del trial (ya desbloqueó) y el Connector está disponible.
   plan: string;
+  // Solicitudes de contacto entrantes pendientes (badge del sidebar).
+  pendingContacts: number;
 }
 
 interface VaultActions {
@@ -76,8 +106,13 @@ interface VaultActions {
   deleteNode: (nodeId: string) => Promise<void>;
   moveNode: (nodeId: string, newParentId: string) => Promise<void>;
   uploadFiles: (files: File[]) => Promise<void>;
-  getFileBlob: (node: DecryptedNode) => Promise<Blob>;
+  getFileBlob: (node: DecryptedNode, fileKey?: Bytes) => Promise<Blob>;
   downloadFile: (node: DecryptedNode) => Promise<void>;
+  // Archivo recibido (compartido por otro usuario): abre el sealedKey con la
+  // exchange privkey propia → file_key, abre sealedMeta → nombre/mime, baja y
+  // descifra. Devuelve el blob (lo usa el visor) además de no forzar descarga.
+  getSharedFileBlob: (share: IncomingShare) => Promise<{ blob: Blob; name: string; mime: string }>;
+  downloadSharedFile: (share: IncomingShare) => Promise<void>;
   loadTrash: () => Promise<DecryptedNode[]>;
   restoreNode: (nodeId: string) => Promise<void>;
   purgeNode: (nodeId: string) => Promise<void>;
@@ -85,9 +120,17 @@ interface VaultActions {
   loadRecent: () => Promise<DecryptedNode[]>;
   loadStarred: () => Promise<DecryptedNode[]>;
   lookupUser: (username: string) => Promise<{ id: string; username: string; exchangePublicKey: string } | null>;
-  createShare: (nodeId: string, recipientUsername: string, permission?: 'read' | 'write') => Promise<void>;
+  // recipient = contacto ACEPTADO; se sella contra su exchangePublicKey fijada.
+  createShare: (nodeId: string, recipient: Contact, permission?: 'read' | 'write') => Promise<void>;
   loadShares: (direction: 'incoming' | 'outgoing') => Promise<any[]>;
   revokeShare: (shareId: string) => Promise<void>;
+  // ─── Contactos (consentimiento previo a compartir) ──────────
+  loadContacts: () => Promise<{ accepted: Contact[]; incoming: ContactRequest[]; outgoing: ContactRequest[] }>;
+  requestContact: (username: string) => Promise<'accepted' | 'pending'>;
+  acceptContact: (contactId: string) => Promise<void>;
+  declineContact: (contactId: string) => Promise<void>;
+  removeContact: (contactId: string) => Promise<void>;
+  refreshContactCount: () => Promise<void>;
   logActivity: (event: { type: string; description: string; target?: string }) => Promise<void>;
   loadActivity: (limit?: number, offset?: number) => Promise<{ events: any[]; total: number }>;
   refreshStorage: () => Promise<void>;
@@ -165,6 +208,7 @@ const initial: VaultState = {
   trialDays: 30,
   trialExempt: true,
   plan: 'free',
+  pendingContacts: 0,
 };
 
 export const useVault = create<VaultState & VaultActions>((set, get) => ({
@@ -214,6 +258,7 @@ export const useVault = create<VaultState & VaultActions>((set, get) => ({
       });
 
       await get().refreshStorage();
+      get().refreshContactCount();
       if (currentVaultId) await get().loadNodes(null);
     } catch (err: any) {
       toast.error(err.message ?? rt('toasts.loadVaultError'));
@@ -483,14 +528,14 @@ export const useVault = create<VaultState & VaultActions>((set, get) => ({
   },
 
   // ─── Decrypt file to Blob (reusable for preview + download) ─
-  getFileBlob: async (node) => {
+  // fileKeyOverride: para archivos COMPARTIDOS, la file_key sale de abrir el
+  // sealedKey con la exchange privkey del receptor (no del vault key propio,
+  // que no descifraría la clave envuelta por el emisor). Si se pasa, el caller
+  // es dueño de esa clave y la limpia él (no la borramos aquí).
+  getFileBlob: async (node, fileKeyOverride) => {
     if (node.kind !== 'file' || !node.currentVersionId) {
       throw new Error('No es un archivo descargable');
     }
-    const { currentVaultId } = get();
-    if (!currentVaultId) throw new Error('No hay vault seleccionado');
-
-    const vaultKey = requireVaultKey(currentVaultId);
     const sodium = (await import('libsodium-wrappers-sumo')).default;
     await sodium.ready;
 
@@ -500,7 +545,15 @@ export const useVault = create<VaultState & VaultActions>((set, get) => ({
       fileKeyNonce: string;
     }>(`/api/v1/uploads/${node.currentVersionId}/download`);
 
-    const fileKey = decrypt(fromB64(dl.fileKeyWrapped), fromB64(dl.fileKeyNonce), vaultKey);
+    let fileKey: Bytes;
+    if (fileKeyOverride) {
+      fileKey = fileKeyOverride;
+    } else {
+      const { currentVaultId } = get();
+      if (!currentVaultId) throw new Error('No hay vault seleccionado');
+      const vaultKey = requireVaultKey(currentVaultId);
+      fileKey = decrypt(fromB64(dl.fileKeyWrapped), fromB64(dl.fileKeyNonce), vaultKey);
+    }
     const parts: Uint8Array[] = [];
 
     for (const ch of dl.chunks.sort((a, b) => a.index - b.index)) {
@@ -520,7 +573,7 @@ export const useVault = create<VaultState & VaultActions>((set, get) => ({
       );
     }
 
-    wipe(fileKey);
+    if (!fileKeyOverride) wipe(fileKey);
     return new Blob(parts as BlobPart[], { type: node.mimeType || 'application/octet-stream' });
   },
 
@@ -536,6 +589,73 @@ export const useVault = create<VaultState & VaultActions>((set, get) => ({
       a.click();
       setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(a.href); }, 100);
       toast.success(rt('toasts.downloaded', { name: node.name }));
+    } catch (err: any) {
+      toast.error(rt('toasts.downloadFailed', { error: err.message }));
+    }
+  },
+
+  // ─── Shared files (receptor) ───────────────────────────────
+  getSharedFileBlob: async (share) => {
+    const auth = useAuth.getState();
+    if (!auth.exchangePrivateKey || !auth.exchangePublicKey) {
+      throw new Error('Sesión bloqueada — vuelve a entrar');
+    }
+    if (!share.sealedKey || !share.currentVersionId) {
+      throw new Error('Compartición incompleta');
+    }
+    const sodium = (await import('libsodium-wrappers-sumo')).default;
+    await sodium.ready;
+
+    // El sealedKey lo selló el emisor con NUESTRA pubkey de intercambio; se
+    // abre con nuestra pubkey + privkey (crypto_box_seal_open).
+    const fileKey = sodium.crypto_box_seal_open(
+      fromB64(share.sealedKey), auth.exchangePublicKey, auth.exchangePrivateKey,
+    );
+
+    // Nombre/mime sellados igual. Si el share es anterior a sealed_meta, o no
+    // descifra, caemos a un nombre genérico (no rompemos la descarga).
+    let name = 'archivo';
+    let mime = 'application/octet-stream';
+    if (share.sealedMeta) {
+      try {
+        const metaBytes = sodium.crypto_box_seal_open(
+          fromB64(share.sealedMeta), auth.exchangePublicKey, auth.exchangePrivateKey,
+        );
+        const meta = JSON.parse(sodium.to_string(metaBytes)) as { name?: string; mime?: string };
+        if (meta.name) name = meta.name;
+        if (meta.mime) mime = meta.mime;
+      } catch { /* meta vieja/corrupta → nombre genérico */ }
+    }
+
+    const node: DecryptedNode = {
+      id: share.nodeId,
+      kind: 'file',
+      name,
+      mimeType: mime,
+      size: share.ciphertextSize ?? 0,
+      currentVersionId: share.currentVersionId,
+      updatedAt: '',
+      createdAt: '',
+    };
+
+    try {
+      const blob = await get().getFileBlob(node, fileKey);
+      return { blob, name, mime };
+    } finally {
+      wipe(fileKey);
+    }
+  },
+
+  downloadSharedFile: async (share) => {
+    try {
+      const { blob, name } = await get().getSharedFileBlob(share);
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = name;
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(a.href); }, 100);
+      toast.success(rt('toasts.downloaded', { name }));
     } catch (err: any) {
       toast.error(rt('toasts.downloadFailed', { error: err.message }));
     }
@@ -621,7 +741,7 @@ export const useVault = create<VaultState & VaultActions>((set, get) => ({
     }
   },
 
-  createShare: async (nodeId, recipientUsername, permission = 'read') => {
+  createShare: async (nodeId, recipient, permission = 'read') => {
     const { currentVaultId } = get();
     if (!currentVaultId) return;
 
@@ -629,25 +749,32 @@ export const useVault = create<VaultState & VaultActions>((set, get) => ({
     const sodium = (await import('libsodium-wrappers-sumo')).default;
     await sodium.ready;
 
-    const recipient = await get().lookupUser(recipientUsername);
-    if (!recipient) throw new Error(`Usuario «${recipientUsername}» no encontrado`);
-
     const node = get().nodes.find((n) => n.id === nodeId);
     if (!node || !node.fileKeyWrapped || !node.fileKeyNonce) {
       throw new Error('Archivo sin clave — no se puede compartir');
     }
 
     const fileKey = decrypt(fromB64(node.fileKeyWrapped), fromB64(node.fileKeyNonce), vaultKey);
-    const sealedKey = sodium.crypto_box_seal(fileKey, fromB64(recipient.exchangePublicKey));
+    const recipientPk = fromB64(recipient.exchangePublicKey);
+    const sealedKey = sodium.crypto_box_seal(fileKey, recipientPk);
     wipe(fileKey);
+
+    // El nombre del nodo va cifrado con la vault key del emisor, que el
+    // receptor no tiene. Sellamos {name, mime} con su pubkey para que pueda
+    // mostrar el nombre y elegir el visor al abrir.
+    const sealedMeta = sodium.crypto_box_seal(
+      sodium.from_string(JSON.stringify({ name: node.name, mime: node.mimeType ?? '' })),
+      recipientPk,
+    );
 
     await apiFetch('/api/v1/shares', {
       method: 'POST',
       body: JSON.stringify({
         nodeId,
-        sharedWithUserId: recipient.id,
+        sharedWithUserId: recipient.userId,
         permission,
         sealedKey: toB64(sealedKey),
+        sealedMeta: toB64(sealedMeta),
       }),
     });
 
@@ -667,6 +794,51 @@ export const useVault = create<VaultState & VaultActions>((set, get) => ({
   revokeShare: async (shareId) => {
     await apiFetch(`/api/v1/shares/${shareId}`, { method: 'DELETE' });
     toast.success(rt('toasts.shareRevoked'));
+  },
+
+  // ─── Contactos ──────────────────────────────────────────────
+  loadContacts: async () => {
+    try {
+      return await apiFetch<{ accepted: Contact[]; incoming: ContactRequest[]; outgoing: ContactRequest[] }>(
+        '/api/v1/contacts',
+      );
+    } catch {
+      return { accepted: [], incoming: [], outgoing: [] };
+    }
+  },
+
+  requestContact: async (username) => {
+    const res = await apiFetch<{ status: 'accepted' | 'pending'; autoAccepted?: boolean }>(
+      '/api/v1/contacts',
+      { method: 'POST', body: JSON.stringify({ username }) },
+    );
+    toast.success(res.status === 'accepted'
+      ? rt('toasts.contactAdded', { name: username })
+      : rt('toasts.contactRequested', { name: username }));
+    return res.status;
+  },
+
+  acceptContact: async (contactId) => {
+    await apiFetch(`/api/v1/contacts/${contactId}/accept`, { method: 'POST' });
+    toast.success(rt('toasts.contactAccepted'));
+    get().refreshContactCount();
+  },
+
+  declineContact: async (contactId) => {
+    await apiFetch(`/api/v1/contacts/${contactId}/decline`, { method: 'POST' });
+    get().refreshContactCount();
+  },
+
+  removeContact: async (contactId) => {
+    await apiFetch(`/api/v1/contacts/${contactId}`, { method: 'DELETE' });
+    toast.success(rt('toasts.contactRemoved'));
+  },
+
+  refreshContactCount: async () => {
+    try {
+      const { incoming } = await apiFetch<{ incoming: ContactRequest[] }>('/api/v1/contacts');
+      set({ pendingContacts: incoming.length });
+    } catch { /* ignore */ }
   },
 
   // ─── Activity log ───────────────────────────────────────────

@@ -40,6 +40,12 @@ export function useSync() {
       return;
     }
 
+    if (event.resource === 'contacts') {
+      if (event.action === 'requested') toast.info(rt('toasts.newContactRequest'));
+      useVault.getState().refreshContactCount();
+      return;
+    }
+
     if (!initialized) return;
     if (event.resource === 'nodes') {
       loadNodes(parentId);

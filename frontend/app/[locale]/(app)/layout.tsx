@@ -7,7 +7,7 @@ import Image from 'next/image';
 import {
   FolderTree, Star, Share2, Trash2, Clock, Settings, LogOut,
   Search, Plus, ChevronDown, HardDrive, Activity, PanelLeftClose, PanelLeftOpen,
-  BookOpen, Menu, Hourglass,
+  BookOpen, Menu, Hourglass, Users,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslations } from 'next-intl';
@@ -40,7 +40,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
   const { isAuthenticated, isUnlocked, username, logout, hydrate } = useAuth();
   const { sidebarCollapsed, toggleSidebar, hydrate: hydrateFontScale } = useFontScale();
-  const { storageUsed, storageQuota, trialStartedAt, trialDays, trialExempt, plan, init: initVault, reset: resetVault } = useVault();
+  const { storageUsed, storageQuota, trialStartedAt, trialDays, trialExempt, plan, pendingContacts, init: initVault, reset: resetVault } = useVault();
   const [mounted, setMounted] = useState(false);
   // Drawer móvil: el sidebar pasa a off-canvas en pantallas pequeñas.
   const [isMobile, setIsMobile] = useState(false);
@@ -87,12 +87,13 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   const collapsed = isMobile ? false : sidebarCollapsed;
 
   const navItems = [
-    { href: '/vault', label: t('nav.files'), icon: FolderTree },
-    { href: '/vault/recent', label: t('nav.recent'), icon: Clock },
-    { href: '/vault/starred', label: t('nav.starred'), icon: Star },
-    { href: '/vault/shared', label: t('nav.shared'), icon: Share2 },
-    { href: '/vault/activity', label: t('nav.activity'), icon: Activity },
-    { href: '/vault/trash', label: t('nav.trash'), icon: Trash2 },
+    { href: '/vault', label: t('nav.files'), icon: FolderTree, badge: 0 },
+    { href: '/vault/recent', label: t('nav.recent'), icon: Clock, badge: 0 },
+    { href: '/vault/starred', label: t('nav.starred'), icon: Star, badge: 0 },
+    { href: '/vault/shared', label: t('nav.shared'), icon: Share2, badge: 0 },
+    { href: '/vault/contacts', label: t('nav.contacts'), icon: Users, badge: pendingContacts },
+    { href: '/vault/activity', label: t('nav.activity'), icon: Activity, badge: 0 },
+    { href: '/vault/trash', label: t('nav.trash'), icon: Trash2, badge: 0 },
   ];
 
   // Hasta confirmar sesión activa no se renderiza NADA del vault (ni chrome ni
@@ -198,13 +199,22 @@ export default function AppLayout({ children }: { children: ReactNode }) {
               onClick={() => setMobileOpen(false)}
               title={collapsed ? item.label : undefined}
               className={cn(
-                'flex items-center h-9 rounded-md text-sm transition-colors',
+                'relative flex items-center h-9 rounded-md text-sm transition-colors',
                 'text-text-secondary hover:text-text-primary hover:bg-bg-surface',
                 collapsed ? 'justify-center px-0' : 'gap-3 px-3',
               )}
             >
               <item.icon className="size-4 shrink-0" />
-              {!collapsed && <span>{item.label}</span>}
+              {!collapsed && <span className="flex-1">{item.label}</span>}
+              {item.badge > 0 && (
+                collapsed ? (
+                  <span className="absolute top-1 right-2 size-2 rounded-full bg-violet-500" />
+                ) : (
+                  <span className="min-w-5 h-5 px-1.5 rounded-full bg-violet-500 text-white text-[10px] font-medium grid place-items-center">
+                    {item.badge > 9 ? '9+' : item.badge}
+                  </span>
+                )
+              )}
             </Link>
           ))}
         </nav>
