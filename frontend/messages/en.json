@@ -15,6 +15,7 @@
     "about": "About",
     "security": "Security",
     "roadmap": "Roadmap",
+    "selfhost": "Install",
     "pricing": "Pricing",
     "terms": "Terms",
     "privacy": "Privacy",
@@ -88,6 +89,7 @@
       "body": "Noctcom is 100% open source (AGPL-3.0). Deploy it on your own hardware with a single command: Docker on any Linux, or an LXC on Proxmox VE. Same encryption, no third parties. Your cloud, your hardware, real zero-knowledge.",
       "download": "Download v{version}",
       "github": "View on GitHub",
+      "guideLink": "Full installation guide →",
       "deployComment": "# Linux + Docker",
       "proxmoxComment": "# Proxmox VE (creates an LXC)",
       "readyComment": "# With a domain: automatic TLS · without one: http://<IP> on your LAN"
@@ -1199,6 +1201,10 @@
   "manual": {
     "title": "User manual",
     "subtitle": "Updated with every release"
+  },
+  "selfhostGuide": {
+    "title": "Install Noctcom",
+    "subtitle": "Free self-host · AGPL-3.0"
   },
   "recent": {
     "title": "Recent",

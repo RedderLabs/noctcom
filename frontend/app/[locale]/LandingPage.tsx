@@ -185,7 +185,7 @@ export default function LandingPage() {
                 <p className="text-text-secondary leading-relaxed mb-6">
                   {t('selfhost.body')}
                 </p>
-                <div className="flex flex-wrap gap-3">
+                <div className="flex flex-wrap items-center gap-3">
                   <a href="https://github.com/RedderLabs/noctcom" target="_blank" rel="noopener noreferrer">
                     <Button
                       variant="primary"
@@ -195,6 +195,12 @@ export default function LandingPage() {
                       {t('selfhost.github')}
                     </Button>
                   </a>
+                  <Link
+                    href={'/self-host' as any}
+                    className="text-sm text-violet-300 hover:text-violet-200 transition-colors"
+                  >
+                    {t('selfhost.guideLink')}
+                  </Link>
                 </div>
               </div>
               <div className="w-full md:w-80 shrink-0">
@@ -250,6 +256,9 @@ export default function LandingPage() {
             </Link>
             <Link href="/roadmap" className="hover:text-text-secondary transition-colors">
               {tf('roadmap')}
+            </Link>
+            <Link href={'/self-host' as any} className="hover:text-text-secondary transition-colors">
+              {tf('selfhost')}
             </Link>
             <Link href={'/precios' as any} className="hover:text-text-secondary transition-colors">
               {tf('pricing')}
