@@ -16,7 +16,8 @@ curl -fsSL https://raw.githubusercontent.com/RedderLabs/noctcom/main/install.sh 
 ```
 
 **En Proxmox VE** — crea un LXC Debian, instala Docker dentro y lo levanta todo
-(ejecutar como root en el host Proxmox; ver [`proxmox/`](proxmox/)):
+(ejecutar como root en el host Proxmox; manual paso a paso en
+[`docs/INSTALL_PROXMOX.md`](docs/INSTALL_PROXMOX.md)):
 
 ```bash
 bash <(curl -fsSL https://raw.githubusercontent.com/RedderLabs/noctcom/main/proxmox/noctcom-lxc.sh)
@@ -62,7 +63,8 @@ Lo que ve el servidor: tamaño del ciphertext, timestamps, estructura del arbol 
 - **Vault cifrado E2E** — archivos, carpetas, nombres, metadatos
 - **Previsualizacion de archivos** — imagenes (con zoom), video, audio, PDF, codigo fuente, texto
 - **Drag & drop** — arrastra archivos o muevalos entre carpetas
-- **Compartir E2E** — sealed box con la pubkey del destinatario
+- **Compartir E2E con contactos** — solicitas contacto → te aceptan → compartes. La clave del archivo se sella con la pubkey del destinatario (sealed box) y el receptor la descarga y descifra en su dispositivo. Solo entre contactos aceptados (consentimiento mutuo, anti-spam)
+- **Contactos** — lista de personas de confianza; al aceptar se fija (TOFU) su clave pública
 - **2FA** — passkeys (WebAuthn: huella digital o Face ID) o codigo de un solo uso por email
 - **Recuperacion** — frase de 12 palabras (BIP39) que restaura cuenta y archivos
 - **Onboarding guiado** — tour de bienvenida en el primer login (ES/EN)
@@ -119,10 +121,11 @@ Lo que ve el servidor: tamaño del ciphertext, timestamps, estructura del arbol 
 5. PUT cada chunk directo a MinIO/Backblaze
 6. `POST /uploads/:versionId/complete` con `content_hash`
 
-### Compartir
-1. Lookup recipient → `exchange_public_key`
-2. `sealed_key = crypto_box_seal(file_key, recipient_pubkey)`
-3. `POST /shares` — recipient abre con su privkey
+### Compartir (con contactos)
+1. Consentimiento: A solicita contacto a B (`POST /contacts`); B acepta. Al aceptar se fija (TOFU) la `exchange_public_key` de cada uno
+2. `sealed_key = crypto_box_seal(file_key, contacto_pubkey)` + `sealed_meta = crypto_box_seal({name, mime}, contacto_pubkey)` (el nombre va cifrado con la `vault_key` del emisor, que el receptor no tiene)
+3. `POST /shares` — solo si sois contactos aceptados
+4. El receptor abre `sealed_key`/`sealed_meta` con su privkey, descarga los chunks y los descifra con la `file_key`
 
 ## Docker images
 

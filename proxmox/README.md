@@ -1,5 +1,9 @@
 # Noctcom en Proxmox VE
 
+> **¿Solo quieres instalarlo?** El manual de usuario paso a paso está en
+> [`docs/INSTALL_PROXMOX.md`](../docs/INSTALL_PROXMOX.md). Este documento cubre
+> el detalle técnico del LXC y el plan de contribución a *community-scripts*.
+
 Dos rutas para desplegar Noctcom como contenedor LXC en Proxmox. Ambas crean
 un LXC Debian **no privilegiado** con nesting, instalan Docker dentro y
 levantan el stack con el instalador oficial (`install.sh` de la raíz del repo).

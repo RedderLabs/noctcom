@@ -92,9 +92,30 @@ Pulsa `Ctrl+K` (o `⌘K` en Mac) y busca por nombre. La búsqueda ocurre en tu d
 
 - **Recientes:** lo último que abriste o tocaste, por si quieres volver.
 - **Destacados:** marca con la estrella lo que uses mucho y lo tendrás siempre a mano.
-- **Compartidos:** lo que compartes con otras personas o lo que comparten contigo. Quien recibe el enlace es quien puede abrirlo.
+- **Contactos:** las personas con las que puedes compartir. Para compartir hace falta que os hayáis aceptado mutuamente, así nadie te cuela archivos sin tu permiso.
+- **Compartidos:** lo que compartes con tus contactos y lo que comparten contigo. Lo que recibes lo abres y descargas desde aquí; se descifra en tu propio dispositivo.
 - **Actividad:** un diario de lo que ha pasado en tu cuenta (subidas, descargas, inicios de sesión…). Útil para tener todo bajo control.
 - **Papelera:** lo que borras se queda aquí 30 días por si te arrepientes. Puedes restaurarlo o vaciarlo del todo. Aunque esté en la papelera, sigue cifrado.
+
+---
+
+## Compartir archivos con tus contactos
+
+Compartir en Noctcom es de extremo a extremo: la llave del archivo se cierra con la llave pública de quien lo recibe, así que **solo esa persona** puede abrirlo. Ni nosotros ni nadie más.
+
+Para que nadie te cuele archivos sin permiso, primero tenéis que ser **contactos**:
+
+1. Entra en **Contactos** (menú lateral) y busca a la persona por su nombre de usuario. Pulsa **Añadir**.
+2. Le llega una **solicitud**. Cuando la acepte —o si ella ya te había enviado una, se acepta sola— os convertís en contactos.
+3. A partir de ahí aparece en tu lista y puedes compartirle archivos sin volver a buscarla.
+
+**Para compartir un archivo:** ábrelo o usa su menú, pulsa **Compartir**, elige un contacto y el permiso (solo lectura, o lectura y escritura). Si la persona aún no es contacto, desde la misma ventana puedes enviarle la solicitud.
+
+**Para abrir lo que te comparten:** ve a **Compartidos**, pestaña *Recibidos*, y pulsa **Descargar**. El archivo se descifra en tu dispositivo.
+
+Si eliminas a un contacto dejáis de poder compartir y se retiran los archivos que os habíais compartido (lo que la otra persona ya descargó, lógicamente, sigue en su poder).
+
+> Lo único que ve el servidor es que dos cuentas son contactos y que se han pasado algo —lo justo para entregártelo—, nunca el nombre ni el contenido.
 
 ---
 

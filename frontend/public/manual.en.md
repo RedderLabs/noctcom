@@ -92,9 +92,30 @@ Press `Ctrl+K` (or `⌘K` on Mac) and search by name. The search happens on your
 
 - **Recent:** the last things you opened or touched, in case you want to go back.
 - **Starred:** mark what you use often with the star and you'll always have it at hand.
-- **Shared:** what you share with other people, and what they share with you. Only the recipient can open it.
+- **Contacts:** the people you can share with. Sharing requires you both to have accepted each other, so nobody can push files to you without your permission.
+- **Shared:** what you share with your contacts, and what they share with you. What you receive you open and download from here; it's decrypted on your own device.
 - **Activity:** a diary of what's happened in your account (uploads, downloads, sign-ins…). Handy for keeping everything under control.
 - **Trash:** what you delete stays here for 30 days in case you change your mind. You can restore it or empty it for good. Even in the trash, it stays encrypted.
+
+---
+
+## Sharing files with your contacts
+
+Sharing in Noctcom is end-to-end: the file's key is sealed with the public key of whoever receives it, so **only that person** can open it. Not us, not anyone else.
+
+So nobody can push files to you without permission, you first have to be **contacts**:
+
+1. Go to **Contacts** (sidebar) and search for the person by their username. Press **Add**.
+2. They get a **request**. When they accept it —or if they had already sent you one, it's accepted automatically— you become contacts.
+3. From then on they appear in your list and you can share files with them without searching again.
+
+**To share a file:** open it or use its menu, press **Share**, pick a contact and the permission (read only, or read and write). If the person isn't a contact yet, you can send them the request from the same window.
+
+**To open what others share with you:** go to **Shared**, the *Received* tab, and press **Download**. The file is decrypted on your device.
+
+If you remove a contact you can no longer share, and the files you'd shared with each other are withdrawn (whatever the other person already downloaded stays with them, of course).
+
+> All the server sees is that two accounts are contacts and that they've shared something —just enough to deliver it— never the name or the contents.
 
 ---
 
