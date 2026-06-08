@@ -319,8 +319,8 @@
         "desc": "Ver imágenes, vídeo, audio, texto y PDF descifrados en memoria, sin tener que descargarlos."
       },
       "e2e-sharing": {
-        "title": "Compartir de extremo a extremo",
-        "desc": "Compartes con otra persona usando sealed boxes (X25519): ni nosotros podemos abrir lo que circula."
+        "title": "Compartir de extremo a extremo con contactos",
+        "desc": "Añades a alguien como contacto (debe aceptar — nadie puede colarte archivos sin permiso) y luego compartes archivos sellados con su clave pública (X25519). Quien lo recibe lo descarga y descifra en su dispositivo; ni nosotros podemos abrir lo que circula."
       },
       "multi-device": {
         "title": "Varios dispositivos",

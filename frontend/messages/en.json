@@ -319,8 +319,8 @@
         "desc": "View images, video, audio, text and PDF decrypted in memory, without having to download them."
       },
       "e2e-sharing": {
-        "title": "End-to-end sharing",
-        "desc": "You share with someone else using sealed boxes (X25519): not even we can open what's passed around."
+        "title": "End-to-end sharing with contacts",
+        "desc": "You add someone as a contact (they have to accept — nobody can push files to you unasked), then share files sealed with their public key (X25519). The recipient downloads and decrypts on their device; not even we can open what's passed around."
       },
       "multi-device": {
         "title": "Multiple devices",

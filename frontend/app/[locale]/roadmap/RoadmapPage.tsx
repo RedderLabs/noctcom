@@ -24,12 +24,12 @@ const MILESTONES: { status: Status; key: string }[] = [
   { status: 'done', key: 'legal-privacy' },
   { status: 'done', key: 'light-dark-theme' },
   { status: 'done', key: 'i18n' },
+  { status: 'done', key: 'mobile-app' },
   // ─── En marcha ───
   { status: 'progress', key: 'storage-plans' },
   // ─── Más adelante ───
   { status: 'next', key: 'independent-audit' },
   { status: 'next', key: 'evidence-mode' },
-  { status: 'next', key: 'mobile-app' },
   { status: 'next', key: 'desktop-app' },
 ];
 
