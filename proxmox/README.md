@@ -50,9 +50,10 @@ community-scripts/
    `ct/`, `install/` y `json/` → probar en un Proxmox real → abrir el PR.
 3. Estándares de código: <https://community-scripts.org/docs/contribution>
    (shellcheck limpio, formato de los `msg_info/msg_ok`, etc.).
-4. Los revisores pueden pedir que la instalación sea explícita en lugar de
-   delegar en nuestro `install.sh`; en ese caso, inlinear los pasos
-   (clonar repo, generar `.env`, `docker compose up`).
+4. La instalación es **explícita** (no delega en `install.sh`): `install/noctcom-install.sh`
+   ya inlinea los pasos —clonar el repo, generar `.env` con secretos, `docker compose up`—
+   replicando el modo LAN del instalador oficial, como esperan los revisores.
+   Al enviar, el JSON va en `frontend/public/json/noctcom.json` (no en `json/`).
 
 ### Checklist de madurez antes del PR
 

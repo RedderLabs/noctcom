@@ -3,7 +3,7 @@
 import type { ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
-import { Lock, Shield, EyeOff, AtSign, Share2, ArrowRight, Server, Download, Github, Newspaper, Megaphone, Scale, FileSignature } from 'lucide-react';
+import { Lock, Shield, EyeOff, AtSign, Share2, ArrowRight, Server, Github, Newspaper, Megaphone, Scale, FileSignature } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Navbar } from '@/components/ui/Navbar';
 import { SecurityDemo } from '@/components/landing/SecurityDemo';
@@ -186,22 +186,15 @@ export default function LandingPage() {
                   {t('selfhost.body')}
                 </p>
                 <div className="flex flex-wrap gap-3">
-                  <Button
-                    variant="primary"
-                    size="md"
-                    leftIcon={<Download className="size-4" />}
-                    onClick={() => {}}
-                  >
-                    {t('selfhost.download', { version })}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="md"
-                    leftIcon={<Github className="size-4" />}
-                    onClick={() => {}}
-                  >
-                    {t('selfhost.github')}
-                  </Button>
+                  <a href="https://github.com/RedderLabs/noctcom" target="_blank" rel="noopener noreferrer">
+                    <Button
+                      variant="primary"
+                      size="md"
+                      leftIcon={<Github className="size-4" />}
+                    >
+                      {t('selfhost.github')}
+                    </Button>
+                  </a>
                 </div>
               </div>
               <div className="w-full md:w-80 shrink-0">
