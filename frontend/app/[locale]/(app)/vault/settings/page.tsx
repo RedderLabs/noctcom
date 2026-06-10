@@ -16,6 +16,7 @@ import { Input } from '@/components/ui/Input';
 import { useAuth } from '@/lib/auth-store';
 import { useVault } from '@/lib/vault-store';
 import { apiFetch } from '@/lib/api';
+import { copyText, clearClipboard } from '@/lib/clipboard';
 import { getStepUpToken } from '@/lib/step-up';
 import { fromB64, decryptString, encryptString, toB64, initCrypto, wipe } from '@/lib/crypto';
 import {
@@ -1240,11 +1241,12 @@ function RecoveryKitSection() {
               variant="secondary"
               className="w-full"
               leftIcon={copied ? <Check className="size-4" /> : <Copy className="size-4" />}
-              onClick={() => {
-                navigator.clipboard.writeText(newMnemonic.join(' '));
+              onClick={async () => {
+                const ok = await copyText(newMnemonic.join(' '));
+                if (!ok) { toast.error(t('recovery.copyFailed')); return; }
                 setCopied(true);
                 setTimeout(() => setCopied(false), 2000);
-                setTimeout(() => { navigator.clipboard.writeText('').catch(() => {}); }, 60_000);
+                setTimeout(() => clearClipboard(), 60_000);
                 toast.success(t('recovery.copiedClipboard'));
               }}
             >
@@ -2135,9 +2137,9 @@ function ConnectorAgentsSection() {
               .\noctcom-connector.exe pair --code {pairCode}
             </code>
             <button
-              onClick={() => {
-                navigator.clipboard?.writeText(`.\\noctcom-connector.exe pair --code ${pairCode}`);
-                toast.success(t('connector.commandCopied'));
+              onClick={async () => {
+                const ok = await copyText(`.\\noctcom-connector.exe pair --code ${pairCode}`);
+                toast[ok ? 'success' : 'error'](t(ok ? 'connector.commandCopied' : 'connector.copyFailed'));
               }}
               className="p-2 rounded-lg text-text-tertiary hover:text-text-primary hover:bg-bg-surface-2 transition-colors"
               title={t('connector.copy')}

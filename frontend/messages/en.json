@@ -700,6 +700,7 @@
       "subtitle": "Keep it somewhere safe. It's your only way to recover your account.",
       "copy": "Copy phrase",
       "copied": "Copied",
+      "copyFailed": "Couldn't copy. Copy the phrase manually.",
       "confirmCheckbox": "I've saved my recovery phrase somewhere safe and I understand it's the only way to recover my account.",
       "continue": "Continue"
     },
@@ -995,6 +996,7 @@
       "copyPhrase": "Copy phrase",
       "copied": "Copied",
       "copiedClipboard": "Copied to clipboard (it will be cleared in 60s)",
+      "copyFailed": "Couldn't copy. Copy the phrase manually.",
       "savedConfirmLabel": "I've saved the new phrase somewhere safe and I understand the previous one will stop working.",
       "activateNewPhrase": "Activate new phrase",
       "sessionLocked": "Session locked — sign in again",
@@ -1053,6 +1055,7 @@
       "buildsSoon": "Builds for macOS and Linux: coming soon.",
       "step2": "2 · Open a terminal <strong>in the folder where it was downloaded</strong> (usually Downloads) and run:",
       "commandCopied": "Command copied",
+      "copyFailed": "Couldn't copy. Copy it manually.",
       "copy": "Copy",
       "runHint": "Then keep it connected with <run></run>. The code expires in 10 minutes and is single-use.<br></br><tip>Tip: in File Explorer, open the downloads folder, type <cmd></cmd> in the address bar and press Enter to open the terminal there.</tip>",
       "alreadyLinked": "I've already linked it",

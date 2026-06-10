@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { useAuth } from '@/lib/auth-store';
 import { apiFetch, setTokens } from '@/lib/api';
+import { copyText, clearClipboard } from '@/lib/clipboard';
 import {
   initCrypto, deriveMasterKey, hashEmail, fromB64, toB64,
   encrypt, encryptString, randomBytes, randomKey, DEFAULT_KDF, deriveSubKey, wipe,
@@ -231,7 +232,7 @@ export default function SignupPage() {
       setMnemonic([]);
       setPassword('');
       setPasswordConfirm('');
-      navigator.clipboard.writeText('').catch(() => {});
+      clearClipboard();
       toast.success(t('toasts.accountCreated'));
       router.push('/verify');
     } catch (err: unknown) {
@@ -374,13 +375,12 @@ export default function SignupPage() {
             size="md"
             className="w-full"
             leftIcon={copied ? <Check className="size-4" /> : <Copy className="size-4" />}
-            onClick={() => {
-              navigator.clipboard.writeText(mnemonic.join(' '));
+            onClick={async () => {
+              const ok = await copyText(mnemonic.join(' '));
+              if (!ok) { toast.error(t('mnemonic.copyFailed')); return; }
               setCopied(true);
               setTimeout(() => setCopied(false), 2000);
-              setTimeout(() => {
-                navigator.clipboard.writeText('').catch(() => {});
-              }, 60_000);
+              setTimeout(() => clearClipboard(), 60_000);
               toast.success(t('toasts.copied'));
             }}
           >

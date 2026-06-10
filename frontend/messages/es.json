@@ -700,6 +700,7 @@
       "subtitle": "Guárdala en lugar seguro. Es tu única forma de recuperar tu cuenta.",
       "copy": "Copiar frase",
       "copied": "Copiado",
+      "copyFailed": "No se pudo copiar. Copia la frase manualmente.",
       "confirmCheckbox": "He guardado mi frase de recuperación en un lugar seguro y entiendo que es la única forma de recuperar mi cuenta.",
       "continue": "Continuar"
     },
@@ -995,6 +996,7 @@
       "copyPhrase": "Copiar frase",
       "copied": "Copiada",
       "copiedClipboard": "Copiada al portapapeles (se borrará en 60s)",
+      "copyFailed": "No se pudo copiar. Copia la frase manualmente.",
       "savedConfirmLabel": "He guardado la frase nueva en un lugar seguro y entiendo que la anterior dejará de funcionar.",
       "activateNewPhrase": "Activar frase nueva",
       "sessionLocked": "Sesión bloqueada — vuelve a iniciar sesión",
@@ -1053,6 +1055,7 @@
       "buildsSoon": "Builds para macOS y Linux: próximamente.",
       "step2": "2 · Abre una terminal <strong>en la carpeta donde se descargó</strong> (normalmente Descargas) y ejecuta:",
       "commandCopied": "Comando copiado",
+      "copyFailed": "No se pudo copiar. Cópialo manualmente.",
       "copy": "Copiar",
       "runHint": "Luego déjalo conectado con <run></run>. El código caduca en 10 minutos y es de un solo uso.<br></br><tip>Truco: en el Explorador, entra en la carpeta de descargas, escribe <cmd></cmd> en la barra de direcciones y pulsa Enter para abrir la terminal ahí.</tip>",
       "alreadyLinked": "Ya lo he vinculado",
