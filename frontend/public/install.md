@@ -71,7 +71,7 @@ Es posible, pero es una vía **avanzada**: en un PaaS no corres el `docker-compo
 
 ## Después de instalar
 
-- **Actualizar:** desde la carpeta del proyecto, `git pull && docker compose up -d --build`. En Proxmox: `pct exec <CTID> -- bash -lc 'cd /opt/noctcom && git pull && docker compose up -d --build'`.
+- **Actualizar:** desde la carpeta del proyecto, `bash update.sh` (hace `git pull`, migra el `.env` y reconstruye, sin tocar tus secretos). En Proxmox: `pct exec <CTID> -- bash -lc 'cd /opt/noctcom && bash update.sh'`.
 - **Email (verificación/OTP):** desactivado por defecto. Añade `RESEND_API_KEY` o las variables `SMTP_*` en `.env`.
 - **Copias de seguridad:** respalda los volúmenes de PostgreSQL y MinIO. Guía de restauración verificada: [docs/RESTORE.md](https://github.com/RedderLabs/noctcom/blob/main/docs/RESTORE.md).
 

@@ -185,7 +185,7 @@ fi
 say ""
 say "  ${DIM}(desde la carpeta '$DIR')${N}"
 say "  Ver logs:   ${B}$DC logs -f${N}"
-say "  Parar:      ${B}$DC down${N}      ·   Actualizar: ${B}git pull && $DC up -d --build${N}"
+say "  Parar:      ${B}$DC down${N}      ·   Actualizar: ${B}bash update.sh${N}"
 say "  Email:      añade ${B}RESEND_API_KEY${N} o ${B}SMTP_*${N} en .env para verificación/OTP."
 say ""
 say "  ${DIM}Self-host gratis para siempre · AGPL-3.0 · https://noctcom.com${N}"

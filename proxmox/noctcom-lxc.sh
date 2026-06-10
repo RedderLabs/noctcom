@@ -153,7 +153,7 @@ fi
 say ""
 say "  Entrar al LXC:  ${B}pct enter $CTID${N}"
 say "  Ver logs:       ${B}pct exec $CTID -- bash -lc 'cd /opt/noctcom && docker compose logs -f'${N}"
-say "  Actualizar:     ${B}pct exec $CTID -- bash -lc 'cd /opt/noctcom && git pull && docker compose up -d --build'${N}"
+say "  Actualizar:     ${B}pct exec $CTID -- bash -lc 'cd /opt/noctcom && bash update.sh'${N}"
 say ""
 say "  ${DIM}Self-host gratis para siempre · AGPL-3.0 · https://noctcom.com${N}"
 say ""

@@ -71,7 +71,7 @@ It's possible, but it's an **advanced** route: on a PaaS you don't run the full 
 
 ## After installing
 
-- **Update:** from the project folder, `git pull && docker compose up -d --build`. On Proxmox: `pct exec <CTID> -- bash -lc 'cd /opt/noctcom && git pull && docker compose up -d --build'`.
+- **Update:** from the project folder, `bash update.sh` (pulls, migrates `.env` and rebuilds, without touching your secrets). On Proxmox: `pct exec <CTID> -- bash -lc 'cd /opt/noctcom && bash update.sh'`.
 - **Email (verification/OTP):** disabled by default. Add `RESEND_API_KEY` or the `SMTP_*` variables to `.env`.
 - **Backups:** back up the PostgreSQL and MinIO volumes. Verified restore guide: [docs/RESTORE.md](https://github.com/RedderLabs/noctcom/blob/main/docs/RESTORE.md).
 

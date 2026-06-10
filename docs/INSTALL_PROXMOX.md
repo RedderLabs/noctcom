@@ -113,10 +113,11 @@ discos externos (vía el agente *Noctcom Connector*) y el manual integrado.
 
 ## Mantenimiento
 
-**Actualizar** a la última versión (reconstruye y relanza el stack dentro del LXC):
+**Actualizar** a la última versión — un solo comando hace `git pull`, reconcilia
+el `.env` (aplica migraciones) y reconstruye, sin reinstalar ni tocar tus secretos:
 
 ```bash
-pct exec <CTID> -- bash -lc 'cd /opt/noctcom && git pull && docker compose up -d --build'
+pct exec <CTID> -- bash -lc 'cd /opt/noctcom && bash update.sh'
 ```
 
 **Ver el estado** de los servicios:

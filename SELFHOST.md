@@ -114,10 +114,12 @@ Default quotas in `.env`:
 
 ## Updates
 
+From the install folder, one command pulls the latest changes, reconciles your
+`.env` (applying any migrations) and rebuilds — without reinstalling or touching
+your secrets:
+
 ```bash
-git pull
-docker compose build
-docker compose up -d
+bash update.sh
 ```
 
 ## Backups
