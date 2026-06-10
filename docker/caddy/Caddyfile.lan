@@ -1,6 +1,10 @@
 # Caddyfile para el modo LAN/IP (instalación sin dominio: homelab, LXC de
-# Proxmox, pruebas). HTTP plano, sin TLS: la app se sirve en :80 y la API en
-# :3000, accesibles por la IP de la máquina desde toda la red local.
+# Proxmox, pruebas). HTTP plano, sin TLS.
+#
+# SAME-ORIGIN: la web Y la API se sirven en el mismo puerto :80. Caddy enruta
+# /api/* y /health al backend; todo lo demás al frontend. Así el navegador usa
+# URLs relativas (PUBLIC_API_URL vacío en .env) y funciona con cualquier IP o
+# hostname, sin CORS y sin depender del puerto 3000 ni de la IP horneada.
 #
 # Lo monta docker-compose.lan.yml (COMPOSE_FILE en .env, escrito por
 # install.sh). El modo con dominio usa ./Caddyfile (TLS automático).
@@ -9,9 +13,15 @@
 	auto_https off
 }
 
-# ─── Frontend ───────────────────────────────────────────────────
+# ─── App + API (mismo origen) ───────────────────────────────────
 :80 {
 	encode zstd gzip
+
+	# API REST, health-check y WebSocket → backend.
+	@api path /api/* /health
+	reverse_proxy @api backend:3000
+
+	# Resto (la web Next.js) → frontend.
 	reverse_proxy frontend:3000
 
 	header {
@@ -23,7 +33,10 @@
 	}
 }
 
-# ─── API ────────────────────────────────────────────────────────
+# ─── API en :3000 (compatibilidad) ──────────────────────────────
+# Instalaciones anteriores hornearon la API en http://<ip>:3000. Se mantiene
+# para no romperlas; las nuevas (same-origin) ya no lo usan. Al reejecutar
+# install.sh, esas instalaciones migran a URLs relativas automáticamente.
 :3000 {
 	encode zstd gzip
 	reverse_proxy backend:3000

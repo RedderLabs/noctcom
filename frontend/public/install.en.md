@@ -27,7 +27,7 @@ curl -fsSL https://raw.githubusercontent.com/RedderLabs/noctcom/main/install.sh 
 ```
 
 - **With a domain:** automatic TLS (Let's Encrypt via Caddy). Point `app.your-domain.com` and `api.your-domain.com` to the server's IP.
-- **Without a domain → LAN mode:** the app on `http://<IP>` and the API on `http://<IP>:3000`, visible on your network. Reserve the IP in your DHCP: the API URL is baked into the frontend build.
+- **Without a domain → LAN mode (same-origin):** the app and the API share `http://<IP>` (the API under `/api`), visible on your network. The frontend uses relative paths, so sign-in works with any IP or hostname, with no CORS, even if it changes via DHCP.
 
 When it finishes, open the URL and **create your account** (the first one is the administrator).
 

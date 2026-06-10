@@ -18,8 +18,9 @@ completo de Noctcom con el instalador oficial (`install.sh`):
 
 - PostgreSQL, Redis, MinIO (object storage), el backend, el frontend y Caddy
   (TLS automático) — todo dentro del LXC, aislado del host.
-- **Sin dominio → modo LAN:** la app queda en `http://<IP-del-LXC>` y la API en
-  `:3000`. Ideal para homelab / red local.
+- **Sin dominio → modo LAN (same-origin):** la app y la API conviven en
+  `http://<IP-del-LXC>` (la API bajo `/api`). Ideal para homelab / red local; la
+  web usa rutas relativas, así que funciona con cualquier IP sin configurar nada.
 - **Con dominio → TLS automático** con Caddy (necesita DNS apuntando al LXC y
   los puertos 80/443 accesibles).
 
@@ -101,7 +102,7 @@ NOCTCOM_RAM=6144 NOCTCOM_DOMAIN=noctcom.midominio.com NOCTCOM_EMAIL=tu@correo.co
 
 ## Acceder y usar
 
-- **Modo LAN:** `http://<IP-del-LXC>` (la API responde en el puerto `:3000`).
+- **Modo LAN:** `http://<IP-del-LXC>` (same-origin: la API responde bajo `/api`).
 - **Con dominio:** `https://app.tu-dominio.com` (Caddy emite el certificado solo).
 
 Desde ahí ya tienes todo: subir y previsualizar archivos, carpetas, papelera,

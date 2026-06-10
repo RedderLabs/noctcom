@@ -8,8 +8,19 @@ import { useVault } from './vault-store';
 import { loadTokens, setTokens } from './api';
 import { flushQueuedUploads } from './offline-queue';
 
-const WS_URL = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000')
-  .replace('http', 'ws');
+// Base del WebSocket. Si NEXT_PUBLIC_API_URL está definido (cloud / self-host con
+// dominio) lo usamos (http→ws, https→wss). Si va vacío (self-host LAN same-origin)
+// derivamos el origen actual: `new WebSocket` exige una URL absoluta ws(s)://, así
+// que no podemos pasar una ruta relativa.
+function wsBase(): string {
+  const configured = process.env.NEXT_PUBLIC_API_URL;
+  if (configured) return configured.replace(/^http/, 'ws');
+  if (typeof window !== 'undefined') {
+    const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    return `${proto}//${window.location.host}`;
+  }
+  return 'ws://localhost:3000';
+}
 
 const RECONNECT_DELAY = 3000;
 const BROADCAST_CHANNEL = 'noctcom-sync';
@@ -59,7 +70,7 @@ export function useSync() {
     const { access } = loadTokens();
     if (!access || wsRef.current?.readyState === WebSocket.OPEN) return;
 
-    const ws = new WebSocket(`${WS_URL}/api/v1/ws/sync?token=${access}`);
+    const ws = new WebSocket(`${wsBase()}/api/v1/ws/sync?token=${access}`);
     wsRef.current = ws;
 
     ws.onmessage = (e) => {

@@ -148,14 +148,17 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        NEXT_PUBLIC_API_URL: ${PUBLIC_API_URL:-http://localhost:3000}
+        # '-' (no ':-'): un PUBLIC_API_URL definido pero VACÍO se propaga vacío
+        # (modo LAN same-origin → URLs relativas en el frontend). Solo cae al
+        # default si está SIN definir (dev). Ver install.sh / Caddyfile.lan.
+        NEXT_PUBLIC_API_URL: ${PUBLIC_API_URL-http://localhost:3000}
     container_name: noctcom-frontend
     restart: unless-stopped
     depends_on:
       - backend
     environment:
       NODE_ENV: ${NODE_ENV:-production}
-      NEXT_PUBLIC_API_URL: ${PUBLIC_API_URL:-http://localhost:3000}
+      NEXT_PUBLIC_API_URL: ${PUBLIC_API_URL-http://localhost:3000}
     networks:
       - noctcom-public
 

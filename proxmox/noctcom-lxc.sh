@@ -7,7 +7,7 @@
 # Ejecutar COMO ROOT EN EL HOST Proxmox VE (no dentro de una VM/LXC).
 # Crea un LXC Debian no privilegiado con nesting (Docker dentro), instala
 # Docker y levanta Noctcom con el instalador oficial (install.sh).
-#   · Sin dominio → modo LAN: app en http://<IP-del-LXC>, API en :3000.
+#   · Sin dominio → modo LAN same-origin: app y API en http://<IP-del-LXC> (API bajo /api).
 #   · Con dominio → TLS automático (requiere DNS apuntando al LXC y 80/443).
 #
 # Variables de entorno opcionales:
@@ -144,11 +144,11 @@ if [ -n "$DOMAIN" ]; then
   say "  ${Y}Apunta los DNS (registros A) app.$DOMAIN y api.$DOMAIN → $IP${N}"
   say "  ${DIM}(y redirige 80/443 del router al LXC si está tras NAT)${N}"
 else
-  say "  App:  ${B}http://$IP${N}    API: ${B}http://$IP:3000${N}"
+  say "  App + API:  ${B}http://$IP${N}   ${DIM}(modo LAN same-origin; la API va bajo http://$IP/api)${N}"
   say ""
-  say "  ${Y}Recomendado: reserva esta IP en tu DHCP.${N} La URL de la API va"
-  say "  ${DIM}integrada en el build del frontend; si la IP cambia, edita las URLs"
-  say "  en /opt/noctcom/.env y relanza: docker compose up -d --build${N}"
+  say "  ${DIM}La web usa rutas relativas: el inicio de sesión sigue funcionando aunque${N}"
+  say "  ${DIM}cambie la IP. Aun así conviene reservar esta IP en tu DHCP para las${N}"
+  say "  ${DIM}subidas grandes (PUBLIC_URL). Entra por http://$IP desde cualquier equipo.${N}"
 fi
 say ""
 say "  Entrar al LXC:  ${B}pct enter $CTID${N}"

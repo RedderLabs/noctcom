@@ -90,6 +90,16 @@ if [ -f .env ]; then
     printf '\n# Fijado por install.sh: evita cargar docker-compose.override.yml (solo desarrollo).\nCOMPOSE_FILE=docker-compose.yml\n' >> .env
     warn "Añadido COMPOSE_FILE a .env (el override de desarrollo publicaba puertos de postgres/redis/minio al host)."
   fi
+  # Migración a same-origin (solo modo LAN): si la API se horneó en http://<ip>:3000,
+  # vaciamos PUBLIC_API_URL para que el frontend use URLs relativas (mismo origen,
+  # vía Caddyfile.lan) y quitamos el :3000 de PUBLIC_URL (las subidas de chunks
+  # viajan ahora por el :80 bajo /api). Deja de depender de la IP y del puerto 3000.
+  if grep -q '^CADDY_DOMAIN=localhost' .env && grep -qE '^PUBLIC_API_URL=.+' .env; then
+    sed -i.bak -E 's|^PUBLIC_API_URL=.*|PUBLIC_API_URL=|' .env
+    sed -i.bak -E 's|^(PUBLIC_URL=https?://[^:/]+):3000$|\1|' .env
+    rm -f .env.bak
+    warn "Modo LAN migrado a same-origin (PUBLIC_API_URL vaciado → URLs relativas). Se reconstruye el frontend."
+  fi
 else
   [ -f .env.example ] || die "No encuentro .env.example en el repo."
 
@@ -100,10 +110,14 @@ else
 
   COMPOSE_FILES="docker-compose.yml"
   if [ -n "$DOMAIN" ]; then
-    FRONT="https://app.$DOMAIN"; API="https://api.$DOMAIN"; FROM="noreply@$DOMAIN"
+    FRONT="https://app.$DOMAIN"; API="https://api.$DOMAIN"; APIBASE="$API"; FROM="noreply@$DOMAIN"
   else
-    # Modo LAN: sin dominio. Caddy sirve HTTP plano por IP (Caddyfile.lan):
-    # la app en http://<IP> y la API en http://<IP>:3000, visibles en la red.
+    # Modo LAN same-origin: sin dominio. Caddy (Caddyfile.lan) sirve la web Y la
+    # API en el mismo :80 (enruta /api y /health al backend). El frontend usa
+    # URLs RELATIVAS → PUBLIC_API_URL va VACÍO: funciona con cualquier IP o
+    # hostname y aguanta cambios de DHCP sin rehornear el build. PUBLIC_URL
+    # (backend; p. ej. las URLs absolutas de subida de chunks) sí necesita una
+    # base válida → http://<IP> (puerto 80, donde vive /api).
     LAN_IP="${NOCTCOM_LAN_IP:-auto}"
     if [ "$LAN_IP" = "auto" ]; then
       # '|| true': con pipefail, un 'hostname -I' que falle mataría el script.
@@ -111,9 +125,9 @@ else
     fi
     [ -z "$LAN_IP" ] && LAN_IP="127.0.0.1"
     DOMAIN="localhost"; EMAIL="${EMAIL:-admin@localhost}"
-    FRONT="http://$LAN_IP"; API="http://$LAN_IP:3000"; FROM="noreply@localhost"
+    FRONT="http://$LAN_IP"; API=""; APIBASE="http://$LAN_IP"; FROM="noreply@localhost"
     COMPOSE_FILES="docker-compose.yml:docker-compose.lan.yml"
-    warn "Sin dominio: modo LAN por IP ($LAN_IP), sin TLS. Para producción, relanza con un dominio."
+    warn "Sin dominio: modo LAN same-origin por IP ($LAN_IP), sin TLS. Para producción, relanza con un dominio."
   fi
 
   cp .env.example .env
@@ -124,7 +138,7 @@ else
   sed_i '^REDIS_PASSWORD=.*'      "REDIS_PASSWORD=$(secret)"
   sed_i '^MINIO_ROOT_PASSWORD=.*' "MINIO_ROOT_PASSWORD=$(secret)"
   sed_i '^JWT_SECRET=.*'          "JWT_SECRET=$(openssl rand -base64 64 | tr -d '\n')"
-  sed_i '^PUBLIC_URL=.*'          "PUBLIC_URL=$API"
+  sed_i '^PUBLIC_URL=.*'          "PUBLIC_URL=$APIBASE"
   sed_i '^PUBLIC_API_URL=.*'      "PUBLIC_API_URL=$API"
   sed_i '^FRONTEND_URL=.*'        "FRONTEND_URL=$FRONT"
   sed_i '^SMTP_FROM=.*'           "SMTP_FROM=$FROM"
@@ -150,16 +164,15 @@ ok "Contenedores en marcha"
 # ─── Resumen ────────────────────────────────────────────────────
 DOM="$(grep -E '^CADDY_DOMAIN=' .env | cut -d= -f2- || true)"
 FRONT_URL="$(grep -E '^FRONTEND_URL=' .env | cut -d= -f2- || true)"
-API_URL="$(grep -E '^PUBLIC_API_URL=' .env | cut -d= -f2- || true)"
 say ""
 hr
 printf "${G}${B}  ¡Noctcom está arrancando!${N}\n"
 hr
 if [ "$DOM" = "localhost" ]; then
-  say "  App:  ${B}${FRONT_URL}${N}   API: ${B}${API_URL}${N}"
-  say "  ${DIM}(modo LAN sin TLS, accesible desde tu red — para producción usa un dominio real)${N}"
-  say "  ${DIM}Si la IP de esta máquina cambia, edita las URLs en .env y relanza:${N}"
-  say "  ${DIM}$DC up -d --build${N}"
+  say "  App + API:  ${B}${FRONT_URL}${N}   ${DIM}(API bajo ${FRONT_URL}/api)${N}"
+  say "  ${DIM}(modo LAN same-origin sin TLS, accesible desde tu red — para producción usa un dominio real)${N}"
+  say "  ${DIM}Inicia sesión por esta URL desde cualquier equipo de la red. La web usa rutas${N}"
+  say "  ${DIM}relativas, así que sigue funcionando aunque cambie la IP de esta máquina.${N}"
 else
   say "  App:  ${B}https://app.$DOM${N}"
   say "  API:  ${B}https://api.$DOM${N}"
