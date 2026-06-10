@@ -6,6 +6,11 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const isDev = process.env.NODE_ENV !== 'production';
 
+// Self-host LAN same-origin: NEXT_PUBLIC_API_URL va vacío y se sirve por HTTP
+// plano. En contexto inseguro el navegador IGNORA Cross-Origin-Opener-Policy y
+// avisa por consola, así que no la emitimos ahí (sí en el deploy con dominio/TLS).
+const isLanHttp = !process.env.NEXT_PUBLIC_API_URL;
+
 // La versión sale del package.json y la fecha se sella aquí, en el build.
 // Como cada deploy reconstruye la imagen, esta marca es la hora del último deploy.
 const { version } = JSON.parse(readFileSync(resolve(__dirname, 'package.json'), 'utf8'));
@@ -34,7 +39,9 @@ const nextConfig = {
           { key: 'Referrer-Policy', value: 'no-referrer' },
           { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
           { key: 'X-XSS-Protection', value: '1; mode=block' },
-          { key: 'Cross-Origin-Opener-Policy', value: 'same-origin' },
+          // COOP solo en contexto seguro (HTTPS): sobre HTTP plano el navegador
+          // la ignora y ensucia la consola. Ver isLanHttp arriba.
+          ...(isLanHttp ? [] : [{ key: 'Cross-Origin-Opener-Policy', value: 'same-origin' }]),
           {
             key: 'Content-Security-Policy',
             value: [
