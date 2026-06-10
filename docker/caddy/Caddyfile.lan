@@ -17,13 +17,7 @@
 :80 {
 	encode zstd gzip
 
-	# API REST, health-check y WebSocket → backend.
-	@api path /api/* /health
-	reverse_proxy @api backend:3000
-
-	# Resto (la web Next.js) → frontend.
-	reverse_proxy frontend:3000
-
+	# Cabeceras de seguridad para todas las respuestas.
 	header {
 		X-Content-Type-Options "nosniff"
 		X-Frame-Options "DENY"
@@ -31,12 +25,26 @@
 		Permissions-Policy "geolocation=(), microphone=(), camera=()"
 		-Server
 	}
+
+	# API REST y WebSocket (/api/v1/ws/...) → backend.
+	handle /api/* {
+		reverse_proxy backend:3000
+	}
+
+	# Health-check → backend.
+	handle /health {
+		reverse_proxy backend:3000
+	}
+
+	# Resto (la web Next.js) → frontend.
+	handle {
+		reverse_proxy frontend:3000
+	}
 }
 
 # ─── API en :3000 (compatibilidad) ──────────────────────────────
 # Instalaciones anteriores hornearon la API en http://<ip>:3000. Se mantiene
-# para no romperlas; las nuevas (same-origin) ya no lo usan. Al reejecutar
-# install.sh, esas instalaciones migran a URLs relativas automáticamente.
+# para no romperlas; las nuevas (same-origin) ya no lo usan.
 :3000 {
 	encode zstd gzip
 	reverse_proxy backend:3000

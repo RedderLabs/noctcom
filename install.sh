@@ -159,6 +159,10 @@ fi
 say ""
 say "${B}4. Construyendo y levantando (la primera vez tarda unos minutos)…${N}"
 $DC up -d --build
+# Caddy NO se recrea cuando solo cambia el Caddyfile montado (no su imagen), así
+# que se quedaría con la config vieja (p. ej. el enrutado /api del modo LAN). Lo
+# reiniciamos para que cargue siempre la configuración actual.
+$DC restart caddy >/dev/null 2>&1 || true
 ok "Contenedores en marcha"
 
 # ─── Resumen ────────────────────────────────────────────────────
