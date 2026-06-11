@@ -13,6 +13,12 @@
 -- El servidor solo ve ciphertext: zero-knowledge intacto.
 -- ═══════════════════════════════════════════════════════════════
 
+-- Ed25519 pública de recovery v1 (firma el challenge de recuperación de la
+-- CUENTA). Estaba en el init de la nube (scripts/init-db.sql) pero nunca se
+-- portó al self-host, así que el INSERT de signup fallaba con
+-- «column "recovery_public_key" does not exist». Se backfillea aquí.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS recovery_public_key BYTEA;
+
 -- X25519 pública derivada de la mnemónica (plaintext: es pública).
 ALTER TABLE users ADD COLUMN IF NOT EXISTS recovery_box_public_key BYTEA;
 
