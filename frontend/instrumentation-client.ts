@@ -2,8 +2,10 @@
 // este archivo automáticamente en el cliente. Solo activo en producción.
 import * as Sentry from '@sentry/nextjs';
 
-const DEFAULT_DSN = 'https://3d687198b7a142b289b32839792a2e92@app.glitchtip.com/24348';
-const dsn = process.env.NEXT_PUBLIC_SENTRY_DSN ?? DEFAULT_DSN;
+// OPT-IN: sin DSN explícito no se inicializa. Una instancia self-host NO reporta
+// telemetría a nadie (zero-knowledge también aquí). El DSN se hornea en build
+// vía build-arg (ver frontend/Dockerfile y docker-compose.yml).
+const dsn = process.env.NEXT_PUBLIC_SENTRY_DSN;
 
 if (dsn && process.env.NODE_ENV === 'production') {
   Sentry.init({

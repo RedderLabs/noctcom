@@ -152,6 +152,9 @@ services:
         # (modo LAN same-origin → URLs relativas en el frontend). Solo cae al
         # default si está SIN definir (dev). Ver install.sh / Caddyfile.lan.
         NEXT_PUBLIC_API_URL: ${PUBLIC_API_URL-http://localhost:3000}
+        # Telemetría OPT-IN: vacío si no se define (self-host NO reporta a nadie).
+        # La nube pone NEXT_PUBLIC_SENTRY_DSN en su .env de prod antes de buildear.
+        NEXT_PUBLIC_SENTRY_DSN: ${NEXT_PUBLIC_SENTRY_DSN-}
     container_name: noctcom-frontend
     restart: unless-stopped
     depends_on:

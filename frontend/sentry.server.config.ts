@@ -2,8 +2,8 @@
 // GlitchTip vía SDK de Sentry. Solo activo en producción.
 import * as Sentry from '@sentry/nextjs';
 
-const dsn = process.env.NEXT_PUBLIC_SENTRY_DSN
-  ?? 'https://3d687198b7a142b289b32839792a2e92@app.glitchtip.com/24348';
+// OPT-IN: sin DSN explícito no se inicializa (self-host no reporta telemetría).
+const dsn = process.env.NEXT_PUBLIC_SENTRY_DSN;
 
 if (dsn && process.env.NODE_ENV === 'production') {
   Sentry.init({
