@@ -11,6 +11,10 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 ARG NEXT_PUBLIC_API_URL=https://api.noctcom.com
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+# Modo self-host (panel operativo + '/' al login). Vacío por defecto = build
+# cloud. install.sh lo pasa como SELF_HOST=true vía docker-compose build args.
+ARG NEXT_PUBLIC_SELF_HOST=
+ENV NEXT_PUBLIC_SELF_HOST=$NEXT_PUBLIC_SELF_HOST
 # Config web de Firebase (FCM): pública por diseño — identifica el proyecto, no
 # autentica nada (la seguridad está en el service account del backend). Los
 # mismos valores ya viven en public/firebase-messaging-sw.js.

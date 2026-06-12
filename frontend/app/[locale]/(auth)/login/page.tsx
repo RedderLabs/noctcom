@@ -109,7 +109,8 @@ export default function LoginPage() {
       exchangePrivateKey: exPriv,
       exchangePublicKey: fromB64(payload.exchangePublicKey),
     });
-    router.push('/vault');
+    // En self-host la app es el panel operativo; en la nube, la bóveda.
+    router.push(process.env.NEXT_PUBLIC_SELF_HOST === 'true' ? '/panel' : '/vault');
   }
 
   async function handleCredentials(e: React.FormEvent) {

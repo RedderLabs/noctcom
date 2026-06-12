@@ -5,7 +5,9 @@ import { promisify } from 'node:util';
 import os from 'node:os';
 import { z } from 'zod';
 import { db } from '../db/pool.js';
+import { redis } from '../db/redis.js';
 import { validateVolumePath } from '../storage/disk.js';
+import { env } from '../config.js';
 import * as registry from '../agents/registry.js';
 
 const execFile = promisify(execFileCb);
@@ -649,16 +651,65 @@ const storageRoutes: FastifyPluginAsync = async (app) => {
   // ─── Storage summary ─────────────────────────────────────
 
   app.get('/summary', { onRequest: [app.authenticate] }, async (req, reply) => {
+    // En self-host (sin Stripe) la capacidad es la de los discos reales del
+    // operador, no una cuota de plan. Sumamos los volúmenes activos (suyos o
+    // locales del backend con user_id NULL), igual que hace GET /me. En la nube
+    // se mantiene la cuota del plan tal cual.
     const r = await db.query(
-      'SELECT storage_used_bytes, storage_quota_bytes FROM users WHERE id = $1',
+      `SELECT storage_used_bytes, storage_quota_bytes,
+              COALESCE((
+                SELECT SUM(total_bytes) FROM storage_volumes
+                 WHERE active = true AND (user_id = $1 OR user_id IS NULL)
+              ), 0) AS disk_bytes
+         FROM users WHERE id = $1`,
       [(req as any).user.sub],
     );
     if (r.rowCount === 0) return reply.notFound();
     const row = r.rows[0];
+    const quotaBytes = env.STRIPE_SECRET_KEY
+      ? Number(row.storage_quota_bytes)
+      : Number(row.storage_quota_bytes) + Number(row.disk_bytes);
     return reply.send({
       usedBytes: Number(row.storage_used_bytes),
-      quotaBytes: Number(row.storage_quota_bytes),
+      quotaBytes,
     });
+  });
+
+  // ─── Stack health (self-host dashboard) ───────────────────
+  // Alimenta los chips del panel self-host. Vive bajo /api/v1/storage (lo
+  // enruta Caddy a /api), a diferencia de /health que está en la raíz y no es
+  // alcanzable desde el origen de la app en modo LAN.
+  //
+  // Honestidad: el backend NO tiene docker.sock montado, así que no puede
+  // inspeccionar contenedores. Comprueba de verdad lo que sí alcanza por red
+  // (Postgres, Redis, MinIO) e infiere los dos restantes:
+  //   · backend → ok (si corre este handler, está vivo).
+  //   · caddy   → ok (la petición llegó por su reverse proxy).
+  app.get('/stack-health', { onRequest: [app.authenticate] }, async (_req, reply) => {
+    const check = async (fn: () => Promise<unknown>): Promise<'ok' | 'down'> => {
+      try { await fn(); return 'ok'; } catch { return 'down'; }
+    };
+
+    const postgres = await check(() => db.query('SELECT 1'));
+
+    const r = redis();
+    // Redis ausente (REDIS_URL sin configurar) = sync desactivado a propósito,
+    // no es un fallo del stack → ok, igual que en /health.
+    const redisStatus = r ? await check(() => r.ping()) : 'ok';
+
+    const minio = await check(async () => {
+      const { HeadBucketCommand } = await import('@aws-sdk/client-s3');
+      const { s3 } = await import('../storage/s3.js');
+      await s3.send(new HeadBucketCommand({ Bucket: env.S3_BUCKET }));
+    });
+
+    return reply.send([
+      { service: 'postgres', status: postgres },
+      { service: 'redis', status: redisStatus },
+      { service: 'minio', status: minio },
+      { service: 'backend', status: 'ok' },
+      { service: 'caddy', status: 'ok' },
+    ]);
   });
 
   // ─── Volume management ─────────────────────────────────────

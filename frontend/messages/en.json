@@ -1709,6 +1709,111 @@
       "cta": "<b>noctcom.com</b> · open source (AGPL-3.0) · audit it yourself"
     }
   },
+  "selfhost": {
+    "nav": {
+      "panel": "Dashboard",
+      "files": "Files",
+      "storage": "Storage",
+      "security": "Security"
+    },
+    "shell": {
+      "badge": "LOCAL · ZERO-KNOWLEDGE",
+      "storage": "Storage",
+      "of": "of",
+      "lockVault": "Lock vault",
+      "openMenu": "Open menu",
+      "closeMenu": "Close menu",
+      "encryptionActive": "Encryption active"
+    },
+    "panel": {
+      "title": "Dashboard",
+      "capacity": "Capacity",
+      "volumesCount": "{count, plural, one {# volume} other {# volumes}}",
+      "inUse": "in use",
+      "usedOf": "used of {total}",
+      "heroSub": "Real capacity of your Proxmox disks — no artificial quotas.",
+      "free": "free",
+      "cryptoLine": "<b>Encrypted on your device</b> · the host can't read your files. Keys never leave the browser.",
+      "pctFull": "{pct}% full",
+      "recentFiles": "Recent files",
+      "noRecent": "No files yet.",
+      "encClient": "client-side encrypted",
+      "stackTitle": "LXC container stack"
+    },
+    "storage": {
+      "title": "Storage",
+      "rescan": "Re-scan",
+      "rescanned": "Disks re-read.",
+      "aggregate": "Aggregate usage",
+      "physicalVolumes": "{count, plural, one {# physical volume} other {# physical volumes}}",
+      "cryptoLine": "Usage is computed <b>locally</b>. The host only sees opaque blocks, never names or categories.",
+      "volumes": "Volumes",
+      "addVolume": "Add volume",
+      "addHint": "Mount the disk inside the container (pct set <CTID> -mpN …) and register its mount point here.",
+      "labelPlaceholder": "Label (optional)",
+      "register": "Register",
+      "registered": "Volume registered.",
+      "registerError": "Couldn't register the volume.",
+      "empty": "No volumes registered yet.",
+      "activeBadge": "active",
+      "offline": "offline",
+      "activate": "Activate",
+      "deactivate": "Deactivate",
+      "activated": "Volume activated.",
+      "deactivated": "Volume deactivated.",
+      "updateError": "Couldn't update the volume.",
+      "delete": "Delete",
+      "deleted": "Volume deleted.",
+      "deleteError": "Couldn't delete.",
+      "note": "<b>No artificial quota.</b> Every figure comes from the real disks you gave the container in Proxmox. To grow, add a disk and register it: the panel reflects it on the next re-scan."
+    },
+    "files": {
+      "title": "Files",
+      "newFolder": "New folder",
+      "upload": "Upload",
+      "searchPlaceholder": "Search files…",
+      "cryptoLine": "Each file is encrypted with <b>AES-256-GCM</b> in your browser before it leaves. Names are encrypted too.",
+      "loading": "Loading…",
+      "empty": "No files here.",
+      "encFolder": "encrypted folder",
+      "delete": "Delete",
+      "star": "Star",
+      "unstar": "Unstar",
+      "share": "Share",
+      "download": "Download"
+    },
+    "viewer": {
+      "title": "Viewer",
+      "back": "Back to Files",
+      "notFound": "File not found. Open it from Files."
+    },
+    "security": {
+      "title": "Security",
+      "keyTitle": "Encryption key",
+      "argon": "derived with Argon2id",
+      "masterKey": "Vault master key",
+      "masterKeySub": "Never leaves your device. The server only stores ciphertext.",
+      "active": "Active",
+      "fpLabel": "public key fingerprint · ed25519",
+      "copyFp": "Copy key fingerprint",
+      "accessTitle": "Access",
+      "recovery": "Recovery",
+      "recoveryOn": "Active · {sealed}/{total} vaults sealed",
+      "recoveryOff": "No recovery kit. If you lose your password, you lose access.",
+      "passkeys": "Security keys",
+      "passkeysCount": "{count, plural, =0 {None registered} one {# key registered} other {# keys registered}}",
+      "sessions": "Active sessions",
+      "closeOthers": "Close the others",
+      "noSessions": "No active sessions.",
+      "thisSession": "This session",
+      "close": "Close",
+      "othersClosed": "Other sessions closed.",
+      "sessionClosed": "Session closed.",
+      "revokeError": "Couldn't close the session.",
+      "stackHealth": "LXC stack health",
+      "stackNote": "None of these services can read your files: <b>they only handle ciphertext</b>. The encryption layer lives entirely in the client."
+    }
+  },
   "meta": {
     "description": "Your private vault. Encrypted on your device. No one else can open it. Open source and self-hostable, made by Redder Labs."
   }

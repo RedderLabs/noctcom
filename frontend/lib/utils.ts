@@ -6,6 +6,20 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 /**
+ * Formatea bytes a una cifra legible (B/KB/MB/GB/TB), base 1024. Una cifra
+ * decimal por debajo de 10 unidades. Canónica para el panel self-host (cuotas
+ * de disco, tamaños de archivo). Usar coma decimal vía `locale` si hace falta.
+ */
+export function formatBytes(bytes: number): string {
+  if (!bytes || bytes <= 0) return '0 B';
+  const units = ['B', 'KB', 'MB', 'GB', 'TB', 'PB'];
+  let i = 0;
+  let n = bytes;
+  while (n >= 1024 && i < units.length - 1) { n /= 1024; i++; }
+  return `${n.toFixed(n < 10 && i > 0 ? 1 : 0)} ${units[i]}`;
+}
+
+/**
  * Strip HTML/script tags and dangerous chars to prevent XSS via input fields.
  * Only allows alphanumeric, common punctuation, and unicode letters.
  */

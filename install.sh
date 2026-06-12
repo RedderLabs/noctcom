@@ -90,6 +90,13 @@ if [ -f .env ]; then
     printf '\n# Fijado por install.sh: evita cargar docker-compose.override.yml (solo desarrollo).\nCOMPOSE_FILE=docker-compose.yml\n' >> .env
     warn "Añadido COMPOSE_FILE a .env (el override de desarrollo publicaba puertos de postgres/redis/minio al host)."
   fi
+  # Modo self-host: si falta, lo añadimos para que el frontend se hornee con el
+  # panel operativo (capacidad por disco + salud del stack + '/' al login). Las
+  # instalaciones previas lo recogen al reejecutar install.sh/update.sh.
+  if ! grep -q '^SELF_HOST=' .env; then
+    printf '\n# Build self-host (panel operativo). Escrito por install.sh.\nSELF_HOST=true\n' >> .env
+    warn "Añadido SELF_HOST=true a .env — se reconstruye el frontend con el panel self-host."
+  fi
   # Migración a same-origin (solo modo LAN): si la API se horneó en http://<ip>:3000,
   # vaciamos PUBLIC_API_URL para que el frontend use URLs relativas (mismo origen,
   # vía Caddyfile.lan) y quitamos el :3000 de PUBLIC_URL (las subidas de chunks
@@ -145,6 +152,9 @@ else
   # COMPOSE_FILE fija qué ficheros usa 'docker compose' desde esta carpeta:
   # nunca el override de desarrollo; en modo LAN añade docker-compose.lan.yml.
   printf '\n# Ficheros compose (escrito por install.sh).\nCOMPOSE_FILE=%s\n' "$COMPOSE_FILES" >> .env
+  # Todo lo instalado por install.sh es self-host → activa el panel operativo
+  # (capacidad por disco, salud del stack, sin cuota de plan) y '/' → login.
+  printf '\n# Build self-host (panel operativo). Escrito por install.sh.\nSELF_HOST=true\n' >> .env
   chmod 600 .env
   ok "Generado .env con secretos aleatorios (chmod 600)"
   say "${DIM}   Email (verificación/OTP) desactivado por defecto: añade RESEND_API_KEY o SMTP_* en .env.${N}"

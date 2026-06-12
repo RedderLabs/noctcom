@@ -36,12 +36,14 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
     return () => observer.disconnect();
   }, [hydrate]);
 
-  // Con sesión activa no tiene sentido ver login/signup/recovery: al vault.
+  // Con sesión activa no tiene sentido ver login/signup/recovery: a la app.
+  // En self-host la app es el panel operativo (/panel); en la nube, /vault.
+  const homePath = process.env.NEXT_PUBLIC_SELF_HOST === 'true' ? '/panel' : '/vault';
   useEffect(() => {
     if (checked && hasSession && !isVerify) {
-      router.replace('/vault');
+      router.replace(homePath);
     }
-  }, [checked, hasSession, isVerify, router]);
+  }, [checked, hasSession, isVerify, router, homePath]);
 
   // Evita el parpadeo del formulario mientras comprobamos o redirigimos.
   if (!checked || (hasSession && !isVerify)) {
@@ -57,8 +59,24 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
         </Link>
       </div>
 
-      <main className="flex-1 flex items-center justify-center px-6 pb-12">
+      <main className="flex-1 flex flex-col items-center justify-center px-6 pb-12">
         <div className="w-full max-w-md">{children}</div>
+
+        {/* Self-host: marca "tu instancia" bajo el formulario (la pantalla de
+            desbloqueo de la bóveda). El login YA es el desbloqueo (deriva la
+            master key con Argon2id en el dispositivo); aquí solo se identifica
+            la instancia local, sin tocar ese flujo. */}
+        {process.env.NEXT_PUBLIC_SELF_HOST === 'true' && (
+          <div className="mt-7 flex flex-col items-center gap-3 text-center">
+            <span className="font-mono text-[9.5px] font-medium tracking-wider text-violet-300 px-2.5 py-1 rounded-full border border-border-strong bg-violet-500/[0.06]">
+              LOCAL · ZERO-KNOWLEDGE
+            </span>
+            <span className="flex items-center gap-2 font-mono text-[11.5px] text-text-muted">
+              <span className="size-[7px] rounded-full bg-success" />
+              noctcom · self-host · en línea
+            </span>
+          </div>
+        )}
       </main>
     </div>
   );

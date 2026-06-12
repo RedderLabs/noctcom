@@ -1709,6 +1709,111 @@
       "cta": "<b>noctcom.com</b> · código abierto (AGPL-3.0) · audítalo tú mismo"
     }
   },
+  "selfhost": {
+    "nav": {
+      "panel": "Panel",
+      "files": "Archivos",
+      "storage": "Almacenamiento",
+      "security": "Seguridad"
+    },
+    "shell": {
+      "badge": "LOCAL · ZERO-KNOWLEDGE",
+      "storage": "Almacenamiento",
+      "of": "de",
+      "lockVault": "Bloquear bóveda",
+      "openMenu": "Abrir menú",
+      "closeMenu": "Cerrar menú",
+      "encryptionActive": "Cifrado activo"
+    },
+    "panel": {
+      "title": "Panel",
+      "capacity": "Capacidad",
+      "volumesCount": "{count, plural, one {# volumen} other {# volúmenes}}",
+      "inUse": "en uso",
+      "usedOf": "usados de {total}",
+      "heroSub": "Capacidad real de los discos de tu Proxmox — sin cuotas artificiales.",
+      "free": "libres",
+      "cryptoLine": "<b>Cifrado en tu dispositivo</b> · el host no puede leer tus archivos. Las claves nunca salen del navegador.",
+      "pctFull": "{pct}% lleno",
+      "recentFiles": "Archivos recientes",
+      "noRecent": "Aún no hay archivos.",
+      "encClient": "cifrado en cliente",
+      "stackTitle": "Stack del contenedor LXC"
+    },
+    "storage": {
+      "title": "Almacenamiento",
+      "rescan": "Re-escanear",
+      "rescanned": "Discos releídos.",
+      "aggregate": "Uso agregado",
+      "physicalVolumes": "{count, plural, one {# volumen físico} other {# volúmenes físicos}}",
+      "cryptoLine": "El uso se calcula <b>localmente</b>. El host solo ve bloques opacos, nunca nombres ni categorías.",
+      "volumes": "Volúmenes",
+      "addVolume": "Añadir volumen",
+      "addHint": "Monta el disco dentro del contenedor (pct set <CTID> -mpN …) y registra aquí su punto de montaje.",
+      "labelPlaceholder": "Etiqueta (opcional)",
+      "register": "Registrar",
+      "registered": "Volumen registrado.",
+      "registerError": "No se pudo registrar el volumen.",
+      "empty": "No hay volúmenes registrados todavía.",
+      "activeBadge": "activo",
+      "offline": "desconectado",
+      "activate": "Activar",
+      "deactivate": "Desactivar",
+      "activated": "Volumen activado.",
+      "deactivated": "Volumen desactivado.",
+      "updateError": "No se pudo actualizar el volumen.",
+      "delete": "Eliminar",
+      "deleted": "Volumen eliminado.",
+      "deleteError": "No se pudo eliminar.",
+      "note": "<b>Sin cuota artificial.</b> Cada cifra sale de los discos reales que has dado al contenedor en Proxmox. Para crecer, añade un disco y regístralo: el panel lo reflejará en el siguiente re-escaneo."
+    },
+    "files": {
+      "title": "Archivos",
+      "newFolder": "Nueva carpeta",
+      "upload": "Subir",
+      "searchPlaceholder": "Buscar archivos…",
+      "cryptoLine": "Cada archivo se cifra con <b>AES-256-GCM</b> en tu navegador antes de salir. Los nombres también van cifrados.",
+      "loading": "Cargando…",
+      "empty": "No hay archivos aquí.",
+      "encFolder": "carpeta cifrada",
+      "delete": "Eliminar",
+      "star": "Destacar",
+      "unstar": "Quitar de destacados",
+      "share": "Compartir",
+      "download": "Descargar"
+    },
+    "viewer": {
+      "title": "Visor",
+      "back": "Volver a Archivos",
+      "notFound": "No se encontró el archivo. Ábrelo desde Archivos."
+    },
+    "security": {
+      "title": "Seguridad",
+      "keyTitle": "Clave de cifrado",
+      "argon": "derivada con Argon2id",
+      "masterKey": "Clave maestra de la bóveda",
+      "masterKeySub": "Nunca abandona tu dispositivo. El servidor solo almacena texto cifrado.",
+      "active": "Activa",
+      "fpLabel": "huella de clave pública · ed25519",
+      "copyFp": "Copiar huella de clave",
+      "accessTitle": "Acceso",
+      "recovery": "Recuperación",
+      "recoveryOn": "Activa · {sealed}/{total} bóvedas selladas",
+      "recoveryOff": "Sin kit de recuperación. Si pierdes la contraseña, perderás el acceso.",
+      "passkeys": "Llaves de seguridad",
+      "passkeysCount": "{count, plural, =0 {Ninguna registrada} one {# llave registrada} other {# llaves registradas}}",
+      "sessions": "Sesiones activas",
+      "closeOthers": "Cerrar las demás",
+      "noSessions": "Sin sesiones activas.",
+      "thisSession": "Esta sesión",
+      "close": "Cerrar",
+      "othersClosed": "Cerradas las demás sesiones.",
+      "sessionClosed": "Sesión cerrada.",
+      "revokeError": "No se pudo cerrar la sesión.",
+      "stackHealth": "Salud del stack LXC",
+      "stackNote": "Ninguno de estos servicios puede leer tus archivos: <b>solo manejan ciphertext</b>. La capa de cifrado vive entera en el cliente."
+    }
+  },
   "meta": {
     "description": "Tu bóveda privada. Cifrada en tu dispositivo. Nadie más puede abrirla. Open source y self-hosteable, hecho por Redder Labs."
   }

@@ -81,14 +81,20 @@ const uploadRoutes: FastifyPluginAsync = async (app) => {
     if (vaultRow.rowCount === 0) return reply.notFound('vault not found');
     if (vaultRow.rows[0].owner_id !== userId) return reply.forbidden();
 
-    const quotaRow = await db.query(
-      `SELECT storage_used_bytes, storage_quota_bytes FROM users WHERE id = $1`,
-      [userId],
-    );
-    const used = BigInt(quotaRow.rows[0].storage_used_bytes);
-    const quota = BigInt(quotaRow.rows[0].storage_quota_bytes);
-    if (used + BigInt(body.totalSize) > quota) {
-      return reply.forbidden('storage quota exceeded');
+    // Cuota POR USUARIO: solo tiene sentido en la nube (planes de pago). En
+    // self-host (sin Stripe) no hay cuota artificial — la capacidad real es la
+    // de los discos del operador, así que se salta el gate. El tope GLOBAL de
+    // abajo sigue aplicando como protección opcional del operador.
+    if (env.STRIPE_SECRET_KEY) {
+      const quotaRow = await db.query(
+        `SELECT storage_used_bytes, storage_quota_bytes FROM users WHERE id = $1`,
+        [userId],
+      );
+      const used = BigInt(quotaRow.rows[0].storage_used_bytes);
+      const quota = BigInt(quotaRow.rows[0].storage_quota_bytes);
+      if (used + BigInt(body.totalSize) > quota) {
+        return reply.forbidden('storage quota exceeded');
+      }
     }
 
     // Tope GLOBAL (protección de gasto en B2/MinIO): si está configurado y la
