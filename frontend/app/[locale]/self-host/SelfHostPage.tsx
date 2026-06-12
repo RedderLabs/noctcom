@@ -5,6 +5,7 @@ import { useTranslations, useLocale } from 'next-intl';
 import { Server } from 'lucide-react';
 import { Navbar } from '@/components/ui/Navbar';
 import { renderMarkdown } from '@/lib/markdown';
+import { ProxmoxInstall } from '@/components/selfhost/ProxmoxInstall';
 
 export default function SelfHostPage() {
   const t = useTranslations('selfhostGuide');
@@ -34,6 +35,9 @@ export default function SelfHostPage() {
           </div>
         </div>
 
+        {/* Bloque premium de Proxmox VE — diseñado, sobre la guía markdown. */}
+        <ProxmoxInstall />
+
         {loading ? (
           <div className="animate-pulse space-y-4">
             <div className="h-4 bg-bg-surface rounded w-full" />
@@ -41,7 +45,11 @@ export default function SelfHostPage() {
             <div className="h-4 bg-bg-surface rounded w-5/6" />
           </div>
         ) : (
-          <article className="prose-noctcom" dangerouslySetInnerHTML={{ __html: html }} />
+          <article
+            id="guia-completa"
+            className="prose-noctcom scroll-mt-24"
+            dangerouslySetInnerHTML={{ __html: html }}
+          />
         )}
       </div>
     </main>

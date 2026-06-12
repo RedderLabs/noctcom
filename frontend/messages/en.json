@@ -1209,6 +1209,102 @@
     "title": "Install Noctcom",
     "subtitle": "Free self-host · AGPL-3.0"
   },
+  "selfhostProxmox": {
+    "badge": "Proxmox VE · LXC",
+    "title": "Install Noctcom on Proxmox VE",
+    "subtitle": "Deploy your own instance as an **LXC** container on a Proxmox VE host. A single command creates the container, installs Docker and brings up the whole stack, isolated from the host.",
+    "installLabel": "Install · as root on the host",
+    "installComment": "Run it on the Proxmox node, not inside a VM/LXC",
+    "installNote": "It asks for your domain (leave it empty for IP-based LAN mode). When it finishes it shows the access URL and the container ID (CTID).",
+    "copy": "Copy",
+    "copied": "Copied",
+    "what": {
+      "title": "What the installer does",
+      "lxc": {
+        "title": "Creates an LXC",
+        "body": "An unprivileged Debian container, with nesting and keyctl enabled so Docker runs inside it."
+      },
+      "docker": {
+        "title": "Installs Docker",
+        "body": "Sets up Docker and Docker Compose inside the container, without you touching anything on the host."
+      },
+      "stack": {
+        "title": "Brings up the stack",
+        "body": "PostgreSQL, Redis, MinIO, backend, frontend and Caddy with automatic TLS. At the end it gives you the URL and the CTID."
+      }
+    },
+    "req": {
+      "title": "Requirements",
+      "host": "Proxmox VE 8.x or 9.x · root access",
+      "cpu": "2 vCPU",
+      "ram": "4 GiB of RAM",
+      "disk": "20 GB of disk",
+      "ramWarning": "RAM matters: the Next.js build needs more than 2 GiB. Don't go below 4 GiB unless you know what you're doing."
+    },
+    "stack": {
+      "title": "What runs inside the container",
+      "subtitle": "The whole stack lives in a single LXC, isolated from the rest of the Proxmox host.",
+      "containerLabel": "Debian LXC · unprivileged",
+      "note": "Your files are encrypted in the browser: neither the server nor whoever administers the host can read their contents.",
+      "roles": {
+        "db": "Database",
+        "cache": "Cache and queues",
+        "storage": "Object storage",
+        "api": "API",
+        "web": "Web interface",
+        "tls": "Proxy and TLS"
+      }
+    },
+    "vars": {
+      "title": "Customize the install",
+      "subtitle": "Pass environment variables before the command to tune resources or networking. The most useful ones:",
+      "colVar": "Variable",
+      "colDefault": "Default",
+      "colDesc": "What it's for",
+      "rows": {
+        "ram": "MiB of RAM (the Next.js build needs more than 2 GiB).",
+        "domain": "Domain; empty = IP-based LAN mode.",
+        "email": "Email for the TLS certificates (when you use a domain).",
+        "cores": "Number of vCPUs for the container.",
+        "disk": "GB of disk for the rootfs.",
+        "noninteractive": "1 = ask nothing and use the defaults."
+      }
+    },
+    "maint": {
+      "title": "Maintenance",
+      "subtitle": "Replace <CTID> with the ID the installer gave you.",
+      "updateLabel": "Update",
+      "updateComment": "git pull + migrations + rebuild, without touching your secrets",
+      "statusLabel": "Status",
+      "statusComment": "Check the stack's services",
+      "logsLabel": "Logs",
+      "logsComment": "Follow the backend logs"
+    },
+    "faq": {
+      "title": "Common problems",
+      "notHost": {
+        "q": "\"I can't find pct / pveam / pvesh\"",
+        "a": "You're running the script inside a VM or LXC, not on the host. Connect to the Proxmox node as root."
+      },
+      "oom": {
+        "q": "The build runs out of memory or gets killed",
+        "a": "Raise NOCTCOM_RAM (4096 recommended minimum; Next.js needs more than 2 GiB to compile)."
+      },
+      "domain": {
+        "q": "It won't load with a domain",
+        "a": "Check that DNS points to the right IP and that ports 80 and 443 reach the LXC (NAT or port-forward on your router or firewall)."
+      },
+      "ip": {
+        "q": "The LXC's IP changed and the app won't reach the API (LAN mode)",
+        "a": "The API URL is baked into the frontend build. Reserve the IP in your DHCP and reinstall, or rebuild the frontend with the new IP."
+      }
+    },
+    "cta": {
+      "github": "View on GitHub",
+      "guide": "Full guide"
+    },
+    "fullGuideLabel": "Full installation guide"
+  },
   "recent": {
     "title": "Recent",
     "subtitle": "Recently modified files",

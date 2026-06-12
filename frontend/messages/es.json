@@ -1209,6 +1209,102 @@
     "title": "Instalar Noctcom",
     "subtitle": "Self-host gratis · AGPL-3.0"
   },
+  "selfhostProxmox": {
+    "badge": "Proxmox VE · LXC",
+    "title": "Instala Noctcom en Proxmox VE",
+    "subtitle": "Despliega tu propia instancia como contenedor **LXC** en un host Proxmox VE. Un solo comando crea el contenedor, instala Docker y levanta todo el stack, aislado del host.",
+    "installLabel": "Instalar · como root en el host",
+    "installComment": "Ejecútalo en el nodo Proxmox, no dentro de una VM/LXC",
+    "installNote": "Te preguntará el dominio (déjalo vacío para modo LAN por IP). Al terminar muestra la URL de acceso y el ID del contenedor (CTID).",
+    "copy": "Copiar",
+    "copied": "Copiado",
+    "what": {
+      "title": "Qué hace la instalación",
+      "lxc": {
+        "title": "Crea un LXC",
+        "body": "Un contenedor Debian no privilegiado, con nesting y keyctl activados para que Docker funcione dentro."
+      },
+      "docker": {
+        "title": "Instala Docker",
+        "body": "Prepara Docker y Docker Compose dentro del contenedor, sin que toques nada en el host."
+      },
+      "stack": {
+        "title": "Levanta el stack",
+        "body": "PostgreSQL, Redis, MinIO, backend, frontend y Caddy con TLS automático. Al final te da la URL y el CTID."
+      }
+    },
+    "req": {
+      "title": "Requisitos",
+      "host": "Proxmox VE 8.x o 9.x · acceso root",
+      "cpu": "2 vCPU",
+      "ram": "4 GiB de RAM",
+      "disk": "20 GB de disco",
+      "ramWarning": "La RAM importa: el build de Next.js necesita más de 2 GiB. No bajes de 4 GiB salvo que sepas lo que haces."
+    },
+    "stack": {
+      "title": "Qué corre dentro del contenedor",
+      "subtitle": "Todo el stack vive en un único LXC, aislado del resto del host Proxmox.",
+      "containerLabel": "LXC Debian · no privilegiado",
+      "note": "Tus archivos se cifran en el navegador: ni el servidor ni quien administre el host puede leer su contenido.",
+      "roles": {
+        "db": "Base de datos",
+        "cache": "Caché y colas",
+        "storage": "Almacenamiento de objetos",
+        "api": "API",
+        "web": "Interfaz web",
+        "tls": "Proxy y TLS"
+      }
+    },
+    "vars": {
+      "title": "Personaliza la instalación",
+      "subtitle": "Pasa variables de entorno antes del comando para ajustar recursos o red. Las más útiles:",
+      "colVar": "Variable",
+      "colDefault": "Por defecto",
+      "colDesc": "Para qué sirve",
+      "rows": {
+        "ram": "MiB de RAM (el build de Next.js pide más de 2 GiB).",
+        "domain": "Dominio; vacío = modo LAN por IP.",
+        "email": "Email para los certificados TLS (cuando usas dominio).",
+        "cores": "Número de vCPUs del contenedor.",
+        "disk": "GB de disco del rootfs.",
+        "noninteractive": "1 = no preguntar nada y usar los valores por defecto."
+      }
+    },
+    "maint": {
+      "title": "Mantenimiento",
+      "subtitle": "Sustituye <CTID> por el ID que te dio la instalación.",
+      "updateLabel": "Actualizar",
+      "updateComment": "git pull + migraciones + rebuild, sin tocar tus secretos",
+      "statusLabel": "Estado",
+      "statusComment": "Ver los servicios del stack",
+      "logsLabel": "Logs",
+      "logsComment": "Seguir los logs del backend"
+    },
+    "faq": {
+      "title": "Problemas frecuentes",
+      "notHost": {
+        "q": "«No encuentro pct / pveam / pvesh»",
+        "a": "Estás ejecutando el script dentro de una VM o LXC, no en el host. Conéctate al nodo Proxmox como root."
+      },
+      "oom": {
+        "q": "El build se queda sin memoria o se mata",
+        "a": "Sube NOCTCOM_RAM (mínimo recomendado 4096; Next.js necesita más de 2 GiB para compilar)."
+      },
+      "domain": {
+        "q": "No carga con dominio",
+        "a": "Revisa que el DNS apunte a la IP correcta y que los puertos 80 y 443 lleguen al LXC (NAT o port-forward en tu router o firewall)."
+      },
+      "ip": {
+        "q": "La IP del LXC cambió y la app no conecta con la API (modo LAN)",
+        "a": "La URL de la API queda integrada en el build del frontend. Reserva la IP en tu DHCP y reinstala, o reconstruye el frontend con la IP nueva."
+      }
+    },
+    "cta": {
+      "github": "Ver en GitHub",
+      "guide": "Guía completa"
+    },
+    "fullGuideLabel": "Guía completa de instalación"
+  },
   "recent": {
     "title": "Recientes",
     "subtitle": "Archivos modificados recientemente",
