@@ -57,14 +57,21 @@ jobs:
         working-directory: agent
         run: cargo build --release --target ${{ matrix.target }}
 
-      - name: Renombrar artefacto
+      - name: Renombrar artefacto + checksum
         shell: bash
-        run: cp "agent/target/${{ matrix.target }}/release/${{ matrix.artifact }}" "${{ matrix.asset }}"
+        run: |
+          cp "agent/target/${{ matrix.target }}/release/${{ matrix.artifact }}" "${{ matrix.asset }}"
+          # SHA256 para que cualquiera pueda verificar la descarga (transparencia
+          # frente a falsos positivos de antivirus en el binario sin firmar).
+          sha256sum "${{ matrix.asset }}" > "${{ matrix.asset }}.sha256"
+          cat "${{ matrix.asset }}.sha256"
 
       - name: Publicar en la release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.event.inputs.tag || github.ref_name }}
-          files: ${{ matrix.asset }}
+          files: |
+            ${{ matrix.asset }}
+            ${{ matrix.asset }}.sha256
           fail_on_unmatched_files: true
           make_latest: true

@@ -129,11 +129,16 @@ const agentRoutes: FastifyPluginAsync = async (app) => {
   app.get<{ Querystring: { platform?: string } }>('/version', async (req, reply) => {
     const platform = (req.query.platform ?? '').toLowerCase();
     const available = Object.prototype.hasOwnProperty.call(DOWNLOADS, platform);
+    // Transparencia de descarga: SHA256 del binario y enlace a VirusTotal. Solo
+    // para Windows (es el único binario servido) y solo si hay hash configurado.
+    const sha256 = platform === 'windows' && env.AGENT_WINDOWS_SHA256 ? env.AGENT_WINDOWS_SHA256 : null;
     return reply.send({
       version: env.AGENT_LATEST_VERSION,
       platform: platform || null,
       available,
       downloadUrl: available ? `/api/v1/agent/download?platform=${platform}` : null,
+      sha256,
+      virusTotalUrl: sha256 ? `https://www.virustotal.com/gui/file/${sha256}` : null,
     });
   });
 

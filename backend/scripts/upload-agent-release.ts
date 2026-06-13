@@ -6,6 +6,7 @@
  * La descarga se sirve vía GET /api/v1/agent/download?platform=… (URL firmada).
  */
 import { readFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { resolve } from 'node:path';
 import { PutObjectCommand } from '@aws-sdk/client-s3';
 import { s3 } from '../src/storage/s3.js';
@@ -48,6 +49,7 @@ if (!t) {
 
 const file = resolve(process.cwd(), process.argv[3] ?? t.defaultFile);
 const body = readFileSync(file);
+const sha256 = createHash('sha256').update(body).digest('hex');
 
 await s3.send(
   new PutObjectCommand({
@@ -60,3 +62,8 @@ await s3.send(
 );
 
 console.log(`✓ Subido ${file} (${(body.length / 1024 / 1024).toFixed(1)} MB) → ${env.S3_BUCKET}/${t.key}`);
+console.log(`  SHA256: ${sha256}`);
+if (platform === 'windows') {
+  console.log(`  → Pon AGENT_WINDOWS_SHA256=${sha256} en el backend (.env.prod / Render)`);
+  console.log(`    para que la web muestre el checksum y el enlace a VirusTotal.`);
+}

@@ -48,6 +48,12 @@ const envSchema = z.object({
   // agentes ya instalados detecten que hay actualización.
   AGENT_LATEST_VERSION: z.string().default('0.1.0'),
 
+  // SHA256 (hex) del binario de Windows servido en B2. Lo imprime
+  // scripts/upload-agent-release.ts al subir; se publica en la web para que el
+  // usuario verifique la descarga y enlace al informe de VirusTotal. Vacío =
+  // no se muestra nada (nunca un hash inventado).
+  AGENT_WINDOWS_SHA256: z.string().regex(/^[a-f0-9]{64}$/i).optional().or(z.literal('')).default(''),
+
   // Push (FCM): el service account de Firebase como JSON en base64 — la vía
   // para prod (Render no tiene el archivo). En dev se usa el archivo
   // backend/firebase-service-account.json (gitignored) y esto queda vacío.

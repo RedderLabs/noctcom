@@ -2014,6 +2014,10 @@ function ConnectorAgentsSection() {
   const [pairing, setPairing] = useState(false);
   const [pairCode, setPairCode] = useState<string | null>(null);
   const [os, setOs] = useState<'windows' | 'macos' | 'linux' | 'other'>('other');
+  const [release, setRelease] = useState<{ sha256: string | null; virusTotalUrl: string | null }>({
+    sha256: null,
+    virusTotalUrl: null,
+  });
 
   useEffect(() => {
     const ua = navigator.userAgent.toLowerCase();
@@ -2023,6 +2027,16 @@ function ConnectorAgentsSection() {
         : (ua.includes('linux') || ua.includes('x11')) ? 'linux'
         : 'other',
     );
+  }, []);
+
+  // SHA256 + enlace a VirusTotal del binario de Windows (transparencia de
+  // descarga). Endpoint público; si no hay hash configurado, no se muestra nada.
+  useEffect(() => {
+    apiFetch<{ sha256: string | null; virusTotalUrl: string | null }>(
+      '/api/v1/agent/version?platform=windows',
+    )
+      .then((r) => setRelease({ sha256: r.sha256 ?? null, virusTotalUrl: r.virusTotalUrl ?? null }))
+      .catch(() => { /* sin datos de release: solo se omite el bloque de checksum */ });
   }, []);
 
   const fetchAgents = useCallback(async () => {
@@ -2122,6 +2136,53 @@ function ConnectorAgentsSection() {
           <p className="text-[10px] text-text-muted mt-2">
             {t('connector.buildsSoon')}
           </p>
+        )}
+
+        {/* Aviso de SmartScreen: el binario aún no está firmado. Solo Windows. */}
+        {os === 'windows' && (
+          <p className="flex items-start gap-2 text-[11px] text-text-muted mt-3 leading-relaxed">
+            <AlertTriangle className="size-3.5 mt-0.5 shrink-0 text-amber-400/80" />
+            <span>
+              {t.rich('connector.unsignedNote', {
+                strong: (chunks) => <strong className="text-text-tertiary">{chunks}</strong>,
+              })}
+            </span>
+          </p>
+        )}
+
+        {/* Transparencia: SHA256 + informe de VirusTotal del binario servido. */}
+        {release.sha256 && (
+          <div className="mt-3 pt-3 border-t border-border-faint">
+            <div className="flex items-center gap-2 flex-wrap">
+              <FileKey2 className="size-3.5 shrink-0 text-text-muted" />
+              <span className="text-[10px] uppercase tracking-wider text-text-muted">
+                {t('connector.checksumLabel')}
+              </span>
+              <code className="text-[10px] font-mono text-text-tertiary break-all">
+                {release.sha256}
+              </code>
+              <button
+                onClick={async () => {
+                  const ok = await copyText(release.sha256 ?? '');
+                  toast[ok ? 'success' : 'error'](t(ok ? 'connector.checksumCopied' : 'connector.copyFailed'));
+                }}
+                className="p-1 rounded text-text-muted hover:text-text-primary transition-colors"
+                title={t('connector.copy')}
+              >
+                <Copy className="size-3" />
+              </button>
+            </div>
+            {release.virusTotalUrl && (
+              <a
+                href={release.virusTotalUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-block mt-1.5 text-[11px] text-violet-400 hover:text-violet-300 underline underline-offset-2"
+              >
+                {t('connector.virusTotalLink')}
+              </a>
+            )}
+          </div>
         )}
       </div>
 
