@@ -20,7 +20,7 @@ jobs:
       matrix:
         target: [backend, frontend]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -38,7 +38,7 @@ jobs:
     name: OSV Scanner
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: google/osv-scanner-action/osv-scanner-action@v1.9.0
         with:
           scan-args: |-
@@ -57,7 +57,7 @@ jobs:
       contents: read
       security-events: write    # necesario para subir el SARIF al Security tab
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Run Trivy
         uses: aquasecurity/trivy-action@master
         with:
@@ -82,7 +82,7 @@ jobs:
     name: Gitleaks — secret detection
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
       # Usamos el binario libre directamente: la Action v2 exige licencia de
@@ -107,7 +107,7 @@ jobs:
     runs-on: ubuntu-latest
     container: returntocorp/semgrep
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - run: |
           semgrep \
             --config=p/typescript \
@@ -131,7 +131,7 @@ jobs:
       matrix:
         language: ['javascript-typescript']
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: github/codeql-action/init@v3
         with:
           languages: ${{ matrix.language }}
