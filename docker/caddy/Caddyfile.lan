@@ -1,23 +1,34 @@
-# Caddyfile para el modo LAN/IP (instalación sin dominio: homelab, LXC de
-# Proxmox, pruebas). HTTP plano, sin TLS.
+# Caddyfile para el modo LAN/IP con HTTPS INTERNO (instalación sin dominio:
+# homelab, LXC de Proxmox). Caddy emite un certificado autofirmado con su CA
+# interna (tls internal) para la IP, de modo que el navegador trate el origen
+# como SEGURO (secure context) y habilite Web Crypto — imprescindible para el
+# cifrado zero-knowledge (sin él fallan login, subidas y descifrado).
 #
-# SAME-ORIGIN: la web Y la API se sirven en el mismo puerto :80. Caddy enruta
-# /api/* y /health al backend; todo lo demás al frontend. Así el navegador usa
-# URLs relativas (PUBLIC_API_URL vacío en .env) y funciona con cualquier IP o
-# hostname, sin CORS y sin depender del puerto 3000 ni de la IP horneada.
+# La 1ª visita muestra un aviso de certificado (la CA de Caddy no es de
+# confianza pública): acéptalo una vez. Para cero avisos, usa un dominio
+# (./Caddyfile, TLS de Let's Encrypt) o un túnel con HTTPS (Tailscale/Cloudflare).
 #
-# Lo monta docker-compose.lan.yml (COMPOSE_FILE en .env, escrito por
-# install.sh). El modo con dominio usa ./Caddyfile (TLS automático).
+# SAME-ORIGIN: web y API en el mismo origen https://<IP>. Caddy enruta /api/* y
+# /health al backend; el resto al frontend. El frontend usa URLs relativas
+# (PUBLIC_API_URL vacío en .env), así que funciona con cualquier IP sin rehornear.
+#
+# CADDY_DOMAIN lo fija install.sh con la IP del LXC. Lo monta docker-compose.lan.yml.
 
 {
-	auto_https off
+	# El certificado lo emite la CA interna de Caddy, no ACME.
+	auto_https disable_redirects
 }
 
-# ─── App + API (mismo origen) ───────────────────────────────────
-:80 {
+# ─── HTTP → HTTPS (comodidad: http://<IP> redirige a https://<IP>) ──
+http://{$CADDY_DOMAIN} {
+	redir https://{$CADDY_DOMAIN}{uri} permanent
+}
+
+# ─── App + API (mismo origen, HTTPS interno) ────────────────────
+https://{$CADDY_DOMAIN} {
+	tls internal
 	encode zstd gzip
 
-	# Cabeceras de seguridad para todas las respuestas.
 	header {
 		X-Content-Type-Options "nosniff"
 		X-Frame-Options "DENY"
@@ -26,7 +37,7 @@
 		-Server
 	}
 
-	# API REST y WebSocket (/api/v1/ws/...) → backend.
+	# API REST y WebSocket (/api/v1/ws/...) → backend (Caddy hace el upgrade WS).
 	handle /api/* {
 		reverse_proxy backend:3000
 	}
@@ -39,19 +50,5 @@
 	# Resto (la web Next.js) → frontend.
 	handle {
 		reverse_proxy frontend:3000
-	}
-}
-
-# ─── API en :3000 (compatibilidad) ──────────────────────────────
-# Instalaciones anteriores hornearon la API en http://<ip>:3000. Se mantiene
-# para no romperlas; las nuevas (same-origin) ya no lo usan.
-:3000 {
-	encode zstd gzip
-	reverse_proxy backend:3000
-
-	header {
-		X-Content-Type-Options "nosniff"
-		Referrer-Policy "no-referrer"
-		-Server
 	}
 }

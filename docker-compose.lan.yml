@@ -1,12 +1,13 @@
-# Modo LAN/IP (sin dominio ni TLS): Caddy sirve HTTP plano — app en :80 y
-# API en :3000. Pensado para homelab / LXC de Proxmox / pruebas en red local.
+# Modo LAN/IP con HTTPS interno (sin dominio): Caddy emite un certificado
+# autofirmado para la IP (tls internal) y sirve la app + API same-origin en
+# https://<IP>. Necesario para que el navegador habilite Web Crypto (cifrado
+# zero-knowledge). Pensado para homelab / LXC de Proxmox.
 #
 # Se activa vía COMPOSE_FILE en .env (lo escribe install.sh al instalar sin
 # dominio): COMPOSE_FILE=docker-compose.yml:docker-compose.lan.yml
+# Los puertos 80/443 ya los publica el servicio caddy de docker-compose.yml.
 services:
   caddy:
-    ports:
-      - "3000:3000"
     volumes:
       # Mismo destino que en docker-compose.yml → sustituye el Caddyfile.
       - ./docker/caddy/Caddyfile.lan:/etc/caddy/Caddyfile:ro
