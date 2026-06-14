@@ -17,6 +17,10 @@
 {
 	# El certificado lo emite la CA interna de Caddy, no ACME.
 	auto_https disable_redirects
+	# Al conectar por IP el cliente TLS no envía SNI; default_sni le dice a Caddy
+	# qué certificado presentar por defecto (el de la IP). Sin esto, el handshake
+	# por IP falla con "tlsv1 alert internal error".
+	default_sni {$CADDY_DOMAIN}
 }
 
 # ─── HTTP → HTTPS (comodidad: http://<IP> redirige a https://<IP>) ──
