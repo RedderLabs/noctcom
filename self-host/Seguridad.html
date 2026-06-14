@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Noctcom · Seguridad</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="assets/noctcom.css" />
+</head>
+<body>
+  <div class="app">
+
+    <aside class="sidebar">
+      <a class="side-brand" href="Noctcom Proxmox Dashboard.html">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <span class="sb-name">Noctcom</span>
+      </a>
+      <nav class="nav" aria-label="Navegación principal">
+        <a class="nav-item" href="Noctcom Proxmox Dashboard.html"><span class="ico" data-ico="panel"></span><span>Panel</span></a>
+        <a class="nav-item" href="Archivos.html"><span class="ico" data-ico="folder"></span><span>Archivos</span><span class="nav-tail mono">5 384</span></a>
+        <a class="nav-item" href="Almacenamiento.html"><span class="ico" data-ico="storage"></span><span>Almacenamiento</span></a>
+        <a class="nav-item active" href="Seguridad.html" aria-current="page"><span class="ico" data-ico="shield"></span><span>Seguridad</span></a>
+      </nav>
+      <div class="side-foot">
+        <div class="side-storage">
+          <div class="ss-top"><b>1,8 TB</b><span>de 8 TB</span></div>
+          <div class="ss-bar"><i style="width:23%"></i></div>
+          <div class="ss-sub"><span class="ico" data-ico="shield"></span>5 384 archivos cifrados</div>
+        </div>
+        <a class="nav-item" href="Desbloqueo.html"><span class="ico" data-ico="lock"></span><span>Bloquear bóveda</span></a>
+      </div>
+    </aside>
+
+    <div class="main">
+      <header class="topbar">
+        <div class="topbar-titles">
+          <div class="crumb mono"><span>cuenta</span><span class="sep">/</span><span>marta.rios</span></div>
+          <h1 class="page-title">Seguridad</h1>
+        </div>
+        <div class="topbar-right">
+          <span class="badge mono">LOCAL · ZERO-KNOWLEDGE</span>
+          <button class="lang" type="button" aria-label="Cambiar idioma, actual: Español"><span class="ico" data-ico="globe"></span><span>ES</span></button>
+          <span class="avatar" aria-hidden="true">MR</span>
+        </div>
+      </header>
+
+      <div class="content">
+
+        <!-- ============ ENCRYPTION KEY ============ -->
+        <section aria-labelledby="key-h">
+          <div class="section-head"><h2 id="key-h">Clave de cifrado</h2><span class="meta mono">derivada con Argon2id</span></div>
+
+          <div class="card reveal">
+            <div class="card-head">
+              <div>
+                <h3>Clave maestra de la bóveda</h3>
+                <div class="ch-sub">Nunca abandona tu dispositivo. El servidor solo almacena texto cifrado.</div>
+              </div>
+              <span class="ch-right"><span class="pill ok"><span class="ico" data-ico="check"></span>Activa</span></span>
+            </div>
+            <div class="card-pad">
+              <div class="keybox">
+                <span class="ico" data-ico="key" style="width:18px;height:18px;color:var(--violet-tx);flex-shrink:0"></span>
+                <div style="min-width:0">
+                  <div class="kb-lbl mono">huella de clave pública · ed25519</div>
+                  <div class="kb-fp mono">SHA256:bvT9 1pQk 7Lm2 xR4d Hs8N cW0e Yf3a Jg6u Zk5v Pn2b</div>
+                </div>
+                <button class="btn btn-sm btn-icon" type="button" data-act="copy" aria-label="Copiar huella de clave" style="margin-left:auto"><span class="ico" data-ico="copy"></span></button>
+              </div>
+              <div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap">
+                <button class="btn btn-sm" type="button" data-toast="Verificando integridad de la clave…"><span class="ico" data-ico="refresh"></span><span>Verificar clave</span></button>
+                <button class="btn btn-sm" type="button" data-toast="Asistente de rotación de clave abierto">Rotar clave maestra</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ============ RECOVERY PHRASE ============ -->
+        <section aria-labelledby="rec-h">
+          <div class="section-head"><h2 id="rec-h">Frase de recuperación</h2><span class="meta">24 palabras · BIP39</span></div>
+
+          <div class="card reveal d1">
+            <div class="card-head">
+              <div>
+                <h3>Si pierdes tu contraseña, esto es lo único que recupera la bóveda</h3>
+                <div class="ch-sub">Nadie más la tiene — ni Noctcom, ni el host. Guárdala fuera de línea.</div>
+              </div>
+              <span class="ch-right"><button class="btn btn-sm" type="button" id="reveal"><span class="ico" data-ico="eye"></span><span>Mostrar</span></button></span>
+            </div>
+            <div class="card-pad">
+              <div class="words" id="words" aria-label="Frase de recuperación, oculta"></div>
+              <div style="display:flex;align-items:center;gap:10px;margin-top:16px;flex-wrap:wrap">
+                <button class="btn btn-sm" type="button" data-act="copy"><span class="ico" data-ico="copy"></span><span>Copiar</span></button>
+                <button class="btn btn-sm" type="button" data-toast="Generando PDF cifrado de respaldo…"><span class="ico" data-ico="down"></span><span>Descargar respaldo</span></button>
+                <span class="pill warn" style="margin-left:auto"><span class="ico" data-ico="shield"></span>Verificada hace 3 meses</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ============ ACCESS / 2FA ============ -->
+        <section aria-labelledby="acc-h">
+          <div class="section-head"><h2 id="acc-h">Acceso</h2></div>
+          <div class="card reveal d2">
+            <div class="set-list">
+              <div class="set-row">
+                <div class="set-main">
+                  <div class="sr-t">Autenticación en dos pasos</div>
+                  <div class="sr-d">App TOTP (Aegis) vinculada. Se pide al desbloquear desde un dispositivo nuevo.</div>
+                </div>
+                <div class="set-aside">
+                  <span class="pill ok"><span class="ico" data-ico="check"></span>Activa</span>
+                  <span class="switch" role="switch" tabindex="0" aria-checked="true" aria-label="Autenticación en dos pasos" data-label="2FA"></span>
+                </div>
+              </div>
+              <div class="set-row">
+                <div class="set-main">
+                  <div class="sr-t">Llave de seguridad física</div>
+                  <div class="sr-d">YubiKey 5C registrada como segundo factor de hardware (FIDO2).</div>
+                </div>
+                <div class="set-aside">
+                  <span class="pill ok"><span class="ico" data-ico="check"></span>1 llave</span>
+                  <span class="switch" role="switch" tabindex="0" aria-checked="true" aria-label="Llave de seguridad física" data-label="Llave física"></span>
+                </div>
+              </div>
+              <div class="set-row">
+                <div class="set-main">
+                  <div class="sr-t">Auto-bloqueo de la bóveda</div>
+                  <div class="sr-d">Cifra y descarga las claves de memoria tras 15 min de inactividad.</div>
+                </div>
+                <div class="set-aside">
+                  <span class="pill muted mono">15 min</span>
+                  <span class="switch" role="switch" tabindex="0" aria-checked="true" aria-label="Auto-bloqueo de la bóveda" data-label="Auto-bloqueo"></span>
+                </div>
+              </div>
+              <div class="set-row">
+                <div class="set-main">
+                  <div class="sr-t">Enlaces compartidos públicos</div>
+                  <div class="sr-d">Permitir generar enlaces con clave embebida en el fragmento (#). Desactivado por defecto.</div>
+                </div>
+                <div class="set-aside">
+                  <span class="pill muted">Desactivado</span>
+                  <span class="switch" role="switch" tabindex="0" aria-checked="false" aria-label="Enlaces compartidos públicos" data-label="Enlaces públicos"></span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ============ SESSIONS ============ -->
+        <section aria-labelledby="ses-h">
+          <div class="section-head">
+            <h2 id="ses-h">Sesiones activas</h2>
+            <span class="meta"><a href="#" data-toast="Cerrando todas las demás sesiones…">Cerrar las demás</a></span>
+          </div>
+          <div class="card reveal d3">
+            <div class="sessions" id="sessions"></div>
+          </div>
+        </section>
+
+        <!-- ============ STACK HEALTH ============ -->
+        <section aria-labelledby="sh-h">
+          <div class="section-head"><h2 id="sh-h">Salud del stack LXC</h2><span class="meta mono">ct/110 · uptime 41 d</span></div>
+          <div class="stack reveal d3" id="stack"></div>
+          <p class="crypto-line">
+            <span class="ico" data-ico="shield"></span>
+            <span>Ninguno de estos servicios puede leer tus archivos: <b>solo manejan ciphertext</b>. La capa de cifrado vive entera en el cliente.</span>
+          </p>
+        </section>
+
+      </div>
+    </div>
+  </div>
+
+  <script src="assets/noctcom.js"></script>
+  <script>
+  (function () {
+    "use strict";
+    var ico = window.NCT.ico;
+
+    /* ---- recovery words ---- */
+    var words = ["ribera","cobre","nocturno","glaciar","ámbar","sigilo","brújula","helecho","muralla",
+      "vértice","saúco","liquen","pórtico","cantera","oleaje","yunque","penumbra","abedul",
+      "cifrado","balsa","cumbre","sosiego","ístmo","faro"];
+    var wEl = document.getElementById("words");
+    words.forEach(function (w, i) {
+      var d = document.createElement("div");
+      d.className = "word";
+      d.innerHTML = '<span class="wn mono">' + (i + 1) + '</span><span class="ww mono">' + w + '</span>';
+      wEl.appendChild(d);
+    });
+    var btn = document.getElementById("reveal"), shown = false;
+    btn.addEventListener("click", function () {
+      shown = !shown;
+      wEl.classList.toggle("revealed", shown);
+      wEl.setAttribute("aria-label", "Frase de recuperación, " + (shown ? "visible" : "oculta"));
+      btn.querySelector("span:last-child").textContent = shown ? "Ocultar" : "Mostrar";
+    });
+
+    /* ---- sessions ---- */
+    var sessions = [
+      { ico: "laptop", t: "MacBook Pro · Madrid", now: true,  d: "Firefox 139 · 192.168.1.24 · ahora mismo" },
+      { ico: "phone",  t: "Pixel 8 · Madrid",     now: false, d: "App Noctcom · 192.168.1.31 · hace 3 h" },
+      { ico: "server", t: "Proxmox host · ct/110", now: false, d: "Agente de respaldo · 10.0.0.2 · hace 6 h" },
+      { ico: "laptop", t: "ThinkPad · oficina",    now: false, d: "Chrome 138 · 88.20.14.6 · hace 2 días" }
+    ];
+    var sEl = document.getElementById("sessions");
+    sessions.forEach(function (s) {
+      var r = document.createElement("div");
+      r.className = "sess-row";
+      r.innerHTML =
+        '<span class="sess-ico">' + ico[s.ico] + '</span>' +
+        '<div class="sess-main"><div class="se-t"><span>' + s.t + '</span>' +
+          (s.now ? '<span class="tag-now">Esta sesión</span>' : '') + '</div>' +
+          '<div class="se-d mono">' + s.d + '</div></div>' +
+        (s.now ? '' : '<button class="btn btn-sm btn-ghost" type="button" data-toast="Sesión cerrada">Cerrar</button>');
+      sEl.appendChild(r);
+    });
+
+    /* ---- stack ---- */
+    ["PostgreSQL", "Redis", "MinIO", "Backend", "Caddy"].forEach(function (s) {
+      var c = document.createElement("div");
+      c.className = "chip";
+      c.innerHTML = '<span class="pulse"></span><span class="svc mono">' + s + '</span><span class="st mono">ok</span>';
+      document.getElementById("stack").appendChild(c);
+    });
+  })();
+  </script>
+</body>
+</html>

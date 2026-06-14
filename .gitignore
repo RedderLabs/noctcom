@@ -59,6 +59,14 @@ backend/firebase-service-account.b64.txt
 NOCTCOM.md
 NOCTCOM_vs_NEXTCLOUD_INTERNAL.md
 NOCTCOM_vs_SELFHOSTED_INTERNAL.md
+PLAN_SELFHOST_INTERNAL.md
+roadmap-proxmox.md
+Noctcom installer visual.md
+rol.md
+
+# Prototipos de diseño internos (referencia del track self-host, no se publican)
+Noctcom Proxmox Dashboard.html
+*.design.html
 backend/firebase-service-account.b64.txt
 url.txt
 

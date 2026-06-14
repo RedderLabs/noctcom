@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Noctcom · Almacenamiento</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="assets/noctcom.css" />
+</head>
+<body>
+  <div class="app">
+
+    <aside class="sidebar">
+      <a class="side-brand" href="Noctcom Proxmox Dashboard.html">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <span class="sb-name">Noctcom</span>
+      </a>
+      <nav class="nav" aria-label="Navegación principal">
+        <a class="nav-item" href="Noctcom Proxmox Dashboard.html"><span class="ico" data-ico="panel"></span><span>Panel</span></a>
+        <a class="nav-item" href="Archivos.html"><span class="ico" data-ico="folder"></span><span>Archivos</span><span class="nav-tail mono">5 384</span></a>
+        <a class="nav-item active" href="Almacenamiento.html" aria-current="page"><span class="ico" data-ico="storage"></span><span>Almacenamiento</span></a>
+        <a class="nav-item" href="Seguridad.html"><span class="ico" data-ico="shield"></span><span>Seguridad</span></a>
+      </nav>
+      <div class="side-foot">
+        <div class="side-storage">
+          <div class="ss-top"><b>1,8 TB</b><span>de 8 TB</span></div>
+          <div class="ss-bar"><i style="width:23%"></i></div>
+          <div class="ss-sub"><span class="ico" data-ico="shield"></span>5 384 archivos cifrados</div>
+        </div>
+        <a class="nav-item" href="Desbloqueo.html"><span class="ico" data-ico="lock"></span><span>Bloquear bóveda</span></a>
+      </div>
+    </aside>
+
+    <div class="main">
+      <header class="topbar">
+        <div class="topbar-titles">
+          <div class="crumb mono"><span>homelab</span><span class="sep">/</span><span>discos</span></div>
+          <h1 class="page-title">Almacenamiento</h1>
+        </div>
+        <div class="topbar-right">
+          <span class="badge mono">LOCAL · ZERO-KNOWLEDGE</span>
+          <button class="lang" type="button" aria-label="Cambiar idioma, actual: Español"><span class="ico" data-ico="globe"></span><span>ES</span></button>
+          <a class="avatar" href="Seguridad.html" aria-label="Cuenta de Marta Ríos">MR</a>
+        </div>
+      </header>
+
+      <div class="content">
+
+        <!-- ============ AGGREGATE BREAKDOWN ============ -->
+        <section aria-labelledby="agg-h">
+          <div class="section-head">
+            <h2 id="agg-h">Uso agregado</h2>
+            <span class="meta mono">8 TB físicos · 3 volúmenes</span>
+          </div>
+
+          <div class="card card-pad reveal">
+            <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:18px">
+              <span style="font-size:30px;font-weight:700;letter-spacing:-0.03em">1,8 TB</span>
+              <span style="font-size:15px;color:var(--tx-2)">usados de 8 TB</span>
+              <span class="mono" style="margin-left:auto;font-size:12px;color:var(--tx-4)">6,2 TB libres</span>
+            </div>
+
+            <div class="usebar" role="img" aria-label="Desglose de uso por categoría">
+              <span style="width:34.5%;background:var(--violet)"></span>
+              <span style="width:22%;background:#7c6fd6"></span>
+              <span style="width:14%;background:#5b6ee0"></span>
+              <span style="width:7%;background:var(--ok)"></span>
+              <span style="width:22.5%;background:var(--border-strong)"></span>
+            </div>
+
+            <div class="legend">
+              <span class="lg"><span class="sw" style="background:var(--violet)"></span><span class="lg-t">Documentos</span><span class="lg-v mono">632 GB</span></span>
+              <span class="lg"><span class="sw" style="background:#7c6fd6"></span><span class="lg-t">Media</span><span class="lg-v mono">404 GB</span></span>
+              <span class="lg"><span class="sw" style="background:#5b6ee0"></span><span class="lg-t">Copias de seguridad</span><span class="lg-v mono">256 GB</span></span>
+              <span class="lg"><span class="sw" style="background:var(--ok)"></span><span class="lg-t">Bases de datos</span><span class="lg-v mono">128 GB</span></span>
+              <span class="lg"><span class="sw" style="background:var(--border-strong)"></span><span class="lg-t">Sistema / reservado</span><span class="lg-v mono">404 GB</span></span>
+            </div>
+          </div>
+
+          <p class="crypto-line">
+            <span class="ico" data-ico="shield"></span>
+            <span>El desglose se calcula <b>localmente sobre metadatos cifrados</b>. El host solo ve bloques opacos, nunca categorías ni nombres.</span>
+          </p>
+        </section>
+
+        <!-- ============ PER-VOLUME DETAIL ============ -->
+        <section aria-labelledby="vol-h">
+          <div class="section-head">
+            <h2 id="vol-h">Volúmenes de Proxmox</h2>
+            <span class="meta"><a href="#" data-toast="Releyendo discos de Proxmox…">Re-escanear</a></span>
+          </div>
+          <div id="vols" class="reveal d1"></div>
+        </section>
+
+        <div class="note reveal d2">
+          <p>
+            <b>Sin cuota artificial.</b> Noctcom no impone un límite de plan: cada cifra de arriba sale de <b>los discos reales que has dado al contenedor</b> en Proxmox. Para crecer, añade un disco al pool ZFS o amplía el thin-LVM — el panel lo reflejará en el siguiente re-escaneo.
+          </p>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script src="assets/noctcom.js"></script>
+  <script>
+  (function () {
+    "use strict";
+    var ico = window.NCT.ico, TB = 1024;
+    var fmt = function (gb) { return gb >= TB ? (gb / TB).toFixed(gb % TB === 0 ? 0 : 1).replace(".", ",") + " TB" : Math.round(gb) + " GB"; };
+
+    var vols = [
+      {
+        name: "local-lvm", kind: "LVM-Thin · SSD SATA · /dev/sda", tag: "raíz", icon: "ssd",
+        used: 472, total: 512, mount: "/var/lib/vz", fs: "ext4 sobre LVM-Thin",
+        temp: "38 °C", power: "2 a 114 d", smart: "PASSED", health: "ok",
+        note: "Casi lleno — considera mover la bóveda fría a hdd-archive."
+      },
+      {
+        name: "nvme-fast", kind: "ZFS mirror · NVMe Gen4 · nvme0/nvme1", tag: "vm/ct", icon: "nvme",
+        used: 756, total: 2048, mount: "rpool/data", fs: "ZFS (lz4, ashift=12)",
+        temp: "44 °C", power: "1 a 67 d", smart: "PASSED", health: "ok",
+        note: "Dataset de VMs y contenedores. Scrub sin errores hace 3 días."
+      },
+      {
+        name: "hdd-archive", kind: "ext4 · HDD 7.200 rpm · /dev/sdb", tag: "bóveda", icon: "hdd",
+        used: 620, total: 5632, mount: "/mnt/archive", fs: "ext4",
+        temp: "33 °C", power: "4 a 201 d", smart: "PASSED", health: "ok",
+        note: "Almacenamiento frío de la bóveda cifrada. 88 % libre."
+      }
+    ];
+
+    var host = document.getElementById("vols");
+    vols.forEach(function (v) {
+      var pct = Math.round((v.used / v.total) * 100);
+      var color = pct >= 90 ? "var(--danger)" : pct >= 75 ? "var(--warn)" : "var(--violet)";
+      var pctCls = pct >= 90 ? "warn" : "";
+      var el = document.createElement("article");
+      el.className = "vol";
+      el.innerHTML =
+        '<div class="vol-head">' +
+          '<span class="disk-icon">' + ico[v.icon] + '</span>' +
+          '<div><div class="vol-title mono">' + v.name + '</div><div class="vol-meta">' + v.kind + '</div></div>' +
+          '<div class="vol-fig"><div class="vf-u">' + fmt(v.used) + '</div><div class="vf-t">/ ' + fmt(v.total) + '</div></div>' +
+        '</div>' +
+        '<div class="vol-body">' +
+          '<div class="disk-bar" style="height:8px"><i style="width:' + pct + '%;background:' + color + '"></i></div>' +
+          '<div style="display:flex;justify-content:space-between;margin-top:8px;font-size:12px;color:var(--tx-4)">' +
+            '<span class="mono" style="color:' + color + ';font-weight:600">' + pct + '% lleno</span>' +
+            '<span>' + fmt(v.total - v.used) + ' libres</span>' +
+          '</div>' +
+          '<div class="vol-stats">' +
+            stat("Punto de montaje", v.mount, "", true) +
+            stat("Sistema de ficheros", v.fs, "") +
+            stat("Temperatura", v.temp, "") +
+            stat("Encendido", v.power, "") +
+            stat("SMART", v.smart, "ok") +
+            stat("Uso", pct + "%", pctCls) +
+          '</div>' +
+        '</div>' +
+        '<div class="vol-foot">' +
+          '<span class="health ' + (v.health === "warn" ? "warn" : "") + '"><span class="pulse"></span>' +
+            (v.health === "warn" ? "Atención" : "Saludable") + '</span>' +
+          '<span style="font-size:12px;color:var(--tx-3)">' + v.note + '</span>' +
+          '<span style="flex:1"></span>' +
+          '<button class="btn btn-sm" type="button" data-toast="Test SMART iniciado en ' + v.name + '">Test SMART</button>' +
+        '</div>';
+      host.appendChild(el);
+    });
+
+    function stat(label, value, cls, mono) {
+      return '<div class="vstat"><div class="vs-l">' + label + '</div>' +
+        '<div class="vs-v ' + (cls || "") + (mono ? " mono" : "") + '">' + value + '</div></div>';
+    }
+  })();
+  </script>
+</body>
+</html>

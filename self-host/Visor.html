@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Noctcom · Visor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="assets/noctcom.css" />
+</head>
+<body>
+  <div class="app">
+
+    <aside class="sidebar">
+      <a class="side-brand" href="Noctcom Proxmox Dashboard.html">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <span class="sb-name">Noctcom</span>
+      </a>
+      <nav class="nav" aria-label="Navegación principal">
+        <a class="nav-item" href="Noctcom Proxmox Dashboard.html"><span class="ico" data-ico="panel"></span><span>Panel</span></a>
+        <a class="nav-item active" href="Archivos.html" aria-current="page"><span class="ico" data-ico="folder"></span><span>Archivos</span><span class="nav-tail mono">5 384</span></a>
+        <a class="nav-item" href="Almacenamiento.html"><span class="ico" data-ico="storage"></span><span>Almacenamiento</span></a>
+        <a class="nav-item" href="Seguridad.html"><span class="ico" data-ico="shield"></span><span>Seguridad</span></a>
+      </nav>
+      <div class="side-foot">
+        <div class="side-storage">
+          <div class="ss-top"><b>1,8 TB</b><span>de 8 TB</span></div>
+          <div class="ss-bar"><i style="width:23%"></i></div>
+          <div class="ss-sub"><span class="ico" data-ico="shield"></span>5 384 archivos cifrados</div>
+        </div>
+        <a class="nav-item" href="Desbloqueo.html"><span class="ico" data-ico="lock"></span><span>Bloquear bóveda</span></a>
+      </div>
+    </aside>
+
+    <div class="main">
+      <header class="topbar">
+        <div class="topbar-titles">
+          <div class="crumb mono"><a href="Archivos.html">bóveda</a><span class="sep">/</span><a href="Archivos.html" id="crumbFolder">Documentos</a><span class="sep">/</span><span id="crumbName">archivo</span></div>
+          <h1 class="page-title">Visor</h1>
+        </div>
+        <div class="topbar-right">
+          <span class="badge mono">LOCAL · ZERO-KNOWLEDGE</span>
+          <button class="lang" type="button" aria-label="Cambiar idioma, actual: Español"><span class="ico" data-ico="globe"></span><span>ES</span></button>
+          <a class="avatar" href="Seguridad.html" aria-label="Cuenta de Marta Ríos">MR</a>
+        </div>
+      </header>
+
+      <div class="content">
+        <a class="btn btn-sm btn-ghost reveal" href="Archivos.html" style="margin:4px 0 14px;padding-left:8px"><span class="ico" data-ico="back"></span><span>Volver a Archivos</span></a>
+
+        <div class="viewer">
+          <!-- PREVIEW -->
+          <div class="preview reveal" id="preview"></div>
+
+          <!-- ASIDE -->
+          <div class="v-aside reveal d1">
+            <div>
+              <div class="v-title" id="vTitle">archivo</div>
+              <div class="v-sub" id="vSub">—</div>
+            </div>
+
+            <div class="v-actions">
+              <button class="btn btn-primary" type="button" id="dlBtn"><span class="ico" data-ico="down"></span><span>Descargar y descifrar</span></button>
+              <button class="btn btn-sm" type="button" id="shareBtn"><span class="ico" data-ico="share"></span><span>Compartir</span></button>
+              <button class="btn btn-sm" type="button" data-act="link" aria-label="Copiar enlace cifrado"><span class="ico" data-ico="link"></span><span>Enlace</span></button>
+            </div>
+
+            <div class="card card-pad" style="padding:16px 18px">
+              <div class="metalist" id="meta"></div>
+            </div>
+
+            <div class="card card-pad" style="padding:16px 18px">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+                <div style="font-size:12.5px;font-weight:600;color:var(--tx-2)">Compartido con</div>
+                <button class="btn btn-sm btn-ghost" type="button" id="manageBtn" style="height:28px;padding:0 8px;font-size:12px">Gestionar</button>
+              </div>
+              <div style="display:flex;align-items:center;gap:12px">
+                <div class="avatar-stack">
+                  <span class="av" style="background:linear-gradient(150deg,#3a2f5c,#221b38)">MR</span>
+                  <span class="av" style="background:linear-gradient(150deg,#2f4a5c,#1b2c38)">DF</span>
+                  <span class="av" style="background:linear-gradient(150deg,#5c3a4f,#381b2c)">LS</span>
+                </div>
+                <span style="font-size:12px;color:var(--tx-4)">Tú, Diego y Lucía</span>
+              </div>
+            </div>
+
+            <div class="card card-pad" style="padding:16px 18px">
+              <div style="font-size:12.5px;font-weight:600;color:var(--tx-2);margin-bottom:8px">Historial de versiones</div>
+              <div class="vhist" id="vhist"></div>
+            </div>
+          </div>
+        </div>
+
+        <p class="crypto-line">
+          <span class="ico" data-ico="shield"></span>
+          <span>Esta vista previa se <b>descifra y se renderiza en tu navegador</b>. El stream nunca pasa en claro por el host ni por la red.</span>
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <script src="assets/noctcom.js"></script>
+  <script>
+  (function () {
+    "use strict";
+    var ico = window.NCT.ico;
+
+    var DB = {
+      "reunion-consejo.mp4": {
+        type: "video", icon: "vid", folder: "Documentos",
+        meta: { "Tipo": "Vídeo · MP4 (H.264)", "Tamaño": "1,3 GB", "Duración": "42:17", "Resolución": "1920 × 1080", "Modificado": "hace 5 días", "Propietario": "Marta Ríos" },
+        dur: 2537
+      },
+      "islandia-glaciar.jpg": {
+        type: "image", icon: "img", folder: "Documentos",
+        meta: { "Tipo": "Imagen · JPEG", "Tamaño": "18 MB", "Dimensiones": "6000 × 4000", "Cámara": "Fujifilm X-T5", "Modificado": "ayer · 21:14", "Propietario": "Marta Ríos" }
+      },
+      "contratos-2026-Q1.pdf": {
+        type: "pdf", icon: "doc", folder: "Contratos",
+        meta: { "Tipo": "Documento · PDF", "Tamaño": "4,2 MB", "Páginas": "14", "Modificado": "hace 2 h", "Propietario": "Marta Ríos" },
+        pages: 14
+      },
+      "backup-vaultwarden.tar.gz": {
+        type: "generic", icon: "archive", folder: "Copias de seguridad",
+        meta: { "Tipo": "Archivo comprimido · tar.gz", "Tamaño": "88 MB", "Contiene": "1 datastore", "Modificado": "hace 5 h", "Propietario": "Marta Ríos" }
+      }
+    };
+
+    var params = new URLSearchParams(location.search);
+    var name = params.get("f");
+    if (!name || !DB[name]) name = "reunion-consejo.mp4";
+    var data = DB[name];
+
+    document.getElementById("crumbName").textContent = name;
+    document.getElementById("crumbFolder").textContent = data.folder;
+    document.getElementById("vTitle").textContent = name;
+    document.getElementById("vSub").textContent = data.meta["Tipo"] + " · cifrado AES-256-GCM";
+
+    /* ---- meta list ---- */
+    var metaEl = document.getElementById("meta");
+    Object.keys(data.meta).forEach(function (k) {
+      var r = document.createElement("div");
+      r.className = "metarow";
+      r.innerHTML = '<span class="ml">' + k + '</span><span class="mv' + (k === "Tipo" ? "" : "") + '">' + data.meta[k] + '</span>';
+      metaEl.appendChild(r);
+    });
+    var enc = document.createElement("div");
+    enc.className = "metarow";
+    enc.innerHTML = '<span class="ml">Cifrado</span><span class="mv ok">' + ico.lock + 'En cliente</span>';
+    metaEl.appendChild(enc);
+
+    /* ---- versions ---- */
+    var versions = [
+      { t: "Versión actual", d: "Marta Ríos · hace 2 h · " + data.meta["Tamaño"], cur: true, tag: "v4" },
+      { t: "Editado por Diego", d: "Diego Ferrer · hace 1 día", tag: "v3" },
+      { t: "Subida inicial", d: "Marta Ríos · hace 5 días", tag: "v1" }
+    ];
+    var vh = document.getElementById("vhist");
+    versions.forEach(function (v) {
+      var r = document.createElement("div");
+      r.className = "vrow" + (v.cur ? " cur" : "");
+      r.innerHTML = '<span class="vdot"></span><div class="vinfo"><div class="vt">' + v.t +
+        '<span class="vtag mono">' + v.tag + '</span></div><div class="vd">' + v.d + '</div></div>';
+      vh.appendChild(r);
+    });
+
+    /* ---- share wiring ---- */
+    document.getElementById("shareBtn").addEventListener("click", function () { window.NCT.share(name); });
+    document.getElementById("manageBtn").addEventListener("click", function () { window.NCT.share(name); });
+    document.getElementById("dlBtn").addEventListener("click", function () { window.NCT.toast("Descifrando «" + name + "» en tu dispositivo…"); });
+
+    /* ---- preview by type ---- */
+    var pv = document.getElementById("preview");
+    if (data.type === "video") renderVideo(pv, data);
+    else if (data.type === "image") renderImage(pv);
+    else if (data.type === "pdf") renderPDF(pv, data);
+    else renderGeneric(pv, name);
+
+    /* ===== VIDEO ===== */
+    function fmtTime(s) {
+      s = Math.max(0, Math.floor(s));
+      var m = Math.floor(s / 60), ss = s % 60;
+      return m + ":" + (ss < 10 ? "0" : "") + ss;
+    }
+    function renderVideo(host, d) {
+      var total = d.dur;
+      host.innerHTML =
+        '<div class="stage">' +
+          '<span class="stage-tag">' + ico.lock + 'descifrado en cliente</span>' +
+          '<div class="stage-ph"><div class="ph-ico">' + ico.vid + '</div>' +
+            '<div class="ph-t mono">fotograma del vídeo · cifrado</div>' +
+            '<div class="ph-d">se descifra al reproducir</div></div>' +
+          '<button class="bigplay" id="bigplay" aria-label="Reproducir">' + ico.play + '</button>' +
+          '<div class="pctl">' +
+            '<div class="scrub" id="scrub"><i id="prog"></i></div>' +
+            '<div class="prow">' +
+              '<button class="pbtn" id="pp" aria-label="Reproducir o pausar">' + ico.play + '</button>' +
+              '<span class="ptime mono"><b id="cur">0:00</b> / ' + fmtTime(total) + '</span>' +
+              '<span class="pspace"></span>' +
+              '<button class="pbtn" aria-label="Volumen">' + ico.volume + '</button>' +
+              '<button class="pbtn" aria-label="Pantalla completa" data-toast="Pantalla completa">' + ico.expand + '</button>' +
+            '</div>' +
+          '</div>' +
+        '</div>';
+      var t = 0, playing = false, timer = null;
+      var prog = host.querySelector("#prog"), cur = host.querySelector("#cur");
+      var pp = host.querySelector("#pp"), big = host.querySelector("#bigplay"), scrub = host.querySelector("#scrub");
+      function paint() { prog.style.width = (t / total * 100) + "%"; cur.textContent = fmtTime(t); }
+      function setPlay(on) {
+        playing = on;
+        pp.innerHTML = on ? ico.pause : ico.play;
+        big.classList.toggle("playing", on);
+        big.innerHTML = on ? ico.pause : ico.play;
+        if (on) {
+          if (t >= total) { t = 0; }
+          clearInterval(timer);
+          timer = setInterval(function () {
+            t += 1; if (t >= total) { t = total; paint(); setPlay(false); return; } paint();
+          }, 1000);
+        } else { clearInterval(timer); }
+      }
+      pp.addEventListener("click", function () { setPlay(!playing); });
+      big.addEventListener("click", function () { setPlay(!playing); });
+      scrub.addEventListener("click", function (e) {
+        var r = scrub.getBoundingClientRect();
+        t = Math.round((e.clientX - r.left) / r.width * total);
+        paint();
+      });
+      paint();
+    }
+
+    /* ===== IMAGE ===== */
+    function renderImage(host) {
+      host.innerHTML =
+        '<div class="stage tall">' +
+          '<span class="stage-tag">' + ico.lock + 'descifrado en cliente</span>' +
+          '<div class="stage-ph" id="imgwrap"><div class="ph-ico">' + ico.img + '</div>' +
+            '<div class="ph-t mono">vista previa de imagen · 6000 × 4000</div>' +
+            '<div class="ph-d">arrastra una imagen real aquí para sustituir el marcador</div></div>' +
+          '<div class="izoom">' +
+            '<button id="zo" aria-label="Alejar">' + ico.zout + '</button>' +
+            '<span class="zlevel mono" id="zl">100%</span>' +
+            '<button id="zi" aria-label="Acercar">' + ico.zin + '</button>' +
+            '<button id="zf" aria-label="Ajustar" data-toast="Imagen ajustada a pantalla">' + ico.expand + '</button>' +
+          '</div>' +
+        '</div>';
+      var z = 100, zl = host.querySelector("#zl"), wrap = host.querySelector("#imgwrap");
+      function apply() { zl.textContent = z + "%"; wrap.style.transform = "scale(" + (z / 100) + ")"; }
+      host.querySelector("#zi").addEventListener("click", function () { z = Math.min(300, z + 25); apply(); });
+      host.querySelector("#zo").addEventListener("click", function () { z = Math.max(25, z - 25); apply(); });
+      host.querySelector("#zf").addEventListener("click", function () { z = 100; apply(); });
+    }
+
+    /* ===== PDF ===== */
+    function renderPDF(host, d) {
+      var pages = d.pages;
+      host.innerHTML =
+        '<div class="stage tall">' +
+          '<span class="stage-tag">' + ico.lock + 'descifrado en cliente</span>' +
+          '<div class="pdfpage"><div class="pl t"></div><div class="pl s"></div><div class="pl s2"></div><div class="pl s3"></div><div class="pl"></div><div class="pl s"></div><div class="pl s4"></div></div>' +
+          '<div class="pdfnav">' +
+            '<button id="pprev" aria-label="Página anterior">' + ico.chevL + '</button>' +
+            '<span class="ppage mono" id="ppage">1 / ' + pages + '</span>' +
+            '<button id="pnext" aria-label="Página siguiente">' + ico.chevR + '</button>' +
+          '</div>' +
+        '</div>';
+      var p = 1, lbl = host.querySelector("#ppage");
+      function set(n) { p = Math.min(pages, Math.max(1, n)); lbl.textContent = p + " / " + pages; }
+      host.querySelector("#pprev").addEventListener("click", function () { set(p - 1); });
+      host.querySelector("#pnext").addEventListener("click", function () { set(p + 1); });
+    }
+
+    /* ===== GENERIC (no preview) ===== */
+    function renderGeneric(host, fname) {
+      host.innerHTML =
+        '<div class="stage">' +
+          '<span class="stage-tag">' + ico.lock + 'cifrado en cliente</span>' +
+          '<div class="stage-ph"><div class="ph-ico">' + ico.archive + '</div>' +
+            '<div class="ph-t">Sin vista previa para este tipo</div>' +
+            '<div class="ph-d">Descárgalo para descifrarlo y abrirlo en tu equipo.</div></div>' +
+        '</div>';
+    }
+  })();
+  </script>
+</body>
+</html>

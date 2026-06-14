@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Noctcom · Desbloquear bóveda</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="assets/noctcom.css" />
+<style>
+  .unlock-wrap { position: relative; z-index: 1; min-height: 100vh; display: grid; place-items: center; padding: 32px 20px; }
+  .unlock { width: 100%; max-width: 408px; }
+  .ul-brand { display: flex; align-items: center; gap: 12px; justify-content: center; margin-bottom: 30px; }
+  .ul-brand .brand-mark { width: 36px; height: 36px; border-radius: 11px; }
+  .ul-brand b { font-size: 19px; font-weight: 600; letter-spacing: -0.02em; }
+
+  .ul-card { border-radius: var(--r-lg); border: 1px solid var(--border); background: radial-gradient(150% 120% at 50% -10%, rgba(139,92,246,0.10), transparent 55%), var(--card); padding: 30px 28px 26px; }
+  .ul-lock { width: 56px; height: 56px; border-radius: 16px; margin: 0 auto 18px; display: grid; place-items: center; background: var(--bg-deep); border: 1px solid var(--border-strong); color: var(--violet-tx); position: relative; }
+  .ul-lock svg { width: 26px; height: 26px; }
+  .ul-lock::after { content: ""; position: absolute; inset: -1px; border-radius: 16px; box-shadow: 0 0 28px -6px rgba(139,92,246,0.55); pointer-events: none; }
+  .ul-card h1 { font-size: 21px; font-weight: 600; letter-spacing: -0.025em; text-align: center; }
+  .ul-card .ul-sub { font-size: 13px; color: var(--tx-3); text-align: center; margin-top: 7px; line-height: 1.55; }
+
+  .ul-form { margin-top: 24px; display: flex; flex-direction: column; gap: 12px; }
+  .field { position: relative; }
+  .field label { display: block; font-size: 11.5px; color: var(--tx-4); margin-bottom: 7px; letter-spacing: 0.01em; }
+  .field input {
+    width: 100%; height: 46px; padding: 0 44px 0 14px; border-radius: var(--r-sm);
+    background: var(--bg-deep); border: 1px solid var(--border); color: var(--tx-1);
+    font-family: inherit; font-size: 14px; letter-spacing: 0.02em;
+    transition: border-color 0.16s var(--ease), background 0.16s var(--ease), box-shadow 0.16s var(--ease);
+  }
+  .field input::placeholder { color: var(--tx-4); letter-spacing: 0; }
+  .field input:focus { outline: none; border-color: var(--violet); box-shadow: 0 0 0 3px rgba(139,92,246,0.18); }
+  .field .toggle { position: absolute; right: 6px; bottom: 5px; width: 36px; height: 36px; display: grid; place-items: center; border-radius: 7px; color: var(--tx-4); }
+  .field .toggle:hover { color: var(--violet-tx); background: var(--card); }
+  .field .toggle svg { width: 17px; height: 17px; }
+
+  .ul-row { display: flex; align-items: center; justify-content: space-between; margin-top: 2px; }
+  .ul-row .chk { display: flex; align-items: center; gap: 9px; font-size: 12.5px; color: var(--tx-3); cursor: pointer; }
+  .ul-row a { font-size: 12.5px; color: var(--violet-tx); }
+  .ul-row a:hover { text-decoration: underline; }
+
+  .ul-btn { width: 100%; height: 48px; margin-top: 8px; font-size: 14.5px; }
+
+  .ul-zk { margin-top: 20px; padding: 13px 14px; border-radius: var(--r-sm); background: var(--bg-deep); border: 1px solid var(--border); display: flex; gap: 11px; align-items: flex-start; }
+  .ul-zk svg { width: 16px; height: 16px; color: var(--violet-tx); flex-shrink: 0; margin-top: 1px; }
+  .ul-zk p { font-size: 11.5px; color: var(--tx-3); line-height: 1.6; }
+  .ul-zk b { color: var(--tx-2); font-weight: 600; }
+
+  .ul-foot { margin-top: 22px; display: flex; align-items: center; justify-content: center; gap: 14px; font-size: 11px; color: var(--tx-4); }
+  .ul-foot .badge { font-size: 9.5px; }
+  .ul-foot .dotsep { width: 3px; height: 3px; border-radius: 50%; background: var(--tx-4); }
+
+  .ul-host { display: flex; align-items: center; gap: 8px; justify-content: center; margin-top: 14px; font-size: 11.5px; color: var(--tx-4); }
+  .ul-host .pulse { width: 7px; height: 7px; border-radius: 50%; background: var(--ok); flex-shrink: 0; }
+
+  /* shake on wrong attempt */
+  @keyframes shake { 10%,90%{transform:translateX(-1px)} 30%,70%{transform:translateX(3px)} 50%{transform:translateX(-4px)} }
+  .ul-card.err { animation: shake 0.4s var(--ease); }
+  .err-msg { color: var(--danger); font-size: 12px; margin-top: 4px; min-height: 16px; }
+</style>
+</head>
+<body>
+  <div class="unlock-wrap">
+    <main class="unlock reveal">
+      <div class="ul-brand">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <b>Noctcom</b>
+      </div>
+
+      <div class="ul-card" id="card">
+        <div class="ul-lock"><span class="ico" data-ico="lock"></span></div>
+        <h1>Desbloquear bóveda</h1>
+        <p class="ul-sub">Tu frase descifra las claves <b>en este dispositivo</b>.<br />El host nunca la recibe.</p>
+
+        <form class="ul-form" id="form" autocomplete="off">
+          <div class="field">
+            <label for="pass">Frase de cifrado</label>
+            <input type="password" id="pass" placeholder="Introduce tu frase maestra" aria-describedby="err" />
+            <button type="button" class="toggle" id="peek" aria-label="Mostrar u ocultar frase"><span class="ico" data-ico="eye"></span></button>
+          </div>
+          <div class="err-msg" id="err" role="alert"></div>
+
+          <div class="ul-row">
+            <label class="chk"><span class="switch" role="switch" tabindex="0" aria-checked="false" aria-label="Recordar este dispositivo 15 minutos" data-label="Recordar dispositivo"></span>Recordar 15 min</label>
+            <a href="Seguridad.html">¿Olvidaste la frase?</a>
+          </div>
+
+          <button type="submit" class="btn btn-primary ul-btn"><span class="ico" data-ico="shield"></span><span>Descifrar y entrar</span></button>
+        </form>
+
+        <div class="ul-zk">
+          <span class="ico" data-ico="shield"></span>
+          <p><b>Zero-knowledge.</b> El descifrado ocurre en tu navegador con una clave derivada vía Argon2id. Si pierdes la frase <b>y</b> la recuperación, ni Noctcom ni el administrador del Proxmox pueden abrir tus archivos.</p>
+        </div>
+      </div>
+
+      <div class="ul-host">
+        <span class="pulse"></span>
+        <span class="mono">ct/110 · noctcom.homelab · en línea</span>
+      </div>
+
+      <div class="ul-foot">
+        <span class="badge mono">LOCAL · ZERO-KNOWLEDGE</span>
+        <span class="dotsep"></span>
+        <button class="lang" type="button" style="height:auto;border:none;padding:0;color:var(--tx-4);font-size:11px" aria-label="Idioma español"><span class="ico" data-ico="globe" style="width:12px;height:12px"></span><span>Español</span></button>
+      </div>
+    </main>
+  </div>
+
+  <script src="assets/noctcom.js"></script>
+  <script>
+  (function () {
+    "use strict";
+    var form = document.getElementById("form");
+    var pass = document.getElementById("pass");
+    var err = document.getElementById("err");
+    var card = document.getElementById("card");
+    var peek = document.getElementById("peek");
+
+    peek.addEventListener("click", function () {
+      pass.type = pass.type === "password" ? "text" : "password";
+      pass.focus();
+    });
+
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
+      err.textContent = "";
+      if (!pass.value.trim()) {
+        err.textContent = "Introduce tu frase de cifrado.";
+        card.classList.remove("err"); void card.offsetWidth; card.classList.add("err");
+        pass.focus();
+        return;
+      }
+      // simulate client-side derive + decrypt, then enter the vault
+      var btn = form.querySelector("button[type=submit] span:last-child");
+      btn.textContent = "Derivando clave…";
+      window.NCT.toast("Descifrando bóveda en tu dispositivo…");
+      setTimeout(function () {
+        window.location.href = "Noctcom Proxmox Dashboard.html";
+      }, 950);
+    });
+  })();
+  </script>
+</body>
+</html>
