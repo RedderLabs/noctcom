@@ -22,6 +22,7 @@
 set -euo pipefail
 
 REPO_URL="https://github.com/RedderLabs/noctcom.git"
+REF="${NOCTCOM_REF:-main}"        # rama/tag a instalar (main por defecto)
 DIR="${NOCTCOM_DIR:-noctcom}"
 
 # ─── Colores ────────────────────────────────────────────────────
@@ -76,8 +77,8 @@ if [ -d "$DIR/.git" ]; then
   ok "Repo ya presente en '$DIR' — actualizando"
   git -C "$DIR" pull --ff-only || warn "No se pudo hacer fast-forward; sigo con lo que hay."
 else
-  git clone --depth 1 "$REPO_URL" "$DIR"
-  ok "Clonado en '$DIR'"
+  git clone --depth 1 --branch "$REF" "$REPO_URL" "$DIR"
+  ok "Clonado en '$DIR' (ref: $REF)"
 fi
 cd "$DIR"
 
@@ -119,22 +120,23 @@ else
   if [ -n "$DOMAIN" ]; then
     FRONT="https://app.$DOMAIN"; API="https://api.$DOMAIN"; APIBASE="$API"; FROM="noreply@$DOMAIN"
   else
-    # Modo LAN same-origin: sin dominio. Caddy (Caddyfile.lan) sirve la web Y la
-    # API en el mismo :80 (enruta /api y /health al backend). El frontend usa
-    # URLs RELATIVAS → PUBLIC_API_URL va VACÍO: funciona con cualquier IP o
-    # hostname y aguanta cambios de DHCP sin rehornear el build. PUBLIC_URL
-    # (backend; p. ej. las URLs absolutas de subida de chunks) sí necesita una
-    # base válida → http://<IP> (puerto 80, donde vive /api).
+    # Modo LAN same-origin con HTTPS INTERNO: sin dominio. Caddy (Caddyfile.lan)
+    # emite un certificado autofirmado para la IP (tls internal) y sirve la web Y
+    # la API en https://<IP> (enruta /api y /health al backend). HTTPS es
+    # OBLIGATORIO: en http plano el navegador desactiva Web Crypto y el cifrado
+    # zero-knowledge no funciona (login/sesión/subidas rotas). El frontend usa
+    # URLs RELATIVAS → PUBLIC_API_URL VACÍO (aguanta cambios de IP sin rehornear).
+    # CADDY_DOMAIN = la IP, que es lo que el Caddyfile.lan presenta como cert.
     LAN_IP="${NOCTCOM_LAN_IP:-auto}"
     if [ "$LAN_IP" = "auto" ]; then
       # '|| true': con pipefail, un 'hostname -I' que falle mataría el script.
       LAN_IP="$(hostname -I 2>/dev/null | awk '{print $1}' || true)"
     fi
     [ -z "$LAN_IP" ] && LAN_IP="127.0.0.1"
-    DOMAIN="localhost"; EMAIL="${EMAIL:-admin@localhost}"
-    FRONT="http://$LAN_IP"; API=""; APIBASE="http://$LAN_IP"; FROM="noreply@localhost"
+    DOMAIN="$LAN_IP"; EMAIL="${EMAIL:-admin@localhost}"
+    FRONT="https://$LAN_IP"; API=""; APIBASE="https://$LAN_IP"; FROM="noreply@localhost"
     COMPOSE_FILES="docker-compose.yml:docker-compose.lan.yml"
-    warn "Sin dominio: modo LAN same-origin por IP ($LAN_IP), sin TLS. Para producción, relanza con un dominio."
+    warn "Sin dominio: modo LAN por IP con HTTPS interno ($LAN_IP). El navegador avisará del certificado autofirmado la 1ª vez (acéptalo). Para cero avisos, usa un dominio."
   fi
 
   cp .env.example .env
@@ -178,13 +180,15 @@ ok "Contenedores en marcha"
 # ─── Resumen ────────────────────────────────────────────────────
 DOM="$(grep -E '^CADDY_DOMAIN=' .env | cut -d= -f2- || true)"
 FRONT_URL="$(grep -E '^FRONTEND_URL=' .env | cut -d= -f2- || true)"
+LANMODE=0; grep -qE '^COMPOSE_FILE=.*docker-compose\.lan\.yml' .env && LANMODE=1
 say ""
 hr
 printf "${G}${B}  ¡Noctcom está arrancando!${N}\n"
 hr
-if [ "$DOM" = "localhost" ]; then
+if [ "$LANMODE" = "1" ]; then
   say "  App + API:  ${B}${FRONT_URL}${N}   ${DIM}(API bajo ${FRONT_URL}/api)${N}"
-  say "  ${DIM}(modo LAN same-origin sin TLS, accesible desde tu red — para producción usa un dominio real)${N}"
+  say "  ${Y}! La 1ª vez el navegador avisará del certificado autofirmado (HTTPS interno): acéptalo.${N}"
+  say "  ${DIM}Modo LAN same-origin con HTTPS interno, accesible desde tu red. Para cero avisos usa un dominio.${N}"
   say "  ${DIM}Inicia sesión por esta URL desde cualquier equipo de la red. La web usa rutas${N}"
   say "  ${DIM}relativas, así que sigue funcionando aunque cambie la IP de esta máquina.${N}"
 else

@@ -162,12 +162,14 @@ ok "Docker instalado dentro del LXC"
 
 say ""
 say "${B}5. Instalando Noctcom (la primera vez tarda unos minutos)…${N}"
+REF="${NOCTCOM_REF:-main}"   # rama/tag a instalar (main por defecto)
 pct exec "$CTID" -- env \
   NOCTCOM_DIR=/opt/noctcom \
   NOCTCOM_NONINTERACTIVE=1 \
+  NOCTCOM_REF="$REF" \
   NOCTCOM_DOMAIN="$DOMAIN" \
   NOCTCOM_EMAIL="$EMAIL" \
-  bash -c "curl -fsSL https://raw.githubusercontent.com/RedderLabs/noctcom/main/install.sh | bash"
+  bash -c "curl -fsSL https://raw.githubusercontent.com/RedderLabs/noctcom/$REF/install.sh | bash"
 
 # ─── Resumen ────────────────────────────────────────────────────
 say ""
@@ -181,11 +183,12 @@ if [ -n "$DOMAIN" ]; then
   say "  ${Y}Apunta los DNS (registros A) app.$DOMAIN y api.$DOMAIN → $IP${N}"
   say "  ${DIM}(y redirige 80/443 del router al LXC si está tras NAT)${N}"
 else
-  say "  App + API:  ${B}http://$IP${N}   ${DIM}(modo LAN same-origin; la API va bajo http://$IP/api)${N}"
+  say "  App + API:  ${B}https://$IP${N}   ${DIM}(modo LAN same-origin; la API va bajo https://$IP/api)${N}"
   say ""
+  say "  ${O}⚠ La 1ª vez el navegador avisará del certificado autofirmado (HTTPS interno): acéptalo.${N}"
   say "  ${DIM}La web usa rutas relativas: el inicio de sesión sigue funcionando aunque${N}"
   say "  ${DIM}cambie la IP. Aun así conviene reservar esta IP en tu DHCP para las${N}"
-  say "  ${DIM}subidas grandes (PUBLIC_URL). Entra por http://$IP desde cualquier equipo.${N}"
+  say "  ${DIM}subidas grandes (PUBLIC_URL). Entra por https://$IP desde cualquier equipo.${N}"
 fi
 say ""
 say "  Entrar al LXC:  ${B}pct enter $CTID${N}"
