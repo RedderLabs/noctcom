@@ -1718,7 +1718,8 @@
       "panel": "Panel",
       "files": "Archivos",
       "storage": "Almacenamiento",
-      "security": "Seguridad"
+      "security": "Seguridad",
+      "profile": "Perfil"
     },
     "shell": {
       "badge": "LOCAL · ZERO-KNOWLEDGE",
@@ -1816,6 +1817,35 @@
       "revokeError": "No se pudo cerrar la sesión.",
       "stackHealth": "Salud del stack LXC",
       "stackNote": "Ninguno de estos servicios puede leer tus archivos: <b>solo manejan ciphertext</b>. La capa de cifrado vive entera en el cliente."
+    },
+    "profile": {
+      "title": "Perfil",
+      "admin": "Admin",
+      "roleAdmin": "Administrador del servidor",
+      "roleUser": "Usuario",
+      "signOut": "Cerrar sesión",
+      "identityTitle": "Identidad criptográfica",
+      "fpLabel": "huella de clave pública · ed25519",
+      "copyFp": "Copiar huella de clave",
+      "toSecurity": "Gestionar clave, 2FA y sesiones en Seguridad",
+      "usageTitle": "Uso de almacenamiento",
+      "prefsTitle": "Preferencias",
+      "prefsAppearance": "Apariencia e idioma",
+      "prefsSub": "Tema claro/oscuro e idioma de la interfaz. Se guardan en este dispositivo.",
+      "adminTitle": "Administración del servidor",
+      "adminMeta": "agregados · sin datos individuales",
+      "mUsers": "Usuarios",
+      "mActive": "{n} activos (30 d)",
+      "mFiles": "Archivos",
+      "mShares": "Enlaces",
+      "mAgents": "Agentes",
+      "usersTitle": "Usuarios del servidor",
+      "noUsers": "Sin usuarios todavía",
+      "memberSince": "alta",
+      "lastLogin": "último acceso",
+      "never": "nunca",
+      "stackTitle": "Salud del stack LXC",
+      "note": "Estos datos son <b>agregados del servidor</b>: ningún archivo se descifra aquí. Las claves nunca salen de tu dispositivo."
     }
   },
   "meta": {

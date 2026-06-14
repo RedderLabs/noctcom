@@ -4,7 +4,7 @@ import { useState, useEffect, type ReactNode } from 'react';
 import { useRouter, usePathname, Link } from '@/i18n/navigation';
 import Image from 'next/image';
 import {
-  LayoutDashboard, FolderTree, HardDrive, Shield, Lock, Menu, X,
+  LayoutDashboard, FolderTree, HardDrive, Shield, User, Lock, Menu, X,
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useAuth } from '@/lib/auth-store';
@@ -60,6 +60,7 @@ export default function SelfHostLayout({ children }: { children: ReactNode }) {
     { href: '/archivos', label: t('nav.files'), icon: FolderTree },
     { href: '/almacenamiento', label: t('nav.storage'), icon: HardDrive },
     { href: '/seguridad', label: t('nav.security'), icon: Shield },
+    { href: '/perfil', label: t('nav.profile'), icon: User },
   ];
 
   return (
@@ -151,7 +152,7 @@ export default function SelfHostLayout({ children }: { children: ReactNode }) {
           </span>
           <div className="ml-auto flex items-center gap-3">
             <span className="hidden sm:block text-xs text-text-tertiary font-mono">🟢 {t('shell.encryptionActive')}</span>
-            <Link href={'/seguridad' as any} className="size-8 rounded-full bg-gradient-to-br from-violet-400 to-violet-600 grid place-items-center text-xs font-medium" title={username ?? ''}>
+            <Link href={'/perfil' as any} className="size-8 rounded-full bg-gradient-to-br from-violet-400 to-violet-600 grid place-items-center text-xs font-medium" title={username ?? ''}>
               {username?.[0]?.toUpperCase() ?? '?'}
             </Link>
           </div>

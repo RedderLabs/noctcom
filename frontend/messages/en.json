@@ -1718,7 +1718,8 @@
       "panel": "Dashboard",
       "files": "Files",
       "storage": "Storage",
-      "security": "Security"
+      "security": "Security",
+      "profile": "Profile"
     },
     "shell": {
       "badge": "LOCAL · ZERO-KNOWLEDGE",
@@ -1816,6 +1817,35 @@
       "revokeError": "Couldn't close the session.",
       "stackHealth": "LXC stack health",
       "stackNote": "None of these services can read your files: <b>they only handle ciphertext</b>. The encryption layer lives entirely in the client."
+    },
+    "profile": {
+      "title": "Profile",
+      "admin": "Admin",
+      "roleAdmin": "Server administrator",
+      "roleUser": "User",
+      "signOut": "Sign out",
+      "identityTitle": "Cryptographic identity",
+      "fpLabel": "public key fingerprint · ed25519",
+      "copyFp": "Copy key fingerprint",
+      "toSecurity": "Manage key, 2FA and sessions in Security",
+      "usageTitle": "Storage usage",
+      "prefsTitle": "Preferences",
+      "prefsAppearance": "Appearance & language",
+      "prefsSub": "Light/dark theme and interface language. Stored on this device.",
+      "adminTitle": "Server administration",
+      "adminMeta": "aggregates · no individual data",
+      "mUsers": "Users",
+      "mActive": "{n} active (30d)",
+      "mFiles": "Files",
+      "mShares": "Links",
+      "mAgents": "Agents",
+      "usersTitle": "Server users",
+      "noUsers": "No users yet",
+      "memberSince": "joined",
+      "lastLogin": "last login",
+      "never": "never",
+      "stackTitle": "LXC stack health",
+      "note": "This data is <b>server aggregates</b>: no file is decrypted here. Keys never leave your device."
     }
   },
   "meta": {
