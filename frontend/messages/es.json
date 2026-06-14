@@ -1719,7 +1719,8 @@
       "files": "Archivos",
       "storage": "Almacenamiento",
       "security": "Seguridad",
-      "profile": "Perfil"
+      "profile": "Perfil",
+      "help": "Ayuda"
     },
     "shell": {
       "badge": "LOCAL · ZERO-KNOWLEDGE",

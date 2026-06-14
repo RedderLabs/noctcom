@@ -4,7 +4,7 @@ import { useState, useEffect, type ReactNode } from 'react';
 import { useRouter, usePathname, Link } from '@/i18n/navigation';
 import Image from 'next/image';
 import {
-  LayoutDashboard, FolderTree, HardDrive, Shield, User, Lock, Menu, X,
+  LayoutDashboard, FolderTree, HardDrive, Shield, User, BookOpen, Lock, Menu, X,
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useAuth } from '@/lib/auth-store';
@@ -61,6 +61,7 @@ export default function SelfHostLayout({ children }: { children: ReactNode }) {
     { href: '/almacenamiento', label: t('nav.storage'), icon: HardDrive },
     { href: '/seguridad', label: t('nav.security'), icon: Shield },
     { href: '/perfil', label: t('nav.profile'), icon: User },
+    { href: '/manual', label: t('nav.help'), icon: BookOpen },
   ];
 
   return (
