@@ -10,6 +10,8 @@
 #   · Sin dominio → modo LAN same-origin: app y API en http://<IP-del-LXC> (API bajo /api).
 #   · Con dominio → TLS automático (requiere DNS apuntando al LXC y 80/443).
 #
+# Asistente TUI (whiptail) si hay terminal; si no, usa valores por defecto/env.
+#
 # Variables de entorno opcionales:
 #   NOCTCOM_CTID=120            ID del contenedor (por defecto: siguiente libre)
 #   NOCTCOM_HOSTNAME=noctcom    hostname del LXC
@@ -19,9 +21,12 @@
 #   NOCTCOM_STORAGE=local-lvm   storage del rootfs
 #   NOCTCOM_TEMPLATE_STORAGE=local   storage de plantillas (vztmpl)
 #   NOCTCOM_BRIDGE=vmbr0        bridge de red
+#   NOCTCOM_NET=dhcp|static     modo de red (por defecto dhcp)
+#   NOCTCOM_IP=192.168.1.50/24  IP con CIDR (si NET=static)
+#   NOCTCOM_GATEWAY=192.168.1.1 puerta de enlace (si NET=static)
 #   NOCTCOM_DOMAIN=example.com  dominio (vacío = modo LAN por IP)
 #   NOCTCOM_EMAIL=you@mail.com  email para certificados TLS (con dominio)
-#   NOCTCOM_NONINTERACTIVE=1    no preguntar nada
+#   NOCTCOM_NONINTERACTIVE=1    no preguntar nada (usa defaults/env, sin TUI)
 set -euo pipefail
 
 # ─── Marca y color ──────────────────────────────────────────────
@@ -82,6 +87,38 @@ ask() { # ask <prompt> <default> <var>  (lee de /dev/tty aunque venga por tuber�
   printf -v "$__var" '%s' "${reply:-$default}"
 }
 
+# ─── Asistente TUI (whiptail) ───────────────────────────────────
+# Se usa si hay terminal interactiva y whiptail disponible; si no, el script
+# cae a valores por defecto/variables de entorno sin pedir nada.
+USE_TUI=0
+if [ "${NOCTCOM_NONINTERACTIVE:-0}" != "1" ] && [ -t 0 ] && [ -t 2 ] && command -v whiptail >/dev/null 2>&1; then
+  USE_TUI=1
+fi
+
+# Tema "noche" de las cajas whiptail (§2.2). Respeta NO_COLOR (§7).
+if [ "$USE_TUI" = "1" ] && [ -z "${NO_COLOR:-}" ]; then
+  export NEWT_COLORS='
+root=,black
+window=,black
+border=brightcyan,black
+title=brightcyan,black
+textbox=white,black
+listbox=white,black
+actlistbox=black,brightcyan
+button=black,brightcyan
+actbutton=white,blue
+checkbox=white,black
+actcheckbox=black,brightcyan
+entry=white,black
+label=brightcyan,black
+roottext=white,black
+'
+fi
+
+tui_input() { # tui_input <título> <texto> <default> [alto] [ancho]
+  whiptail --title "Noctcom · $1" --inputbox "$2" "${4:-9}" "${5:-66}" "$3" 3>&1 1>&2 2>&3
+}
+
 printf '\n'
 banner
 printf '\n'
@@ -94,6 +131,7 @@ command -v pvesh  >/dev/null 2>&1 || die "No encuentro 'pvesh'. Este script se e
 [ "$(id -u)" = "0" ] || die "Ejecútalo como root en el host Proxmox."
 ok "Host Proxmox VE detectado ($(pveversion 2>/dev/null || echo 'pveversion no disponible'))"
 
+# ─── 2. Configuración (defaults → env → asistente) ──────────────
 CTID="${NOCTCOM_CTID:-$(pvesh get /cluster/nextid)}"
 HOSTNAME="${NOCTCOM_HOSTNAME:-noctcom}"
 CORES="${NOCTCOM_CORES:-2}"
@@ -102,17 +140,93 @@ DISK="${NOCTCOM_DISK:-20}"
 STORAGE="${NOCTCOM_STORAGE:-local-lvm}"
 TPL_STORAGE="${NOCTCOM_TEMPLATE_STORAGE:-local}"
 BRIDGE="${NOCTCOM_BRIDGE:-vmbr0}"
-
 DOMAIN="${NOCTCOM_DOMAIN:-}"
-[ -z "$DOMAIN" ] && ask "   Dominio (vacío = modo LAN por IP, sin TLS):" "" DOMAIN
 EMAIL="${NOCTCOM_EMAIL:-}"
-[ -z "$EMAIL" ] && [ -n "$DOMAIN" ] && ask "   Email para los certificados TLS:" "admin@$DOMAIN" EMAIL
+NET_MODE="${NOCTCOM_NET:-dhcp}"
+NET_IP="${NOCTCOM_IP:-}"
+NET_GW="${NOCTCOM_GATEWAY:-}"
 
-say "${DIM}   LXC #$CTID · $CORES vCPU · ${RAM}MiB RAM · ${DISK}GB ($STORAGE) · $BRIDGE${N}"
+if [ "$USE_TUI" = "1" ]; then
+  say ""
+  # 2.1 Bienvenida
+  whiptail --title "Noctcom" --msgbox \
+"Bienvenido al instalador de Noctcom.
 
-# ─── 2. Plantilla Debian ────────────────────────────────────────
+Esto creará un contenedor LXC Debian y desplegará Noctcom de forma nativa (Docker dentro del LXC).
+
+Necesitarás ~4 GB de RAM y disco para los blobs cifrados." 15 66
+
+  # 2.2 Modo
+  MODE="$(whiptail --title "Noctcom · Tipo de instalación" --menu \
+"¿Cómo quieres configurar el contenedor?" 13 66 2 \
+    "rapido"   "Ajustes por defecto (recomendado)" \
+    "avanzado" "Personalizar CPU, RAM, disco, red…" \
+    3>&1 1>&2 2>&3)" || die "Instalación cancelada."
+
+  # 2.3 Recursos (solo avanzado)
+  if [ "$MODE" = "avanzado" ]; then
+    CTID="$(tui_input "Recursos" "ID del contenedor (CTID):" "$CTID")"          || die "Instalación cancelada."
+    HOSTNAME="$(tui_input "Recursos" "Hostname del contenedor:" "$HOSTNAME")"   || die "Instalación cancelada."
+    CORES="$(tui_input "Recursos" "vCPU (núcleos):" "$CORES")"                  || die "Instalación cancelada."
+    RAM="$(tui_input "Recursos" "RAM en MiB (mínimo recomendado 4096):" "$RAM")" || die "Instalación cancelada."
+    DISK="$(tui_input "Recursos" "Disco raíz en GB:" "$DISK")"                  || die "Instalación cancelada."
+    STORAGE="$(tui_input "Recursos" "Storage del rootfs:" "$STORAGE")"          || die "Instalación cancelada."
+    BRIDGE="$(tui_input "Recursos" "Bridge de red:" "$BRIDGE")"                 || die "Instalación cancelada."
+  fi
+
+  # 2.4 Dominio / TLS
+  DOMAIN="$(tui_input "Dominio" "Dominio base (déjalo VACÍO para modo LAN por IP, sin TLS):" "$DOMAIN")" || die "Instalación cancelada."
+  if [ -n "$DOMAIN" ]; then
+    EMAIL="$(tui_input "Dominio" "Email para los certificados TLS (Let's Encrypt):" "${EMAIL:-admin@$DOMAIN}")" || die "Instalación cancelada."
+  fi
+
+  # 2.5 Red
+  if whiptail --title "Noctcom · Red" --yesno \
+"¿Usar DHCP para la red del contenedor?
+
+Sí = la IP se asigna automáticamente (recomendado).
+No = configurar una IP estática." 12 66; then
+    NET_MODE="dhcp"
+  else
+    NET_MODE="static"
+    NET_IP="$(tui_input "Red estática" "IP con máscara CIDR (p. ej. 192.168.1.50/24):" "$NET_IP")"  || die "Instalación cancelada."
+    NET_GW="$(tui_input "Red estática" "Puerta de enlace (gateway), p. ej. 192.168.1.1:" "$NET_GW")" || die "Instalación cancelada."
+  fi
+else
+  # Sin TUI: conserva el flujo previo (defaults/env + pregunta mínima por tty).
+  [ -z "$DOMAIN" ] && ask "   Dominio (vacío = modo LAN por IP, sin TLS):" "" DOMAIN
+  [ -z "$EMAIL" ] && [ -n "$DOMAIN" ] && ask "   Email para los certificados TLS:" "admin@$DOMAIN" EMAIL
+fi
+
+# Validación de la IP estática (en cualquier modo).
+if [ "$NET_MODE" = "static" ]; then
+  [ -n "$NET_IP" ] || die "Modo de red estática sin IP. Indica IP/CIDR (NOCTCOM_IP) o usa DHCP."
+  [ -n "$NET_GW" ] || die "Modo de red estática sin gateway. Indica la puerta de enlace (NOCTCOM_GATEWAY)."
+  case "$NET_IP" in
+    */*) : ;;
+    *) die "La IP estática debe incluir el CIDR, p. ej. ${NET_IP}/24." ;;
+  esac
+  NET0="name=eth0,bridge=$BRIDGE,ip=$NET_IP,gw=$NET_GW"
+  NETDESC="estática $NET_IP (gw $NET_GW)"
+else
+  NET0="name=eth0,bridge=$BRIDGE,ip=dhcp"
+  NETDESC="DHCP"
+fi
+
+# Resumen + confirmación (§5.6: destructivo → defaultno; aquí no lo es).
+printf -v SUMMARY 'CTID:        %s\nHostname:    %s\nvCPU / RAM:  %s / %s MiB\nDisco raíz:  %s GB en %s\nBridge:      %s\nRed:         %s\nDominio:     %s' \
+  "$CTID" "$HOSTNAME" "$CORES" "$RAM" "$DISK" "$STORAGE" "$BRIDGE" "$NETDESC" "${DOMAIN:-(modo LAN por IP)}"
+if [ "$USE_TUI" = "1" ]; then
+  whiptail --title "Noctcom · Resumen" --yesno "$SUMMARY"$'\n\n'"¿Crear el contenedor con estos ajustes?" 17 66 \
+    || die "Instalación cancelada."
+fi
 say ""
-say "${B}2. Plantilla Debian 13…${N}"
+say "${B}2. Configuración${N}"
+say "${DIM}$SUMMARY${N}"
+
+# ─── 3. Plantilla Debian ────────────────────────────────────────
+say ""
+say "${B}3. Plantilla Debian 13…${N}"
 pveam update >/dev/null 2>&1 || true
 # '|| true': con pipefail, un grep sin resultados mataría el script sin mensaje.
 TEMPLATE="$(pveam available --section system 2>/dev/null | awk '{print $2}' | grep -E '^debian-13-standard' | sort -V | tail -1 || true)"
@@ -125,15 +239,15 @@ else
   ok "Plantilla descargada en '$TPL_STORAGE'"
 fi
 
-# ─── 3. Crear el LXC ────────────────────────────────────────────
+# ─── 4. Crear el LXC ────────────────────────────────────────────
 say ""
-say "${B}3. Creando el LXC #$CTID…${N}"
+say "${B}4. Creando el LXC #$CTID…${N}"
 pct status "$CTID" >/dev/null 2>&1 && die "Ya existe un contenedor con ID $CTID. Usa NOCTCOM_CTID=<otro>."
 pct create "$CTID" "$TPL_STORAGE:vztmpl/$TEMPLATE" \
   --hostname "$HOSTNAME" \
   --cores "$CORES" --memory "$RAM" --swap 512 \
   --rootfs "$STORAGE:$DISK" \
-  --net0 "name=eth0,bridge=$BRIDGE,ip=dhcp" \
+  --net0 "$NET0" \
   --unprivileged 1 \
   --features nesting=1,keyctl=1 \
   --onboot 1 \
@@ -141,27 +255,32 @@ pct create "$CTID" "$TPL_STORAGE:vztmpl/$TEMPLATE" \
   --start 1 >/dev/null
 ok "LXC creado y arrancado (no privilegiado, nesting para Docker)"
 
-# Espera a que el contenedor tenga red (DHCP).
-info "Esperando IP por DHCP…"
-IP=""
-for _ in $(seq 1 30); do
-  IP="$(pct exec "$CTID" -- hostname -I 2>/dev/null | awk '{print $1}')" || true
-  [ -n "$IP" ] && break
-  sleep 2
-done
-[ -n "$IP" ] || die "El contenedor no obtuvo IP. ¿Hay DHCP en el bridge $BRIDGE?"
-ok "IP del contenedor: $IP"
+# Determina la IP del contenedor.
+if [ "$NET_MODE" = "static" ]; then
+  IP="${NET_IP%/*}"
+  ok "IP estática del contenedor: $IP"
+else
+  info "Esperando IP por DHCP…"
+  IP=""
+  for _ in $(seq 1 30); do
+    IP="$(pct exec "$CTID" -- hostname -I 2>/dev/null | awk '{print $1}')" || true
+    [ -n "$IP" ] && break
+    sleep 2
+  done
+  [ -n "$IP" ] || die "El contenedor no obtuvo IP. ¿Hay DHCP en el bridge $BRIDGE?"
+  ok "IP del contenedor: $IP"
+fi
 
-# ─── 4. Docker + Noctcom dentro del LXC ─────────────────────────
+# ─── 5. Docker + Noctcom dentro del LXC ─────────────────────────
 say ""
-say "${B}4. Instalando Docker en el LXC…${N}"
+say "${B}5. Instalando Docker en el LXC…${N}"
 pct exec "$CTID" -- bash -c "apt-get update -qq && DEBIAN_FRONTEND=noninteractive apt-get install -yqq curl git openssl ca-certificates >/dev/null"
 pct exec "$CTID" -- bash -c "curl -fsSL https://get.docker.com | sh >/dev/null 2>&1"
 pct exec "$CTID" -- docker --version >/dev/null 2>&1 || die "Docker no quedó operativo dentro del LXC."
 ok "Docker instalado dentro del LXC"
 
 say ""
-say "${B}5. Instalando Noctcom (la primera vez tarda unos minutos)…${N}"
+say "${B}6. Instalando Noctcom (la primera vez tarda unos minutos)…${N}"
 pct exec "$CTID" -- env \
   NOCTCOM_DIR=/opt/noctcom \
   NOCTCOM_NONINTERACTIVE=1 \
@@ -169,7 +288,18 @@ pct exec "$CTID" -- env \
   NOCTCOM_EMAIL="$EMAIL" \
   bash -c "curl -fsSL https://raw.githubusercontent.com/RedderLabs/noctcom/main/install.sh | bash"
 
-# ─── Resumen ────────────────────────────────────────────────────
+# ─── Resumen final ──────────────────────────────────────────────
+if [ -n "$DOMAIN" ]; then
+  printf -v DONE 'Noctcom está instalado en el LXC #%s.\n\nApp:  https://app.%s\nAPI:  https://api.%s\n\nApunta los DNS (registros A) de app.%s y api.%s a %s\n(y redirige 80/443 del router al LXC si está tras NAT).' \
+    "$CTID" "$DOMAIN" "$DOMAIN" "$DOMAIN" "$DOMAIN" "$IP"
+else
+  printf -v DONE 'Noctcom está instalado en el LXC #%s.\n\nApp + API:  http://%s   (la API va bajo http://%s/api)\n\nModo LAN same-origin: entra por http://%s desde cualquier equipo de la red. La web usa rutas relativas, así que sigue funcionando aunque cambie la IP.' \
+    "$CTID" "$IP" "$IP" "$IP"
+fi
+if [ "$USE_TUI" = "1" ]; then
+  whiptail --title "Noctcom · Instalación completada ✓" --msgbox "$DONE" 17 70 || true
+fi
+
 say ""
 hr
 printf "${G}${B}  ¡Noctcom está instalado en el LXC #$CTID!${N}\n"
