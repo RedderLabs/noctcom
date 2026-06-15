@@ -20,7 +20,11 @@ ENV NODE_ENV=production
 # enviar eventos); SENTRY_DSN del entorno de Render lo sobreescribe si hace falta.
 ENV SENTRY_DSN=https://7a49671484a245eaa01c10b061601511@app.glitchtip.com/24347
 RUN apk add --no-cache wget tini \
- && addgroup -S app && adduser -S app -G app
+ && addgroup -S app && adduser -S app -G app \
+ && mkdir -p /data && chown app:app /data
+# /data: destino de los blobs cifrados en disco (self-host). Se crea aquí como
+# app:app para que, al montar el named volume blob_data por PRIMERA vez, Docker
+# inicialice el volumen con esa propiedad y el proceso (USER app) pueda escribir.
 COPY --from=build /app/dist ./dist
 COPY --from=deps /app/node_modules ./node_modules
 COPY package.json ./
