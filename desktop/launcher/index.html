@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Noctcom</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="wrap">
+    <header class="head">
+      <div class="brand">
+        <span class="mark" aria-hidden="true"></span>
+        <span>Noctcom</span>
+      </div>
+      <div class="eyebrow mono">CONECTAR A</div>
+      <h1>Elige tu instancia</h1>
+      <p class="sub">Cada instancia es una bóveda independiente. Tus claves nunca salen de este equipo.</p>
+    </header>
+
+    <section id="list" class="list" aria-label="Instancias"></section>
+
+    <button id="add-toggle" class="add" type="button">
+      <span class="plus">+</span>
+      <span>Añadir instancia… <span class="mono dim">(URL de tu instancia)</span></span>
+    </button>
+
+    <form id="form" class="form" hidden>
+      <div class="field">
+        <label for="f-name">Nombre</label>
+        <input id="f-name" type="text" placeholder="Casa · Proxmox" autocomplete="off" />
+      </div>
+      <div class="field">
+        <label for="f-url">URL</label>
+        <input id="f-url" type="text" class="mono" placeholder="https://192.168.8.244" autocomplete="off" spellcheck="false" />
+      </div>
+      <div class="form-actions">
+        <button type="button" id="f-cancel" class="btn ghost">Cancelar</button>
+        <button type="submit" id="f-save" class="btn">Guardar</button>
+      </div>
+      <p id="f-error" class="error" role="alert"></p>
+    </form>
+
+    <footer class="foot">
+      <span class="conn"><span class="dot ok"></span>Listo para conectar</span>
+      <button id="connect" class="btn primary" type="button" disabled>
+        Desbloquear y conectar
+      </button>
+    </footer>
+  </main>
+
+  <script src="main.js"></script>
+</body>
+</html>
