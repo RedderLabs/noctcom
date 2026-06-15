@@ -12,11 +12,28 @@ export function PwaProvider() {
 
   useEffect(() => {
     if ('serviceWorker' in navigator) {
-      // El registro también migra a quien tuviera el SW antiguo de FCM
-      // (mismo scope '/': el script nuevo reemplaza al anterior).
-      navigator.serviceWorker.register('/sw.js').catch((err) => {
-        console.warn('[pwa] registro del SW falló:', err);
-      });
+      // El registro de un SW exige un contexto seguro DE CONFIANZA. En modo LAN
+      // con HTTPS interno por IP (certificado autofirmado), el navegador rechaza
+      // el fetch de /sw.js con un SecurityError aunque el usuario acepte el aviso
+      // del certificado: el registro del SW no admite excepción manual como sí la
+      // admite la navegación. Omitirlo en IPs crudas (no loopback) evita ese error
+      // ruidoso; la PWA offline solo aplica con dominio + certificado válido y la
+      // subida/consulta de archivos no necesita SW.
+      const host = window.location.hostname;
+      const isLoopback =
+        host === 'localhost' || host === '127.0.0.1' || host === '::1' || host === '[::1]';
+      const isIpLiteral =
+        !isLoopback && (/^\d{1,3}(\.\d{1,3}){3}$/.test(host) || host.includes(':'));
+
+      if (isIpLiteral) {
+        console.info('[pwa] SW omitido: HTTPS interno por IP (certificado autofirmado).');
+      } else {
+        // El registro también migra a quien tuviera el SW antiguo de FCM
+        // (mismo scope '/': el script nuevo reemplaza al anterior).
+        navigator.serviceWorker.register('/sw.js').catch((err) => {
+          console.warn('[pwa] registro del SW falló:', err);
+        });
+      }
     }
 
     const mq = window.matchMedia('(display-mode: standalone)');
