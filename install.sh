@@ -157,9 +157,44 @@ else
   # Todo lo instalado por install.sh es self-host → activa el panel operativo
   # (capacidad por disco, salud del stack, sin cuota de plan) y '/' → login.
   printf '\n# Build self-host (panel operativo). Escrito por install.sh.\nSELF_HOST=true\n' >> .env
+  # Discos de datos extra (opcional, ver sección 3b). Vacío por defecto; se puede
+  # pasar NOCTCOM_EXTRA_DATA_DIR en la 1ª instalación o editar .env luego.
+  printf '\n# Discos de datos extra para el backend (rutas coma-separadas). Ver .env.example.\nEXTRA_DATA_DIR=%s\n' "${NOCTCOM_EXTRA_DATA_DIR:-}" >> .env
   chmod 600 .env
   ok "Generado .env con secretos aleatorios (chmod 600)"
   say "${DIM}   Email (verificación/OTP) desactivado por defecto: añade RESEND_API_KEY o SMTP_* en .env.${N}"
+fi
+
+# ─── 3b. Discos de datos extra (EXTRA_DATA_DIR) ─────────────────
+# Añade discos del PROPIO servidor (interno/USB, o un recurso de red ya montado
+# en el host; en Proxmox, el disco pasado al LXC con 'pct set -mpN') sin editar
+# compose a mano. Cada ruta de EXTRA_DATA_DIR se bind-monta en el backend con el
+# MISMO path (lo que registras en la web coincide). Idempotente: regenera el
+# fichero y lo mantiene en COMPOSE_FILE; si está vacío, lo retira.
+DISKS_FILE="docker-compose.disks.yml"
+EXTRA_DIRS="$(grep -E '^EXTRA_DATA_DIR=' .env 2>/dev/null | head -1 | cut -d= -f2-)"
+EXTRA_DIRS="${EXTRA_DIRS%\"}"; EXTRA_DIRS="${EXTRA_DIRS#\"}"
+if [ -n "$(printf '%s' "$EXTRA_DIRS" | tr -d ', ')" ]; then
+  {
+    printf 'services:\n  backend:\n    volumes:\n'
+    OLDIFS="$IFS"; IFS=','
+    for d in $EXTRA_DIRS; do
+      d="$(printf '%s' "$d" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+      [ -z "$d" ] && continue
+      mkdir -p "$d" 2>/dev/null || true
+      printf '      - "%s:%s"\n' "$d" "$d"
+    done
+    IFS="$OLDIFS"
+  } > "$DISKS_FILE"
+  if ! grep -q "$DISKS_FILE" .env; then
+    sed -i.bak -E "s|^(COMPOSE_FILE=.*)$|\1:$DISKS_FILE|" .env && rm -f .env.bak
+  fi
+  ok "Discos extra para el backend: $EXTRA_DIRS"
+else
+  rm -f "$DISKS_FILE"
+  if grep -q "$DISKS_FILE" .env; then
+    sed -i.bak -E "s|:$DISKS_FILE||g" .env && rm -f .env.bak
+  fi
 fi
 
 # ─── 4. Arranque ────────────────────────────────────────────────
@@ -176,6 +211,32 @@ $DC up -d --build
 # reiniciamos para que cargue siempre la configuración actual.
 $DC restart caddy >/dev/null 2>&1 || true
 ok "Contenedores en marcha"
+
+# Permisos de los discos extra: el backend corre como usuario 'app' (no root),
+# así que las rutas bind-montadas deben pertenecerle para poder escribir (si no,
+# registrar el volumen daría "path is not a writable directory"). Leemos el uid
+# real de 'app' del contenedor y ajustamos SOLO el directorio raíz (no recursivo:
+# respeta cualquier dato previo del disco).
+if [ -n "${EXTRA_DIRS:-}" ] && [ -n "$(printf '%s' "$EXTRA_DIRS" | tr -d ', ')" ]; then
+  APP_UID=""; APP_GID=""
+  for _ in 1 2 3 4 5; do
+    APP_UID="$($DC exec -T backend id -u 2>/dev/null | tr -dc '0-9')" || true
+    APP_GID="$($DC exec -T backend id -g 2>/dev/null | tr -dc '0-9')" || true
+    [ -n "$APP_UID" ] && [ -n "$APP_GID" ] && break
+    sleep 2
+  done
+  if [ -n "$APP_UID" ] && [ -n "$APP_GID" ]; then
+    OLDIFS="$IFS"; IFS=','
+    for d in $EXTRA_DIRS; do
+      d="$(printf '%s' "$d" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+      [ -n "$d" ] && chown "$APP_UID:$APP_GID" "$d" 2>/dev/null || true
+    done
+    IFS="$OLDIFS"
+    ok "Permisos de discos extra ajustados (app uid $APP_UID)"
+  else
+    warn "No pude leer el uid de 'app' del backend; si registrar un disco extra falla, ajusta el dueño del directorio a mano."
+  fi
+fi
 
 # ─── 5. Migraciones de paridad ──────────────────────────────────
 # Los scripts docker/postgres/init/ SOLO corren con el volumen de Postgres vacío

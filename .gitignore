@@ -19,6 +19,9 @@ desktop/src-tauri/binaries/
 .env.*
 !.env.example
 
+# Compose generado por install.sh para discos extra (EXTRA_DATA_DIR)
+docker-compose.disks.yml
+
 # OS
 .DS_Store
 Thumbs.db
