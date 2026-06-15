@@ -177,6 +177,23 @@ $DC up -d --build
 $DC restart caddy >/dev/null 2>&1 || true
 ok "Contenedores en marcha"
 
+# ─── 5. Migraciones de paridad ──────────────────────────────────
+# Los scripts docker/postgres/init/ SOLO corren con el volumen de Postgres vacío
+# (primer arranque). En una BD ya existente (típico tras 'update.sh') las columnas
+# nuevas no se aplicarían, rompiendo signup y la subida de archivos. Este paso
+# aplica los parches de paridad idempotentes contra el Postgres en marcha.
+say ""
+say "${B}5. Sincronizando schema (migraciones de paridad)…${N}"
+if [ -f scripts/selfhost-db-sync.sh ]; then
+  if DC="$DC" bash scripts/selfhost-db-sync.sh; then
+    ok "Schema al día"
+  else
+    warn "No se pudo sincronizar el schema. Ejecútalo luego: ${B}bash scripts/selfhost-db-sync.sh${N}"
+  fi
+else
+  warn "Falta scripts/selfhost-db-sync.sh — actualiza el repo (git pull) y reintenta."
+fi
+
 # ─── Resumen ────────────────────────────────────────────────────
 DOM="$(grep -E '^CADDY_DOMAIN=' .env | cut -d= -f2- || true)"
 FRONT_URL="$(grep -E '^FRONTEND_URL=' .env | cut -d= -f2- || true)"
