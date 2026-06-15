@@ -89,11 +89,18 @@ ask() { # ask <prompt> <default> <var>  (lee de /dev/tty aunque venga por tuber�
 }
 
 # ─── Asistente TUI (whiptail) ───────────────────────────────────
-# Se usa si hay terminal interactiva y whiptail disponible; si no, el script
-# cae a valores por defecto/variables de entorno sin pedir nada.
+# Detección de terminal robusta (Fase 5): con `bash <(curl…)` el stdin del
+# proceso NO es una tty (es la sustitución de proceso), así que `[ -t 0 ]`
+# fallaba y el asistente nunca salía. Comprobamos /dev/tty, que sí existe en
+# una sesión SSH/consola; las cajas leen el teclado por ahí (ver `</dev/tty`).
 USE_TUI=0
-if [ "${NOCTCOM_NONINTERACTIVE:-0}" != "1" ] && [ -t 0 ] && [ -t 2 ] && command -v whiptail >/dev/null 2>&1; then
-  USE_TUI=1
+if [ "${NOCTCOM_NONINTERACTIVE:-0}" != "1" ] && { [ -t 0 ] || [ -e /dev/tty ]; }; then
+  # whiptail viene de serie en PVE; si faltara, lo instalamos (no es fatal).
+  if ! command -v whiptail >/dev/null 2>&1; then
+    info "Instalando 'whiptail' para el asistente…"
+    DEBIAN_FRONTEND=noninteractive apt-get install -yqq whiptail >/dev/null 2>&1 || true
+  fi
+  command -v whiptail >/dev/null 2>&1 && USE_TUI=1
 fi
 
 # Tema "noche" de las cajas whiptail (§2.2). Respeta NO_COLOR (§7).
@@ -117,7 +124,8 @@ roottext=white,black
 fi
 
 tui_input() { # tui_input <título> <texto> <default> [alto] [ancho]
-  whiptail --title "Noctcom · $1" --inputbox "$2" "${4:-9}" "${5:-66}" "$3" 3>&1 1>&2 2>&3
+  # </dev/tty: el teclado se lee del terminal aunque el stdin del script no lo sea.
+  whiptail --title "Noctcom · $1" --inputbox "$2" "${4:-9}" "${5:-66}" "$3" 3>&1 1>&2 2>&3 </dev/tty
 }
 
 printf '\n'
@@ -156,14 +164,14 @@ if [ "$USE_TUI" = "1" ]; then
 
 Esto creará un contenedor LXC Debian y desplegará Noctcom de forma nativa (Docker dentro del LXC).
 
-Necesitarás ~4 GB de RAM y disco para los blobs cifrados." 15 66
+Necesitarás ~4 GB de RAM y disco para los blobs cifrados." 15 66 </dev/tty
 
   # 2.2 Modo
   MODE="$(whiptail --title "Noctcom · Tipo de instalación" --menu \
 "¿Cómo quieres configurar el contenedor?" 13 66 2 \
     "rapido"   "Ajustes por defecto (recomendado)" \
     "avanzado" "Personalizar CPU, RAM, disco, red…" \
-    3>&1 1>&2 2>&3)" || die "Instalación cancelada."
+    3>&1 1>&2 2>&3 </dev/tty)" || die "Instalación cancelada."
 
   # 2.3 Recursos (solo avanzado)
   if [ "$MODE" = "avanzado" ]; then
@@ -187,7 +195,7 @@ Necesitarás ~4 GB de RAM y disco para los blobs cifrados." 15 66
 "¿Usar DHCP para la red del contenedor?
 
 Sí = la IP se asigna automáticamente (recomendado).
-No = configurar una IP estática." 12 66; then
+No = configurar una IP estática." 12 66 </dev/tty; then
     NET_MODE="dhcp"
   else
     NET_MODE="static"
@@ -219,7 +227,7 @@ fi
 printf -v SUMMARY 'CTID:        %s\nHostname:    %s\nvCPU / RAM:  %s / %s MiB\nDisco raíz:  %s GB en %s\nBridge:      %s\nRed:         %s\nDominio:     %s' \
   "$CTID" "$HOSTNAME" "$CORES" "$RAM" "$DISK" "$STORAGE" "$BRIDGE" "$NETDESC" "${DOMAIN:-(modo LAN por IP)}"
 if [ "$USE_TUI" = "1" ]; then
-  whiptail --title "Noctcom · Resumen" --yesno "$SUMMARY"$'\n\n'"¿Crear el contenedor con estos ajustes?" 17 66 \
+  whiptail --title "Noctcom · Resumen" --yesno "$SUMMARY"$'\n\n'"¿Crear el contenedor con estos ajustes?" 17 66 </dev/tty \
     || die "Instalación cancelada."
 fi
 say ""
@@ -276,14 +284,17 @@ fi
 # ─── 5. Docker + Noctcom dentro del LXC ─────────────────────────
 say ""
 say "${B}5. Instalando Docker en el LXC…${N}"
-pct exec "$CTID" -- bash -c "apt-get update -qq && DEBIAN_FRONTEND=noninteractive apt-get install -yqq curl git openssl ca-certificates >/dev/null"
-pct exec "$CTID" -- bash -c "curl -fsSL https://get.docker.com | sh >/dev/null 2>&1"
+# LC_ALL/LANG=C.UTF-8: evita el ruido "perl: warning: Setting locale failed"
+# dentro del LXC recién creado (sin locales generados todavía).
+pct exec "$CTID" -- env LC_ALL=C.UTF-8 LANG=C.UTF-8 bash -c "apt-get update -qq && DEBIAN_FRONTEND=noninteractive apt-get install -yqq curl git openssl ca-certificates >/dev/null"
+pct exec "$CTID" -- env LC_ALL=C.UTF-8 LANG=C.UTF-8 bash -c "curl -fsSL https://get.docker.com | sh >/dev/null 2>&1"
 pct exec "$CTID" -- docker --version >/dev/null 2>&1 || die "Docker no quedó operativo dentro del LXC."
 ok "Docker instalado dentro del LXC"
 
 say ""
 say "${B}6. Instalando Noctcom (la primera vez tarda unos minutos)…${N}"
 pct exec "$CTID" -- env \
+  LC_ALL=C.UTF-8 LANG=C.UTF-8 \
   NOCTCOM_DIR=/opt/noctcom \
   NOCTCOM_NONINTERACTIVE=1 \
   NOCTCOM_REF="$REF" \
@@ -300,7 +311,7 @@ else
     "$CTID" "$IP" "$IP" "$IP"
 fi
 if [ "$USE_TUI" = "1" ]; then
-  whiptail --title "Noctcom · Instalación completada ✓" --msgbox "$DONE" 17 70 || true
+  whiptail --title "Noctcom · Instalación completada ✓" --msgbox "$DONE" 17 70 </dev/tty || true
 fi
 
 say ""
