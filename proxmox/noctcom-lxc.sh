@@ -281,6 +281,12 @@ else
   ok "IP del contenedor: $IP"
 fi
 
+# Preferir IPv4 dentro del LXC. En hosts con IPv6 configurado pero SIN ruta de
+# salida, los pulls de imágenes (CDN de Docker) resolvían una AAAA e intentaban
+# conectar por IPv6 → "network is unreachable", abortando la instalación. Esta
+# precedencia en gai.conf hace que getaddrinfo prefiera IPv4 sin desactivar IPv6.
+pct exec "$CTID" -- bash -c 'grep -qs "::ffff:0:0/96 100" /etc/gai.conf || echo "precedence ::ffff:0:0/96 100" >> /etc/gai.conf'
+
 # ─── 5. Docker + Noctcom dentro del LXC ─────────────────────────
 say ""
 say "${B}5. Instalando Docker en el LXC…${N}"
