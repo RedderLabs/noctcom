@@ -11,6 +11,8 @@ backend/dist/
 desktop/src-tauri/target/
 desktop/src-tauri/gen/
 agent/target/
+# El binario del Connector (sidecar) se genera en el build, no se versiona.
+desktop/src-tauri/binaries/
 
 # Environment
 .env

@@ -100,7 +100,7 @@ function render() {
         else removeInstance(inst.id);
         return;
       }
-      selectedId = inst.id; save(); render();
+      selectedId = inst.id; save(); render(); cpSyncSelection();
     });
     listEl.appendChild(el);
   }
@@ -179,6 +179,106 @@ async function connect() {
   }
 }
 
+// ── Connector (sidecar): emparejar / iniciar / detener ──
+const cpState = { paired: false, server: null, running: false, busy: false };
+
+function selectedInstance() { return instances.find((i) => i.id === selectedId) || null; }
+
+async function cpRefresh() {
+  if (!inTauri) { cpRender("La gestión de discos solo está disponible dentro de la app."); return; }
+  try {
+    const st = await invoke("connector_status");
+    const out = st.output || "";
+    cpState.paired = /agentId:/.test(out);
+    const m = out.match(/(?:servidor|server):\s*(\S+)/);
+    cpState.server = m ? m[1] : null;
+    cpState.running = await invoke("connector_running");
+  } catch (e) {
+    cpRender("No se pudo consultar el Connector: " + e);
+    return;
+  }
+  cpRender();
+}
+
+function cpRender(errorMsg) {
+  const badge = $("cp-badge");
+  const body = $("cp-body");
+  if (errorMsg) {
+    badge.className = "cp-badge"; badge.textContent = "—";
+    body.innerHTML = '<p class="cp-msg">' + escapeHtml(errorMsg) + "</p>";
+    return;
+  }
+  const inst = selectedInstance();
+  if (cpState.running) { badge.className = "cp-badge on"; badge.textContent = "en marcha"; }
+  else if (cpState.paired) { badge.className = "cp-badge paired"; badge.textContent = "emparejado"; }
+  else { badge.className = "cp-badge"; badge.textContent = "sin emparejar"; }
+
+  let html = "";
+  if (!cpState.paired) {
+    html += '<p class="cp-msg">Consigue un <b>código</b> en la web de la instancia → <b>Ajustes → Connector</b>, y pégalo aquí para dar a esta instancia acceso a los discos de este equipo.</p>';
+    html += '<div class="cp-row"><input id="cp-code" type="text" placeholder="código de emparejamiento" autocomplete="off" />' +
+            '<button id="cp-pair" class="btn" type="button"' + (inst ? "" : " disabled") + ">Emparejar</button></div>";
+    if (!inst) html += '<p class="cp-out">Selecciona primero una instancia arriba.</p>';
+  } else {
+    html += '<p class="cp-msg">Emparejado con <b>' + escapeHtml(cpState.server || "—") + "</b>." +
+            (cpState.running
+              ? " Activo: sus discos aparecen en la instancia (Ajustes → Almacenamiento)."
+              : " Inícialo para que la instancia vea los discos de este equipo.") + "</p>";
+    html += '<div class="cp-row">' +
+            (cpState.running
+              ? '<button id="cp-stop" class="btn" type="button">Detener</button>'
+              : '<button id="cp-start" class="btn primary" type="button">Iniciar</button>') +
+            '<button id="cp-repair" class="btn ghost" type="button">Re-emparejar</button></div>';
+  }
+  html += '<p id="cp-out" class="cp-out"></p>';
+  body.innerHTML = html;
+
+  const pairBtn = $("cp-pair");
+  if (pairBtn) pairBtn.addEventListener("click", cpPair);
+  const startBtn = $("cp-start");
+  if (startBtn) startBtn.addEventListener("click", cpStart);
+  const stopBtn = $("cp-stop");
+  if (stopBtn) stopBtn.addEventListener("click", cpStop);
+  const repairBtn = $("cp-repair");
+  if (repairBtn) repairBtn.addEventListener("click", () => { cpState.paired = false; cpRender(); });
+}
+
+function cpSyncSelection() {
+  const pairBtn = document.getElementById("cp-pair");
+  if (pairBtn) pairBtn.disabled = !selectedInstance();
+}
+
+function cpOut(msg, isErr) {
+  const el = $("cp-out");
+  if (el) { el.textContent = msg; el.className = "cp-out" + (isErr ? " err" : ""); }
+}
+
+async function cpPair() {
+  const inst = selectedInstance();
+  const code = ($("cp-code").value || "").trim();
+  if (!inst || !code) { cpOut("Introduce el código.", true); return; }
+  cpOut("Emparejando…");
+  try {
+    const r = await invoke("connector_pair", { server: inst.url, code });
+    if (r.ok) { await cpRefresh(); cpOut("✓ Emparejado."); }
+    else cpOut(r.output || "El emparejamiento falló.", true);
+  } catch (e) { cpOut("Error: " + e, true); }
+}
+
+async function cpStart() {
+  const server = cpState.server || (selectedInstance() && selectedInstance().url);
+  if (!server) { cpOut("Sin servidor emparejado.", true); return; }
+  cpOut("Iniciando…");
+  try { await invoke("connector_start", { server }); await cpRefresh(); }
+  catch (e) { cpOut("Error: " + e, true); }
+}
+
+async function cpStop() {
+  cpOut("Deteniendo…");
+  try { await invoke("connector_stop"); await cpRefresh(); }
+  catch (e) { cpOut("Error: " + e, true); }
+}
+
 $("add-toggle").addEventListener("click", () => showForm());
 $("f-cancel").addEventListener("click", hideForm);
 formEl.addEventListener("submit", submitForm);
@@ -186,4 +286,5 @@ connectBtn.addEventListener("click", connect);
 
 load();
 render();
-if (inTauri) pingAll();
+if (inTauri) { pingAll(); cpRefresh(); }
+else cpRender("La gestión de discos solo está disponible dentro de la app.");
