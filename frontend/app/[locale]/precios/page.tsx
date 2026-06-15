@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { redirect } from '@/i18n/navigation';
 import PricingPage from './PricingPage';
 
 const BASE_URL = 'https://noctcom.com';
@@ -18,6 +19,12 @@ export const metadata: Metadata = {
   },
 };
 
-export default function Page() {
+export default async function Page({ params }: { params: Promise<{ locale: string }> }) {
+  // En self-host no se cobra (AGPL, gratis): no hay página de precios. El flag se
+  // inlinea en build, así que en la nube esta rama desaparece y se sirve /precios.
+  if (process.env.NEXT_PUBLIC_SELF_HOST === 'true') {
+    const { locale } = await params;
+    redirect({ href: '/login', locale });
+  }
   return <PricingPage />;
 }

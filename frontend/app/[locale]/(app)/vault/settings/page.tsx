@@ -1299,6 +1299,9 @@ function PlanUsageSection() {
   const pct = storageQuota > 0 ? Math.min(100, Math.round((storageUsed / storageQuota) * 100)) : 0;
   const near = pct >= 90;
   const isPaid = !!status && status.plan !== 'free';
+  // Self-host es gratis (AGPL): nunca se ofrece mejorar/cambiar de plan, aunque
+  // el operador tuviera Stripe configurado en su instancia.
+  const isSelfHost = process.env.NEXT_PUBLIC_SELF_HOST === 'true';
 
   async function manage() {
     setWorking(true);
@@ -1344,7 +1347,7 @@ function PlanUsageSection() {
             )}
           </div>
           <div className="flex gap-2">
-            {status?.billingEnabled && (
+            {!isSelfHost && status?.billingEnabled && (
               <Button size="sm" variant={isPaid ? 'ghost' : 'primary'} onClick={() => setShowPlans(true)}>
                 {isPaid ? t('plan.changePlan') : t('plan.upgradePlan')}
               </Button>
