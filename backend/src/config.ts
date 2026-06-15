@@ -27,6 +27,15 @@ const envSchema = z.object({
   MAX_UPLOAD_BYTES: z.coerce.number().default(5 * 1024 * 1024 * 1024),
   USER_QUOTA_BYTES: z.coerce.number().default(1 * 1024 * 1024 * 1024),
 
+  // Self-host: ruta DENTRO del contenedor backend donde guardar los blobs
+  // cifrados en disco. Si está definida, el backend siembra al arrancar un
+  // volumen local por defecto y las subidas van a disco (endpoint mismo-origen
+  // /api/v1/uploads/chunk/, vía Caddy) en vez de a MinIO — cuyas URLs
+  // prefirmadas (http://minio:9000) el navegador NO puede alcanzar en LAN.
+  // Vacío en la nube (allí S3=Backblaze sí es público). docker-compose la pone
+  // a /data (un named volume montado en el backend). Ver ensureDefaultVolume().
+  BLOB_VOLUME_PATH: z.string().optional().or(z.literal('')).default(''),
+
   // Tope GLOBAL de almacenamiento cloud (suma de todos los usuarios). Protege el
   // bolsillo: si Backblaze/MinIO se acerca al gasto que aceptas, deja de admitir
   // subidas nuevas (HTTP 507) en vez de seguir creciendo. 0 = sin tope (default,

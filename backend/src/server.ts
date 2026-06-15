@@ -23,6 +23,7 @@ import { env } from './config.js';
 import { db, initDb } from './db/pool.js';
 import { initRedis, redis } from './db/redis.js';
 import { initS3 } from './storage/s3.js';
+import { ensureDefaultVolume } from './storage/default-volume.js';
 import { initMail } from './mail.js';
 import { initPush } from './push.js';
 import { startJanitor } from './janitor.js';
@@ -219,6 +220,14 @@ async function main() {
   initPush();
 
   const app = await buildServer();
+
+  // Self-host: siembra el volumen de disco por defecto para que las subidas
+  // vayan a disco (mismo-origen) en vez de a MinIO (no alcanzable en LAN).
+  // No bloquea el arranque si falla. No-op en la nube (BLOB_VOLUME_PATH vacío).
+  await ensureDefaultVolume(app.log).catch((err) =>
+    app.log.warn({ err: err?.message }, 'ensureDefaultVolume falló'),
+  );
+
   await app.listen({ host: '0.0.0.0', port: env.PORT });
   app.log.info(`Noctcom API listening on :${env.PORT}`);
 

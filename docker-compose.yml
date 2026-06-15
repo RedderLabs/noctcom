@@ -125,12 +125,20 @@ services:
       PUBLIC_URL: ${PUBLIC_URL:-http://localhost:3000}
       MAX_UPLOAD_BYTES: ${MAX_UPLOAD_BYTES:-5368709120}
       USER_QUOTA_BYTES: ${USER_QUOTA_BYTES:-1073741824}
+      # Self-host: las subidas van a DISCO (este path, montado abajo) por el
+      # endpoint mismo-origen; MinIO no es alcanzable desde el navegador en LAN.
+      BLOB_VOLUME_PATH: ${BLOB_VOLUME_PATH:-/data}
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3001}
       SMTP_HOST: ${SMTP_HOST:-localhost}
       SMTP_PORT: ${SMTP_PORT:-465}
       SMTP_USER: ${SMTP_USER:-noctcom}
       SMTP_PASS: ${SMTP_PASS:-changeme}
       SMTP_FROM: ${SMTP_FROM:-noreply@noctcom.app}
+    volumes:
+      # Blobs cifrados en disco (self-host). Para usar un disco del host en su
+      # lugar, cambia esto por un bind mount (p.ej. /mnt/datos:/data) — y en LXC
+      # Proxmox monta antes el disco en el contenedor (pct set ... -mpN).
+      - blob_data:/data
     networks:
       - noctcom-internal
       - noctcom-public
@@ -206,3 +214,4 @@ volumes:
   redis_data:
   caddy_data:
   caddy_config:
+  blob_data:        # blobs cifrados en disco (self-host)
