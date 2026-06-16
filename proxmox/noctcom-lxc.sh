@@ -308,6 +308,25 @@ pct exec "$CTID" -- env \
   NOCTCOM_EMAIL="$EMAIL" \
   bash -c "curl -fsSL https://raw.githubusercontent.com/RedderLabs/noctcom/$REF/install.sh | bash"
 
+# ─── 7. Disco de datos opcional ─────────────────────────────────
+# El rootfs del LXC (20 GB por defecto) sirve para empezar, pero un LXC no
+# privilegiado NO ve los discos físicos del host: hay que prepararlos en el host
+# y pasarlos como punto de montaje (pct set -mpN). add-disk.sh hace justo eso de
+# forma guiada. Lo ofrecemos aquí y, además, queda disponible para reejecutarlo
+# luego sobre este (o cualquier) LXC.
+if [ "$USE_TUI" = "1" ]; then
+  if whiptail --title "Noctcom · Disco de datos" --yesno \
+"¿Quieres dedicar un disco del servidor a Noctcom ahora?
+
+Listará los discos del host, te dejará elegir uno, formatearlo (opcional) y lo enchufará a este LXC para guardar ahí los blobs cifrados.
+
+Puedes hacerlo también más tarde con add-disk.sh." 16 70 --defaultno </dev/tty; then
+    NOCTCOM_CTID="$CTID" NOCTCOM_REF="$REF" \
+      bash <(curl -fsSL "https://raw.githubusercontent.com/RedderLabs/noctcom/$REF/proxmox/add-disk.sh") \
+      || warn "El asistente de disco terminó con avisos. Puedes reintentarlo con add-disk.sh."
+  fi
+fi
+
 # ─── Resumen final ──────────────────────────────────────────────
 if [ -n "$DOMAIN" ]; then
   printf -v DONE 'Noctcom está instalado en el LXC #%s.\n\nApp:  https://app.%s\nAPI:  https://api.%s\n\nApunta los DNS (registros A) de app.%s y api.%s a %s\n(y redirige 80/443 del router al LXC si está tras NAT).' \
@@ -342,6 +361,7 @@ say ""
 say "  Entrar al LXC:  ${B}pct enter $CTID${N}"
 say "  Ver logs:       ${B}pct exec $CTID -- bash -lc 'cd /opt/noctcom && docker compose logs -f'${N}"
 say "  Actualizar:     ${B}pct exec $CTID -- bash -lc 'cd /opt/noctcom && bash update.sh'${N}"
+say "  Añadir disco:   ${B}bash <(curl -fsSL https://raw.githubusercontent.com/RedderLabs/noctcom/$REF/proxmox/add-disk.sh)${N}"
 say ""
 say "  ${DIM}Self-host gratis para siempre · AGPL-3.0 · https://noctcom.com${N}"
 say ""

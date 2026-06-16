@@ -111,6 +111,51 @@ discos externos (vía el agente *Noctcom Connector*) y el manual integrado.
 
 ---
 
+## Añadir un disco de datos
+
+El rootfs del LXC (20 GB por defecto) sirve para empezar, pero para guardar
+muchos blobs cifrados querrás **dedicar un disco** del servidor a Noctcom.
+
+> **Por qué no se hace desde la web.** Dentro de Proxmox, Noctcom corre en un
+> LXC **no privilegiado**: por diseño no ve los discos físicos del host
+> (`lsblk` dentro del contenedor no lista `/dev/sdX`) ni puede formatear o
+> montar. Por eso el panel de **Almacenamiento** aparece vacío en Proxmox. La
+> forma correcta es preparar el disco **en el host** y pasárselo al LXC como
+> punto de montaje. El asistente lo hace por ti.
+
+El instalador te ofrece este paso al final. Para hacerlo (o repetirlo) más
+tarde, ejecuta **como root en el host Proxmox**:
+
+```bash
+bash <(curl -fsSL https://raw.githubusercontent.com/RedderLabs/noctcom/main/proxmox/add-disk.sh)
+```
+
+El asistente:
+
+1. Elige el LXC de Noctcom (autodetecta los etiquetados `noctcom`).
+2. Lista los discos del host (**oculta los del sistema y los ya usados por
+   PVE/LVM/ZFS** por seguridad).
+3. Te deja elegir uno y, opcionalmente, **formatearlo** (ext4/xfs) con
+   confirmación destructiva.
+4. Lo monta en el host (`/mnt/noctcom-<etiqueta>`, con entrada en `/etc/fstab`),
+   lo engancha al LXC (`pct set -mpN`) y reinicia el contenedor para aplicarlo.
+5. Añade la ruta a `EXTRA_DATA_DIR` y reejecuta `install.sh` dentro del LXC para
+   que el backend lo use y le dé permisos.
+
+**Último paso, en la web:** entra en **Almacenamiento** y registra el volumen
+con el mismo path (p. ej. `/mnt/noctcom-datos`). A partir de ahí recibe las
+subidas cifradas.
+
+> **Hacerlo a mano** (equivalente, si prefieres control total): formatea y monta
+> el disco en el host, pásalo al LXC con
+> `pct set <CTID> -mp0 /mnt/noctcom-datos,mp=/mnt/noctcom-datos`, y añade esa ruta
+> a `EXTRA_DATA_DIR` en `/opt/noctcom/.env` dentro del LXC. En un LXC no
+> privilegiado, deja el directorio del host como `chown 100000:100000` antes de
+> reejecutar `install.sh`, o el contenedor lo verá como `nobody` y no podrá
+> escribir.
+
+---
+
 ## Mantenimiento
 
 **Actualizar** a la última versión — un solo comando hace `git pull`, reconcilia
