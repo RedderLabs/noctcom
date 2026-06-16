@@ -6,6 +6,7 @@ import os from 'node:os';
 import { z } from 'zod';
 import { db } from '../db/pool.js';
 import { redis } from '../db/redis.js';
+import { activeDiskBytes } from '../storage/capacity.js';
 import { validateVolumePath } from '../storage/disk.js';
 import { env } from '../config.js';
 import * as registry from '../agents/registry.js';
@@ -653,22 +654,17 @@ const storageRoutes: FastifyPluginAsync = async (app) => {
   app.get('/summary', { onRequest: [app.authenticate] }, async (req, reply) => {
     // En self-host (sin Stripe) la capacidad es la de los discos reales del
     // operador, no una cuota de plan. Sumamos los volúmenes activos (suyos o
-    // locales del backend con user_id NULL), igual que hace GET /me. En la nube
-    // se mantiene la cuota del plan tal cual.
+    // locales del backend con user_id NULL) midiéndolos en vivo, igual que hace
+    // GET /me (ver capacity.ts). En la nube se mantiene la cuota del plan.
+    const userId = (req as any).user.sub;
     const r = await db.query(
-      `SELECT storage_used_bytes, storage_quota_bytes,
-              COALESCE((
-                SELECT SUM(total_bytes) FROM storage_volumes
-                 WHERE active = true AND (user_id = $1 OR user_id IS NULL)
-              ), 0) AS disk_bytes
-         FROM users WHERE id = $1`,
-      [(req as any).user.sub],
+      `SELECT storage_used_bytes, storage_quota_bytes FROM users WHERE id = $1`,
+      [userId],
     );
     if (r.rowCount === 0) return reply.notFound();
     const row = r.rows[0];
-    const quotaBytes = env.STRIPE_SECRET_KEY
-      ? Number(row.storage_quota_bytes)
-      : Number(row.storage_quota_bytes) + Number(row.disk_bytes);
+    const diskBytes = env.STRIPE_SECRET_KEY ? 0 : await activeDiskBytes(userId);
+    const quotaBytes = Number(row.storage_quota_bytes) + diskBytes;
     return reply.send({
       usedBytes: Number(row.storage_used_bytes),
       quotaBytes,

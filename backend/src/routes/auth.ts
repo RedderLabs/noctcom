@@ -2,6 +2,7 @@ import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 import { randomBytes, createHash, timingSafeEqual } from 'node:crypto';
 import { db, tx } from '../db/pool.js';
+import { activeDiskBytes } from '../storage/capacity.js';
 import { env } from '../config.js';
 import { sendVerificationEmail, normalizeLocale } from '../mail.js';
 import { deleteBlob } from '../storage/s3.js';
@@ -529,19 +530,17 @@ const authRoutes: FastifyPluginAsync = async (app) => {
       `SELECT u.id, u.username, u.storage_quota_bytes, u.storage_used_bytes,
               u.identity_public_key, u.exchange_public_key, u.is_admin,
               u.plan, u.subscription_status, u.current_period_end, u.onboarded_at,
-              u.trial_started_at, u.trial_exempt,
-              COALESCE((
-                SELECT SUM(total_bytes) FROM storage_volumes
-                 WHERE active = true AND (user_id = u.id OR user_id IS NULL)
-              ), 0) AS disk_bytes
+              u.trial_started_at, u.trial_exempt
        FROM users u WHERE u.id = $1`,
       [req.user.sub],
     );
     if (r.rowCount === 0) return reply.notFound();
     const u = r.rows[0];
     // La cuota efectiva = cuota base + capacidad de los discos en uso del usuario
-    // (suya o self-host). Así el "Almacenamiento" refleja el espacio real total.
-    const quota = Number(u.storage_quota_bytes) + Number(u.disk_bytes);
+    // (suya o self-host). Medida en vivo (statfs) para los discos locales, así el
+    // "Almacenamiento" refleja el espacio real total al instante. Ver capacity.ts.
+    const diskBytes = await activeDiskBytes(u.id);
+    const quota = Number(u.storage_quota_bytes) + diskBytes;
     return reply.send({
       id: u.id,
       username: u.username,
@@ -549,7 +548,7 @@ const authRoutes: FastifyPluginAsync = async (app) => {
       storageQuotaBytes: quota,
       storageUsedBytes: Number(u.storage_used_bytes),
       planBytes: Number(u.storage_quota_bytes), // cuota del plan (sin discos)
-      diskBytes: Number(u.disk_bytes),
+      diskBytes,
       plan: u.plan ?? 'free',
       subscriptionStatus: u.subscription_status ?? null,
       currentPeriodEnd: u.current_period_end ?? null,
