@@ -6,7 +6,7 @@ import os from 'node:os';
 import { z } from 'zod';
 import { db } from '../db/pool.js';
 import { redis } from '../db/redis.js';
-import { activeDiskBytes } from '../storage/capacity.js';
+import { activeDiskUsage } from '../storage/capacity.js';
 import { validateVolumePath } from '../storage/disk.js';
 import { env } from '../config.js';
 import * as registry from '../agents/registry.js';
@@ -652,10 +652,11 @@ const storageRoutes: FastifyPluginAsync = async (app) => {
   // ─── Storage summary ─────────────────────────────────────
 
   app.get('/summary', { onRequest: [app.authenticate] }, async (req, reply) => {
-    // En self-host (sin Stripe) la capacidad es la de los discos reales del
-    // operador, no una cuota de plan. Sumamos los volúmenes activos (suyos o
-    // locales del backend con user_id NULL) midiéndolos en vivo, igual que hace
-    // GET /me (ver capacity.ts). En la nube se mantiene la cuota del plan.
+    // En self-host (sin Stripe) tanto la capacidad como el uso son los REALES de
+    // los discos del operador (statfs), no una cuota de plan ni el contador de
+    // chunks: así el hero del panel cuadra exactamente con la tarjeta de cada
+    // disco (GET /volumes) y con el texto «capacidad real, sin cuotas
+    // artificiales». En la nube se mantiene la cuota del plan y storage_used_bytes.
     const userId = (req as any).user.sub;
     const r = await db.query(
       `SELECT storage_used_bytes, storage_quota_bytes FROM users WHERE id = $1`,
@@ -663,11 +664,13 @@ const storageRoutes: FastifyPluginAsync = async (app) => {
     );
     if (r.rowCount === 0) return reply.notFound();
     const row = r.rows[0];
-    const diskBytes = env.STRIPE_SECRET_KEY ? 0 : await activeDiskBytes(userId);
-    const quotaBytes = Number(row.storage_quota_bytes) + diskBytes;
+    if (!env.STRIPE_SECRET_KEY) {
+      const usage = await activeDiskUsage(userId);
+      return reply.send({ usedBytes: usage.usedBytes, quotaBytes: usage.totalBytes });
+    }
     return reply.send({
       usedBytes: Number(row.storage_used_bytes),
-      quotaBytes,
+      quotaBytes: Number(row.storage_quota_bytes),
     });
   });
 

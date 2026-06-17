@@ -2,7 +2,7 @@ import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 import { randomBytes, createHash, timingSafeEqual } from 'node:crypto';
 import { db, tx } from '../db/pool.js';
-import { activeDiskBytes } from '../storage/capacity.js';
+import { activeDiskUsage } from '../storage/capacity.js';
 import { env } from '../config.js';
 import { sendVerificationEmail, normalizeLocale } from '../mail.js';
 import { deleteBlob } from '../storage/s3.js';
@@ -536,19 +536,23 @@ const authRoutes: FastifyPluginAsync = async (app) => {
     );
     if (r.rowCount === 0) return reply.notFound();
     const u = r.rows[0];
-    // La cuota efectiva = cuota base + capacidad de los discos en uso del usuario
-    // (suya o self-host). Medida en vivo (statfs) para los discos locales, así el
-    // "Almacenamiento" refleja el espacio real total al instante. Ver capacity.ts.
-    const diskBytes = await activeDiskBytes(u.id);
-    const quota = Number(u.storage_quota_bytes) + diskBytes;
+    // En self-host la capacidad y el uso son los REALES de los discos (statfs),
+    // sin sumar la cuota de plan: el panel muestra «capacidad real, sin cuotas
+    // artificiales» y debe cuadrar con la tarjeta de cada disco (GET /volumes).
+    // En la nube la cuota efectiva = cuota base + capacidad de los discos de
+    // agente del usuario; el uso sigue siendo storage_used_bytes. Ver capacity.ts.
+    const usage = await activeDiskUsage(u.id);
+    const selfhost = !env.STRIPE_SECRET_KEY;
+    const quota = selfhost ? usage.totalBytes : Number(u.storage_quota_bytes) + usage.totalBytes;
+    const used = selfhost ? usage.usedBytes : Number(u.storage_used_bytes);
     return reply.send({
       id: u.id,
       username: u.username,
       isAdmin: u.is_admin,
       storageQuotaBytes: quota,
-      storageUsedBytes: Number(u.storage_used_bytes),
+      storageUsedBytes: used,
       planBytes: Number(u.storage_quota_bytes), // cuota del plan (sin discos)
-      diskBytes,
+      diskBytes: usage.totalBytes,
       plan: u.plan ?? 'free',
       subscriptionStatus: u.subscription_status ?? null,
       currentPeriodEnd: u.current_period_end ?? null,
