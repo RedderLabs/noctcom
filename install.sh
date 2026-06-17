@@ -309,6 +309,23 @@ else
   warn "Falta scripts/selfhost-db-sync.sh — actualiza el repo (git pull) y reintenta."
 fi
 
+# ─── 5b. Aviso de cambio de IP (modo LAN) ───────────────────────
+# En modo LAN la IP del servidor queda horneada en PUBLIC_URL/CADDY_DOMAIN (la
+# usan las subidas de chunks). Si la IP cambió desde la instalación (DHCP sin
+# reserva), el login aguanta (rutas relativas) pero las subidas apuntarían a la
+# IP vieja. Avisamos con la solución (reservar la IP o re-hornear con la nueva).
+if grep -qE '^COMPOSE_FILE=.*docker-compose\.lan\.yml' .env; then
+  BAKED_IP="$(grep -E '^CADDY_DOMAIN=' .env | cut -d= -f2- || true)"
+  CUR_IP="$(hostname -I 2>/dev/null | awk '{print $1}' || true)"
+  if [ -n "$CUR_IP" ] && [ -n "$BAKED_IP" ] && [ "$CUR_IP" != "$BAKED_IP" ]; then
+    say ""
+    warn "La IP de este servidor (${B}$CUR_IP${N}) no coincide con la de la instalación (${B}$BAKED_IP${N})."
+    say "${DIM}   El acceso sigue (rutas relativas), pero las subidas grandes usan la IP horneada.${N}"
+    say "${DIM}   Recomendado: reserva ${BAKED_IP} en tu DHCP. O re-hornea con la IP nueva editando${N}"
+    say "${DIM}   CADDY_DOMAIN y PUBLIC_URL en .env a ${CUR_IP} y re-ejecutando: ${B}bash update.sh${N}${DIM}.${N}"
+  fi
+fi
+
 # ─── Resumen ────────────────────────────────────────────────────
 DOM="$(grep -E '^CADDY_DOMAIN=' .env | cut -d= -f2- || true)"
 FRONT_URL="$(grep -E '^FRONTEND_URL=' .env | cut -d= -f2- || true)"
@@ -336,6 +353,7 @@ say ""
 say "  ${DIM}(desde la carpeta '$DIR')${N}"
 say "  Ver logs:   ${B}$DC logs -f${N}"
 say "  Parar:      ${B}$DC down${N}      ·   Actualizar: ${B}bash update.sh${N}"
+say "  Backup:     ${B}bash scripts/backup.sh${N}  ·  Restaurar: ${B}bash scripts/restore.sh <archivo>${N}"
 say "  Email:      añade ${B}RESEND_API_KEY${N} o ${B}SMTP_*${N} en .env para verificación/OTP."
 say ""
 say "  ${DIM}Self-host gratis para siempre · AGPL-3.0 · https://noctcom.com${N}"

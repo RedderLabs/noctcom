@@ -180,9 +180,23 @@ pct exec <CTID> -- bash -lc 'cd /opt/noctcom && docker compose ps'
 pct exec <CTID> -- bash -lc 'cd /opt/noctcom && docker compose logs -f backend'
 ```
 
-**Copias de seguridad:** además de respaldar el LXC desde Proxmox (Backup), ten
-en cuenta los volúmenes de PostgreSQL y MinIO dentro del contenedor. La guía de
-restauración verificada está en [`docs/RESTORE.md`](RESTORE.md).
+**Copias de seguridad** — dos niveles, complementarios:
+
+1. **Backup de datos de Noctcom** (DB + blobs, coherentes), con el script incluido:
+   ```bash
+   pct exec <CTID> -- bash -lc 'cd /opt/noctcom && bash scripts/backup.sh'
+   ```
+   Deja un `.tar.gz` con marca de tiempo en `/opt/noctcom/backups/`. Cópialo
+   **fuera del LXC** (otro equipo/disco). Restaurar:
+   ```bash
+   pct exec <CTID> -- bash -lc 'cd /opt/noctcom && bash scripts/restore.sh backups/<archivo>.tar.gz'
+   ```
+   Automatízalo con cron (diario): ver [`docs/RESTORE.md`](RESTORE.md) §0.
+2. **Backup del LXC entero** desde Proxmox (Datacenter → Backup / `vzdump`), que
+   captura el contenedor completo de una vez.
+
+La guía de restauración verificada (self-host y cloud) está en
+[`docs/RESTORE.md`](RESTORE.md).
 
 ---
 

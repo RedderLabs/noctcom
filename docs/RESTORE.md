@@ -18,6 +18,41 @@ habrá referencias colgando. Restaura ambos al punto temporal más cercano.
 
 ---
 
+## 0. Self-host (Docker/LXC): copia y restauración en un comando
+
+En una instalación self-host (la que hace `install.sh`), los dos almacenes viven
+en volúmenes Docker del propio servidor: **PostgreSQL** (`postgres_data`) y los
+**blobs cifrados** (`minio_data` y/o `blob_data`, más cualquier disco de
+`EXTRA_DATA_DIR`). Hay dos scripts que los copian **coherentes entre sí** (todo
+del mismo instante) y los restauran:
+
+```bash
+# Crear una copia (queda en ./backups/noctcom-backup-<fecha>.tar.gz)
+bash scripts/backup.sh
+
+# Restaurar desde una copia (DESTRUCTIVO: pide escribir RESTAURAR)
+bash scripts/restore.sh backups/noctcom-backup-AAAAMMDD-HHMMSS.tar.gz
+```
+
+- `backup.sh` hace `pg_dump` de la base de datos y empaqueta los volúmenes de
+  blobs en un único `.tar.gz` con marca de tiempo; conserva las últimas 7 copias
+  (`NOCTCOM_BACKUP_KEEP`) y acepta `NOCTCOM_BACKUP_DIR` para el destino.
+- `restore.sh` recrea la base de datos, reemplaza el contenido de los volúmenes y
+  reinicia el stack. Como DB y blobs salen del mismo backup, quedan coherentes.
+- **En Proxmox**, ejecútalos dentro del LXC:
+  `pct exec <CTID> -- bash -lc 'cd /opt/noctcom && bash scripts/backup.sh'`.
+- **Guarda las copias fuera del servidor** (otro disco/equipo). Van cifradas a
+  nivel de usuario, pero trátalas como sensibles igualmente.
+- **Automatizar (cron diario, 3:15):**
+  `15 3 * * * cd /opt/noctcom && bash scripts/backup.sh >> /var/log/noctcom-backup.log 2>&1`
+- Además, en Proxmox conviene respaldar el **LXC entero** (Datacenter → Backup),
+  que captura todo el contenedor de una vez.
+
+> Verifica de vez en cuando que una copia restaura de verdad (sección 3): un
+> backup que nunca se ha restaurado no es un backup.
+
+---
+
 ## 1. Restaurar PostgreSQL
 
 ### 1a. Cloud (Neon)

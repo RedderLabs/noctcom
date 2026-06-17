@@ -147,16 +147,29 @@ bash update.sh
 
 ## Backups
 
-Back up these Docker volumes:
-
-- `noctcom_postgres_data` — database
-- `noctcom_minio_data` — encrypted file blobs
-- `noctcom_redis_data` — sessions (optional, regenerated on login)
+One command makes a **time-consistent, restorable** copy of the database
+(`postgres_data`) and the encrypted blobs (`minio_data`, `blob_data`, plus any
+`EXTRA_DATA_DIR` disks) as a single timestamped `.tar.gz` in `./backups/`:
 
 ```bash
-# Example: backup PostgreSQL
-docker exec noctcom-postgres pg_dump -U noctcom noctcom > backup.sql
+bash scripts/backup.sh
 ```
+
+Restore it (DESTRUCTIVE — prompts you to type RESTAURAR):
+
+```bash
+bash scripts/restore.sh backups/noctcom-backup-YYYYMMDD-HHMMSS.tar.gz
+```
+
+- Keeps the last 7 copies (`NOCTCOM_BACKUP_KEEP`); destination via `NOCTCOM_BACKUP_DIR`.
+- **Store copies off the server** (another disk/host). They're user-encrypted, but
+  treat them as sensitive anyway.
+- Automate daily with cron:
+  `15 3 * * * cd /path/to/noctcom && bash scripts/backup.sh >> /var/log/noctcom-backup.log 2>&1`
+- DB and blobs come from the same backup, so they stay consistent with each other.
+- Full restore/verification guide: [`docs/RESTORE.md`](docs/RESTORE.md).
+
+> A backup you've never restored isn't a backup — test a restore now and then.
 
 ## Security notes
 
