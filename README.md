@@ -7,9 +7,9 @@ El servidor no puede leer ni nombres de archivo, ni contenido, ni metadatos.
 
 ## Self-Host (5 minutos)
 
-**Un comando** — descarga el instalador, te pregunta el dominio, genera los
-secretos y lo arranca todo. Con dominio: TLS automático; sin dominio: modo LAN
-(`http://<IP>` en tu red, ideal para homelab):
+**Un comando** — descarga el instalador, **instala Docker si falta**, te pregunta
+el dominio, genera los secretos y lo arranca todo. Con dominio: TLS automático;
+sin dominio: modo LAN (`https://<IP>` con certificado interno, ideal para homelab):
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/RedderLabs/noctcom/main/install.sh | bash
@@ -38,10 +38,14 @@ Tu instancia estará en `https://app.tu-dominio.com`.
 
 ### Requisitos
 
-- Docker y Docker Compose (o un host Proxmox VE para la vía LXC)
-- 2 GB de RAM (Argon2id usa 256 MiB)
+- **Un Linux con acceso a internet.** El instalador en un comando **instala
+  Docker por ti si no está** (cualquier distro con apt/dnf/yum/apk/pacman); para
+  la vía manual necesitas Docker + Compose v2. En Proxmox, el script LXC también
+  instala Docker dentro del contenedor.
+- **≥ 4 GB de RAM recomendado**: el build de Next.js necesita > 2 GiB; en runtime
+  Argon2id usa 256 MiB.
 - Dominio con DNS apuntando al servidor — opcional: sin dominio funciona en
-  modo LAN por IP (sin TLS)
+  modo LAN por IP con HTTPS interno (certificado autofirmado)
 
 ## Garantías criptográficas
 

@@ -2,12 +2,35 @@
 
 ## Requirements
 
-- Docker Engine 24+ with Compose V2
-- A domain with DNS pointing to your server (A record)
-- At least 2 GB RAM / 1 vCPU
-- Ports 80 and 443 open
+- **A Linux box with internet access.** The one-command installer **installs
+  Docker for you if it's missing** (any distro with apt/dnf/yum/apk/pacman); the
+  manual path below needs Docker Engine 24+ with Compose V2.
+- **4 GB RAM recommended** (Next.js build needs > 2 GiB; Argon2id uses 256 MiB at
+  runtime) / 1 vCPU.
+- Optional: a domain with DNS pointing to your server (A record) for automatic
+  TLS. Without a domain it runs in LAN mode at `https://<IP>` with an internal
+  (self-signed) certificate.
+- Ports 80 and 443 open (domain mode).
 
-## Quick start
+## Quickest: one command (recommended)
+
+Installs Docker if needed, asks for your domain (leave empty for LAN mode),
+generates secrets and brings the whole stack up:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/RedderLabs/noctcom/main/install.sh | bash
+```
+
+On **Proxmox VE** (creates a Debian LXC, installs Docker inside, deploys), run as
+root on the PVE host:
+
+```bash
+bash <(curl -fsSL https://raw.githubusercontent.com/RedderLabs/noctcom/main/proxmox/noctcom-lxc.sh)
+```
+
+Prefer to control every step? The manual quick start follows.
+
+## Quick start (manual)
 
 ### 1. Clone and configure
 

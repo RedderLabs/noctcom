@@ -56,18 +56,72 @@ printf "${DIM}  Zero-knowledge encrypted storage · AGPL-3.0${N}\n\n"
 
 # ─── 1. Requisitos ──────────────────────────────────────────────
 say "${B}1. Comprobando requisitos…${N}"
-need() { command -v "$1" >/dev/null 2>&1 || die "Falta '$1'. Instálalo y reintenta. $2"; }
-need git ""
-need openssl ""
-need docker "→ https://docs.docker.com/engine/install/"
-if docker compose version >/dev/null 2>&1; then
-  DC="docker compose"
+
+# Prefijo para mandar como root cuando haga falta (instalar paquetes, o hablar
+# con el demonio de Docker si el usuario aún no está en el grupo 'docker').
+if [ "$(id -u)" = "0" ]; then SUDO=""; elif command -v sudo >/dev/null 2>&1; then SUDO="sudo"; else SUDO=""; fi
+
+# Instala paquetes base con el gestor que haya (best-effort, multi-distro).
+pkg_install() { # pkg_install <paquete...>
+  if command -v apt-get >/dev/null 2>&1; then
+    $SUDO env DEBIAN_FRONTEND=noninteractive apt-get update -qq >/dev/null 2>&1 || true
+    $SUDO env DEBIAN_FRONTEND=noninteractive apt-get install -yqq "$@" >/dev/null 2>&1
+  elif command -v dnf >/dev/null 2>&1; then $SUDO dnf install -y "$@" >/dev/null 2>&1
+  elif command -v yum >/dev/null 2>&1; then $SUDO yum install -y "$@" >/dev/null 2>&1
+  elif command -v apk >/dev/null 2>&1; then $SUDO apk add --no-cache "$@" >/dev/null 2>&1
+  elif command -v pacman >/dev/null 2>&1; then $SUDO pacman -Sy --noconfirm "$@" >/dev/null 2>&1
+  else return 1; fi
+}
+
+# Utilidades base: si faltan, intenta instalarlas; si no se puede, aborta claro.
+for tool in curl git openssl; do
+  if ! command -v "$tool" >/dev/null 2>&1; then
+    warn "Falta '$tool' — intentando instalarlo…"
+    pkg_install "$tool" || true
+    command -v "$tool" >/dev/null 2>&1 || die "No pude instalar '$tool'. Instálalo a mano y reintenta."
+  fi
+done
+
+# Docker: si falta, lo instalamos con el script oficial (get.docker.com), igual
+# que el instalador de Proxmox dentro del LXC → VPS/PC en un solo comando.
+if ! command -v docker >/dev/null 2>&1; then
+  DO_DOCKER="y"
+  if [ "${NOCTCOM_NONINTERACTIVE:-0}" != "1" ] && [ -e /dev/tty ]; then
+    ask "   Docker no está instalado. ¿Lo instalo ahora (get.docker.com)? (y/n):" "y" DO_DOCKER
+  fi
+  case "$DO_DOCKER" in
+    [yYsS]*)
+      warn "Instalando Docker con el script oficial (get.docker.com)…"
+      curl -fsSL https://get.docker.com | $SUDO sh \
+        || die "No se pudo instalar Docker. Hazlo a mano: https://docs.docker.com/engine/install/"
+      $SUDO systemctl enable --now docker >/dev/null 2>&1 || true
+      ok "Docker instalado"
+      ;;
+    *)
+      die "Docker es necesario. Instálalo y reintenta. → https://docs.docker.com/engine/install/"
+      ;;
+  esac
+fi
+
+# El demonio debe responder. Si solo responde con sudo (usuario recién añadido al
+# grupo 'docker', que aún no aplica en esta sesión), usamos sudo para TODO Docker.
+DOCKER="docker"
+if docker info >/dev/null 2>&1; then
+  :
+elif [ -n "$SUDO" ] && $SUDO docker info >/dev/null 2>&1; then
+  DOCKER="$SUDO docker"
+else
+  die "El demonio de Docker no responde (¿arrancado? ¿permisos?). Prueba: ${SUDO:-sudo} systemctl start docker"
+fi
+
+# Docker Compose v2 (plugin) o el binario clásico, con el mismo prefijo.
+if $DOCKER compose version >/dev/null 2>&1; then
+  DC="$DOCKER compose"
 elif command -v docker-compose >/dev/null 2>&1; then
-  DC="docker-compose"
+  DC="${SUDO:+$SUDO }docker-compose"
 else
   die "Falta Docker Compose v2 (plugin 'docker compose'). → https://docs.docker.com/compose/install/"
 fi
-docker info >/dev/null 2>&1 || die "El demonio de Docker no está en marcha (o falta permiso; prueba con sudo)."
 ok "git, openssl y Docker ($DC) disponibles"
 
 # ─── 2. Código ──────────────────────────────────────────────────
