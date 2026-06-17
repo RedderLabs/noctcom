@@ -3,7 +3,7 @@
 import { useLocale } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import {
-  Lock, Shield, FolderTree, HardDrive, Wrench, ShieldCheck,
+  Lock, Shield, FolderTree, HardDrive, Wrench, ShieldCheck, Mail,
   type LucideIcon,
 } from 'lucide-react';
 import { PageHeader, SectionHead } from '@/components/selfhost/PageHeader';
@@ -80,6 +80,20 @@ const CONTENT: Record<'es' | 'en', { title: string; intro: string; sections: Sec
         ],
       },
       {
+        id: 'email', icon: Mail, title: 'Email (verificación y OTP)',
+        blocks: [
+          { p: 'El correo es <b>opcional</b>: sin configurarlo, Noctcom funciona, pero no envía verificación de cuenta ni códigos OTP. Para activarlo hay dos opciones; si defines <b>RESEND_API_KEY</b> se usa Resend, si no, los ajustes <b>SMTP_*</b>.' },
+          { p: '<b>Opción A — Resend (recomendada).</b> Crea una API key en resend.com y <b>verifica un dominio</b> (añade sus registros DNS); el remitente debe pertenecer a ese dominio. Sin dominio propio solo puedes usar onboarding@resend.dev, que envía únicamente al email de tu cuenta Resend (sirve para probar).' },
+          { p: 'En el .env de la instalación (dentro del contenedor, <b>/opt/noctcom</b>):' },
+          { code: ['RESEND_API_KEY=re_tu_clave', 'SMTP_FROM=noreply@tudominio.com   # dominio verificado en Resend'] },
+          { p: '<b>Opción B — SMTP.</b> Si prefieres tu propio servidor o proveedor SMTP, deja RESEND_API_KEY vacío y rellena:' },
+          { code: ['SMTP_HOST=smtp.tuproveedor.com', 'SMTP_PORT=465', 'SMTP_USER=usuario', 'SMTP_PASS=contraseña', 'SMTP_FROM=noreply@tudominio.com'] },
+          { p: 'Aplica los cambios reconstruyendo el backend:' },
+          { code: ['cd /opt/noctcom', 'bash update.sh   # o: docker compose up -d --build backend'] },
+          { note: 'Si un envío falla, revisa los registros: docker compose logs -f backend. Resend devuelve el motivo exacto (dominio sin verificar, clave inválida, etc.).' },
+        ],
+      },
+      {
         id: 'mantenimiento', icon: Wrench, title: 'Mantenimiento',
         blocks: [
           { p: 'Desde la carpeta de la instalación dentro del contenedor (<b>/opt/noctcom</b>):' },
@@ -153,6 +167,20 @@ const CONTENT: Record<'es' | 'en', { title: string; intro: string; sections: Sec
           ] },
           { note: 'In self-host, the simple path is the norm (grow the LXC disk). The default destination is the /data disk, not MinIO. The «volumes» on the Storage screen are for extra disks (via EXTRA_DATA_DIR) or disks attached through an agent (desktop); to register a local folder it must first be mounted inside the container.' },
           { link: { href: '/almacenamiento', label: 'Go to Storage' } },
+        ],
+      },
+      {
+        id: 'email', icon: Mail, title: 'Email (verification & OTP)',
+        blocks: [
+          { p: 'Email is <b>optional</b>: without it Noctcom still works, but it won’t send account verification or OTP codes. To enable it you have two options; if you set <b>RESEND_API_KEY</b> Resend is used, otherwise the <b>SMTP_*</b> settings.' },
+          { p: '<b>Option A — Resend (recommended).</b> Create an API key at resend.com and <b>verify a domain</b> (add its DNS records); the sender must belong to that domain. Without your own domain you can only use onboarding@resend.dev, which only sends to your Resend account email (good for testing).' },
+          { p: 'In the install .env (inside the container, <b>/opt/noctcom</b>):' },
+          { code: ['RESEND_API_KEY=re_your_key', 'SMTP_FROM=noreply@yourdomain.com   # domain verified in Resend'] },
+          { p: '<b>Option B — SMTP.</b> If you prefer your own SMTP server or provider, leave RESEND_API_KEY empty and fill in:' },
+          { code: ['SMTP_HOST=smtp.yourprovider.com', 'SMTP_PORT=465', 'SMTP_USER=user', 'SMTP_PASS=password', 'SMTP_FROM=noreply@yourdomain.com'] },
+          { p: 'Apply the changes by rebuilding the backend:' },
+          { code: ['cd /opt/noctcom', 'bash update.sh   # or: docker compose up -d --build backend'] },
+          { note: 'If sending fails, check the logs: docker compose logs -f backend. Resend returns the exact reason (unverified domain, invalid key, etc.).' },
         ],
       },
       {
