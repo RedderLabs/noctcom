@@ -227,7 +227,14 @@ const uploadRoutes: FastifyPluginAsync = async (app) => {
         }
       }
 
-      return { nodeId, versionId, presignedUrls };
+      // Vía directa: si el destino es un disco de agente, el navegador puede
+      // hablar P2P con el agente (lib/rtc-transport.ts) usando agentId+path+s3Key
+      // de cada chunk. Si no negocia, usa las uploadUrl de relay de siempre.
+      const agentVolume = diskVolume?.agent_id
+        ? { agentId: diskVolume.agent_id, path: diskVolume.path }
+        : null;
+
+      return { nodeId, versionId, presignedUrls, agentVolume };
     });
 
     return reply.code(201).send(result);
@@ -336,11 +343,27 @@ const uploadRoutes: FastifyPluginAsync = async (app) => {
           index: c.chunk_index,
           ciphertextSize: Number(c.ciphertext_size),
           nonce: toB64(c.chunk_nonce),
+          // s3_key es la clave del blob en el disco del agente (vía directa).
+          diskKey: c.storage_type === 'disk' ? c.s3_key : undefined,
           downloadUrl: c.storage_type === 'disk'
             ? `${env.PUBLIC_URL}/api/v1/uploads/chunk/${c.id}/data`
             : await presignDownload(c.s3_key, 600),
         })),
       );
+
+      // Vía directa: si los chunks viven en un disco de agente, el navegador
+      // puede leerlos P2P (rtc-transport) con agentId+path+diskKey. Si no, relay.
+      const diskChunk = chunks.rows.find((c) => c.storage_type === 'disk' && c.volume_id);
+      let agentVolume: { agentId: string; path: string } | null = null;
+      if (diskChunk) {
+        const vol = await db.query(
+          `SELECT path, agent_id FROM storage_volumes WHERE id = $1`,
+          [diskChunk.volume_id],
+        );
+        if (vol.rows[0]?.agent_id) {
+          agentVolume = { agentId: vol.rows[0].agent_id, path: vol.rows[0].path };
+        }
+      }
 
       return reply.send({
         versionId: fv.id,
@@ -354,6 +377,7 @@ const uploadRoutes: FastifyPluginAsync = async (app) => {
         vaultKeyWrapped: toB64(fv.vault_key_wrapped),
         vaultKeyNonce: toB64(fv.vault_key_nonce),
         chunks: chunkResponses,
+        agentVolume,
       });
     },
   );

@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { rt } from './i18n-runtime';
 import { useAuth } from './auth-store';
 import { apiFetch, uploadToPresignedUrl, getAccessToken } from './api';
+import { connectDirectTransport, type DirectTransport } from './rtc-transport';
 import {
   initCrypto, decrypt, encrypt, encryptString, decryptString,
   decryptJSON, encryptJSON, randomKey, randomNonce,
@@ -430,7 +431,8 @@ export const useVault = create<VaultState & VaultActions>((set, get) => ({
         const initRes = await apiFetch<{
           nodeId: string;
           versionId: string;
-          presignedUrls: { index: number; uploadUrl: string }[];
+          presignedUrls: { index: number; uploadUrl: string; s3Key?: string }[];
+          agentVolume?: { agentId: string; path: string } | null;
         }>('/api/v1/uploads/init', {
           method: 'POST',
           body: JSON.stringify({
@@ -455,44 +457,74 @@ export const useVault = create<VaultState & VaultActions>((set, get) => ({
           uploads: { ...s.uploads, [uid]: { ...s.uploads[uid]!, status: 'uploading' } },
         }));
 
+        // Vía directa (WebRTC): si el destino es un disco de agente, intenta abrir
+        // un DataChannel P2P para que los blobs NO relayen por el backend. Si no
+        // negocia (agente sin soporte, NAT…), `direct` queda null y se usa el
+        // relay HTTP de siempre. Es una optimización transparente, nunca un
+        // requisito: cualquier fallo cae al relay.
+        let direct: DirectTransport | null = null;
+        const agentVol = initRes.agentVolume ?? null;
+        if (agentVol) {
+          try { direct = await connectDirectTransport(agentVol.agentId); } catch { direct = null; }
+        }
+
         // Encrypt each chunk, upload, and compute content hash incrementally
         const hashState = sodium.crypto_generichash_init(null, 32);
         const authTags: { index: number; authTag: string }[] = [];
 
-        for (let i = 0; i < chunkMeta.length; i++) {
-          const cm = chunkMeta[i]!;
-          const start = cm.index * CHUNK_SIZE;
-          const end = Math.min(start + CHUNK_SIZE, file.size);
-          const slice = new Uint8Array(await file.slice(start, end).arrayBuffer());
+        try {
+          for (let i = 0; i < chunkMeta.length; i++) {
+            const cm = chunkMeta[i]!;
+            const start = cm.index * CHUNK_SIZE;
+            const end = Math.min(start + CHUNK_SIZE, file.size);
+            const slice = new Uint8Array(await file.slice(start, end).arrayBuffer());
 
-          const aad = sodium.from_string(`chunk:${cm.index}`);
-          const ct = sodium.crypto_aead_xchacha20poly1305_ietf_encrypt(
-            slice, aad, null, cm.nonce, fileKey,
-          );
+            const aad = sodium.from_string(`chunk:${cm.index}`);
+            const ct = sodium.crypto_aead_xchacha20poly1305_ietf_encrypt(
+              slice, aad, null, cm.nonce, fileKey,
+            );
 
-          sodium.crypto_generichash_update(hashState, ct);
-          authTags.push({ index: cm.index, authTag: toB64(ct.slice(ct.length - 16)) });
+            sodium.crypto_generichash_update(hashState, ct);
+            authTags.push({ index: cm.index, authTag: toB64(ct.slice(ct.length - 16)) });
 
-          const url = initRes.presignedUrls.find((p) => p.index === cm.index)!.uploadUrl;
-          const isDiskUpload = url.includes('/api/v1/uploads/chunk/');
-          if (isDiskUpload) {
-            await apiFetch(new URL(url).pathname, {
-              method: 'PUT',
-              headers: { 'content-type': 'application/octet-stream' },
-              body: ct as unknown as BodyInit,
-            });
-            const pct = Math.round(((i + 1) / chunkMeta.length) * 100);
-            set((s) => ({
-              uploads: { ...s.uploads, [uid]: { ...s.uploads[uid]!, progress: pct } },
-            }));
-          } else {
-            await uploadToPresignedUrl(url, ct as unknown as BodyInit, (loaded, total) => {
-              const pct = Math.round(((i + loaded / total) / chunkMeta.length) * 100);
+            const entry = initRes.presignedUrls.find((p) => p.index === cm.index)!;
+            const url = entry.uploadUrl;
+            const isDiskUpload = url.includes('/api/v1/uploads/chunk/');
+            if (isDiskUpload) {
+              let wroteDirect = false;
+              if (direct && agentVol && entry.s3Key) {
+                try {
+                  await direct.writeChunk(agentVol.path, entry.s3Key, ct);
+                  wroteDirect = true;
+                } catch {
+                  // El canal directo falló: ciérralo y sigue por relay (este chunk
+                  // y los siguientes), sin perder la subida.
+                  try { direct.close(); } catch { /* */ }
+                  direct = null;
+                }
+              }
+              if (!wroteDirect) {
+                await apiFetch(new URL(url).pathname, {
+                  method: 'PUT',
+                  headers: { 'content-type': 'application/octet-stream' },
+                  body: ct as unknown as BodyInit,
+                });
+              }
+              const pct = Math.round(((i + 1) / chunkMeta.length) * 100);
               set((s) => ({
                 uploads: { ...s.uploads, [uid]: { ...s.uploads[uid]!, progress: pct } },
               }));
-            });
+            } else {
+              await uploadToPresignedUrl(url, ct as unknown as BodyInit, (loaded, total) => {
+                const pct = Math.round(((i + loaded / total) / chunkMeta.length) * 100);
+                set((s) => ({
+                  uploads: { ...s.uploads, [uid]: { ...s.uploads[uid]!, progress: pct } },
+                }));
+              });
+            }
           }
+        } finally {
+          try { direct?.close(); } catch { /* */ }
         }
 
         const contentHash = sodium.crypto_generichash_final(hashState, 32);
@@ -540,9 +572,10 @@ export const useVault = create<VaultState & VaultActions>((set, get) => ({
     await sodium.ready;
 
     const dl = await apiFetch<{
-      chunks: { index: number; nonce: string; downloadUrl: string }[];
+      chunks: { index: number; nonce: string; downloadUrl: string; diskKey?: string }[];
       fileKeyWrapped: string;
       fileKeyNonce: string;
+      agentVolume?: { agentId: string; path: string } | null;
     }>(`/api/v1/uploads/${node.currentVersionId}/download`);
 
     let fileKey: Bytes;
@@ -556,21 +589,44 @@ export const useVault = create<VaultState & VaultActions>((set, get) => ({
     }
     const parts: Uint8Array[] = [];
 
-    for (const ch of dl.chunks.sort((a, b) => a.index - b.index)) {
-      const headers: Record<string, string> = {};
-      const token = getAccessToken();
-      if (token && ch.downloadUrl.includes('/api/')) {
-        headers.authorization = `Bearer ${token}`;
+    // Vía directa: intenta leer los blobs P2P del agente (sin relay). Si no
+    // negocia o falla un chunk, cae a la descarga HTTP de siempre.
+    let direct: DirectTransport | null = null;
+    const agentVol = dl.agentVolume ?? null;
+    if (agentVol) {
+      try { direct = await connectDirectTransport(agentVol.agentId); } catch { direct = null; }
+    }
+
+    try {
+      for (const ch of dl.chunks.sort((a, b) => a.index - b.index)) {
+        let ct: Uint8Array | null = null;
+        if (direct && agentVol && ch.diskKey) {
+          try {
+            ct = await direct.readChunk(agentVol.path, ch.diskKey);
+          } catch {
+            try { direct.close(); } catch { /* */ }
+            direct = null; // sigue por relay
+          }
+        }
+        if (!ct) {
+          const headers: Record<string, string> = {};
+          const token = getAccessToken();
+          if (token && ch.downloadUrl.includes('/api/')) {
+            headers.authorization = `Bearer ${token}`;
+          }
+          const res = await fetch(ch.downloadUrl, { headers });
+          if (!res.ok) throw new Error(`Chunk ${ch.index} falló`);
+          ct = new Uint8Array(await res.arrayBuffer());
+        }
+        const aad = sodium.from_string(`chunk:${ch.index}`);
+        parts.push(
+          sodium.crypto_aead_xchacha20poly1305_ietf_decrypt(
+            null, ct, aad, fromB64(ch.nonce), fileKey,
+          ),
+        );
       }
-      const res = await fetch(ch.downloadUrl, { headers });
-      if (!res.ok) throw new Error(`Chunk ${ch.index} falló`);
-      const ct = new Uint8Array(await res.arrayBuffer());
-      const aad = sodium.from_string(`chunk:${ch.index}`);
-      parts.push(
-        sodium.crypto_aead_xchacha20poly1305_ietf_decrypt(
-          null, ct, aad, fromB64(ch.nonce), fileKey,
-        ),
-      );
+    } finally {
+      try { direct?.close(); } catch { /* */ }
     }
 
     if (!fileKeyOverride) wipe(fileKey);

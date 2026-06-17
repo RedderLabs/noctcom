@@ -10,6 +10,8 @@ mod format;
 mod i18n;
 mod identity;
 mod protocol;
+#[cfg(feature = "webrtc")]
+mod rtc;
 mod update;
 mod util;
 mod volume;
@@ -351,14 +353,21 @@ async fn handle_cmd(cmd: &str, args: &serde_json::Value) -> Result<serde_json::V
         // Vía directa (WebRTC): el backend reenvía aquí la oferta SDP del
         // navegador para abrir un DataChannel P2P y que los blobs cifrados viajen
         // DIRECTOS (sin relay → sin coste de egress, sostiene el desbloqueo de
-        // por vida). De momento respondemos supported:false → el navegador cae al
-        // relay HTTP de siempre, sin romperse. La negociación real (crate
-        // `webrtc`: SetRemoteDescription(offer) → answer + ICE → DataChannel con
-        // ops write/read/delete sobre `volume::*`) es el siguiente milestone:
-        // ver SPEC_UNLOCK_LIFETIME_INTERNAL.md §"Vía A — agente".
+        // por vida). Con la feature `webrtc` negociamos de verdad; sin ella
+        // respondemos supported:false → el navegador cae al relay HTTP, sin
+        // romperse. Ver rtc.rs y SPEC_UNLOCK_LIFETIME_INTERNAL.md §"Vía A".
         "rtc-offer" => {
-            let _offer = arg_str(args, "offer").ok();
-            Ok(serde_json::json!({ "supported": false }))
+            #[cfg(feature = "webrtc")]
+            {
+                let offer = arg_str(args, "offer")?;
+                let answer = rtc::negotiate(offer).await.context("negociación WebRTC")?;
+                Ok(serde_json::json!({ "answer": answer }))
+            }
+            #[cfg(not(feature = "webrtc"))]
+            {
+                let _offer = arg_str(args, "offer").ok();
+                Ok(serde_json::json!({ "supported": false }))
+            }
         }
         other => anyhow::bail!("comando no soportado: {other}"),
     }

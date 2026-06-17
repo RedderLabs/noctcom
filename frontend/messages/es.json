@@ -1113,6 +1113,7 @@
       "formatTitle": "Formatear el disco (borra todo su contenido)",
       "stopUsing": "Dejar de usar",
       "useThisDisk": "Usar este disco",
+      "formatAndUse": "Formatear y usar",
       "noServerDisks": "No se detectaron discos en el servidor. Conecta un disco (USB/SATA) a la máquina donde corre Noctcom y aparecerá aquí para añadirlo como volumen.",
       "volumeActivated": "Volumen activado",
       "volumeDeactivated": "Volumen desactivado",

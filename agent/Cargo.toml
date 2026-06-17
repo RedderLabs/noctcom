@@ -23,6 +23,17 @@ clap = { version = "4", features = ["derive"] }
 directories = "5"
 anyhow = "1"
 
+# Vía directa (WebRTC): transporte P2P navegador↔agente para que los blobs
+# cifrados no relayen por el backend. Pesado (cientos de crates) → OPCIONAL tras
+# la feature `webrtc`, para no inflar el build por defecto mientras se itera:
+#   cargo build --features webrtc
+# Sin la feature, el handler rtc-offer responde supported:false y todo va por relay.
+webrtc = { version = "0.12", optional = true }
+
+[features]
+default = []
+webrtc = ["dep:webrtc"]
+
 # Solo se usa en build.rs al compilar para Windows (embebe version resource +
 # manifest). En Linux/macOS se compila pero no hace nada.
 [build-dependencies]

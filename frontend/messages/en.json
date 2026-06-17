@@ -1113,6 +1113,7 @@
       "formatTitle": "Format the disk (erases all its content)",
       "stopUsing": "Stop using",
       "useThisDisk": "Use this disk",
+      "formatAndUse": "Format & use",
       "noServerDisks": "No disks detected on the server. Connect a disk (USB/SATA) to the machine running Noctcom and it will appear here to add as a volume.",
       "volumeActivated": "Volume activated",
       "volumeDeactivated": "Volume deactivated",

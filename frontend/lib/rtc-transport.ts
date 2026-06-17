@@ -34,9 +34,9 @@ const ICE_SERVERS: RTCIceServer[] = [{ urls: 'stun:stun.l.google.com:19302' }];
 // un id correlado; los datos binarios van en base64url dentro del JSON para no
 // mezclar frames de texto y binarios en el mismo canal.
 type RtcOp =
-  | { id: string; op: 'write'; key: string; dataB64: string }
-  | { id: string; op: 'read'; key: string }
-  | { id: string; op: 'delete'; key: string };
+  | { id: string; op: 'write'; path: string; key: string; dataB64: string }
+  | { id: string; op: 'read'; path: string; key: string }
+  | { id: string; op: 'delete'; path: string; key: string };
 
 interface Pending {
   resolve: (data: { ok?: boolean; dataB64?: string }) => void;
@@ -45,9 +45,9 @@ interface Pending {
 }
 
 export interface DirectTransport {
-  writeChunk(key: string, data: Uint8Array): Promise<void>;
-  readChunk(key: string): Promise<Uint8Array>;
-  deleteChunk(key: string): Promise<void>;
+  writeChunk(path: string, key: string, data: Uint8Array): Promise<void>;
+  readChunk(path: string, key: string): Promise<Uint8Array>;
+  deleteChunk(path: string, key: string): Promise<void>;
   close(): void;
 }
 
@@ -150,12 +150,12 @@ function makeTransport(pc: RTCPeerConnection, channel: RTCDataChannel): DirectTr
     else p.resolve({ ok: msg.ok, dataB64: msg.dataB64 });
   });
 
-  function send(op: 'write' | 'read' | 'delete', key: string, dataB64?: string): Promise<{ ok?: boolean; dataB64?: string }> {
+  function send(op: 'write' | 'read' | 'delete', path: string, key: string, dataB64?: string): Promise<{ ok?: boolean; dataB64?: string }> {
     if (channel.readyState !== 'open') return Promise.reject(new Error('rtc-channel-closed'));
     const id = `r${++seq}`;
     const frame: RtcOp = op === 'write'
-      ? { id, op: 'write', key, dataB64: dataB64 ?? '' }
-      : { id, op, key };
+      ? { id, op: 'write', path, key, dataB64: dataB64 ?? '' }
+      : { id, op, path, key };
     return new Promise((resolve, reject) => {
       const timer = setTimeout(() => { pending.delete(id); reject(new Error('rtc-timeout')); }, CHANNEL_TIMEOUT_MS);
       pending.set(id, { resolve, reject, timer });
@@ -170,13 +170,13 @@ function makeTransport(pc: RTCPeerConnection, channel: RTCDataChannel): DirectTr
   }
 
   return {
-    async writeChunk(key, data) { await send('write', key, toB64(data)); },
-    async readChunk(key) {
-      const res = await send('read', key);
+    async writeChunk(path, key, data) { await send('write', path, key, toB64(data)); },
+    async readChunk(path, key) {
+      const res = await send('read', path, key);
       if (!res.dataB64) throw new Error('rtc-no-data');
       return fromB64(res.dataB64);
     },
-    async deleteChunk(key) { await send('delete', key); },
+    async deleteChunk(path, key) { await send('delete', path, key); },
     close() {
       for (const p of pending.values()) { clearTimeout(p.timer); p.reject(new Error('rtc-closed')); }
       pending.clear();
