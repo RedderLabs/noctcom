@@ -75,8 +75,9 @@ Lo que ve el servidor: tamaño del ciphertext, timestamps, estructura del arbol 
 - **Multi-dispositivo** — registro, gestion y revocacion de dispositivos
 - **Perfil de usuario** — panel admin, gestion de roles, sesiones activas
 - **Almacenamiento externo** — discos USB/SATA detectados y registrados desde la UI
-  (agente local "Noctcom Connector"; en el cloud gestionado va con los planes de
-  pago — en self-host siempre disponible)
+  (agente local "Noctcom Connector"; en el cloud gestionado va con cualquier plan de
+  pago o con el desbloqueo «Tus discos» de por vida (pago único) — en self-host
+  siempre disponible)
 - **Prueba de 30 dias con 10 GB** en el cloud gestionado (noctcom.com); despues,
   cuenta gratuita de 1 GB para siempre, sin borrados (el self-host no tiene
   planes ni trial: es gratis e ilimitado)
