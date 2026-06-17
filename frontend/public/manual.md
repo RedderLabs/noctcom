@@ -316,6 +316,26 @@ Noctcom encuentra solo los discos que montes en el servidor. Desde **Configuraci
 
 **En resumen:** si es Linux, ext4 y a correr. Si tu disco viene en otro formato, Noctcom te ofrecerá prepararlo (avisándote antes de borrar nada).
 
+### Copias de seguridad
+
+Tu instancia guarda dos cosas: la **base de datos** (metadatos cifrados) y los **blobs** (tus archivos, ya cifrados). Un solo comando hace una copia **coherente** de ambos (todo del mismo instante) en `./backups/`:
+
+```bash
+bash scripts/backup.sh
+```
+
+Y para restaurar desde una copia (te pide escribir `RESTAURAR`, porque sobrescribe los datos actuales):
+
+```bash
+bash scripts/restore.sh backups/noctcom-backup-FECHA.tar.gz
+```
+
+- Conserva las últimas 7 copias por defecto. **Guárdalas fuera del servidor** (otro disco u ordenador): van cifradas, pero trátalas como sensibles igual.
+- Para que se haga sola cada día, añade una tarea `cron` (ejemplo a las 3:15):
+  `15 3 * * * cd /ruta/a/noctcom && bash scripts/backup.sh >> /var/log/noctcom-backup.log 2>&1`
+- En Proxmox, ejecútalo dentro del LXC: `pct exec <CTID> -- bash -lc 'cd /opt/noctcom && bash scripts/backup.sh'`. Además puedes respaldar el LXC entero desde Proxmox (Backup).
+- Una copia que nunca has restaurado no es una copia: prueba una restauración de vez en cuando.
+
 ---
 
 ## Que se vea cómodo para ti

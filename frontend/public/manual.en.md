@@ -316,6 +316,26 @@ Which disk format to use? A quick guide:
 
 **In short:** if it's Linux, ext4 and off you go. If your disk comes in another format, Noctcom will offer to prepare it (warning you before erasing anything).
 
+### Backups
+
+Your instance stores two things: the **database** (encrypted metadata) and the **blobs** (your files, already encrypted). One command makes a **consistent** copy of both (all from the same moment) in `./backups/`:
+
+```bash
+bash scripts/backup.sh
+```
+
+To restore from a copy (it asks you to type `RESTAURAR`, because it overwrites current data):
+
+```bash
+bash scripts/restore.sh backups/noctcom-backup-DATE.tar.gz
+```
+
+- Keeps the last 7 copies by default. **Store them off the server** (another disk or computer): they're encrypted, but treat them as sensitive anyway.
+- To run it daily on its own, add a `cron` job (example at 3:15):
+  `15 3 * * * cd /path/to/noctcom && bash scripts/backup.sh >> /var/log/noctcom-backup.log 2>&1`
+- On Proxmox, run it inside the LXC: `pct exec <CTID> -- bash -lc 'cd /opt/noctcom && bash scripts/backup.sh'`. You can also back up the whole LXC from Proxmox (Backup).
+- A backup you've never restored isn't a backup: test a restore now and then.
+
 ---
 
 ## Make it comfortable for you
