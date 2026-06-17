@@ -184,3 +184,125 @@ fn data_json(id: &str, data_b64: &str) -> String {
 fn err_json(id: &str, error: &str) -> String {
     serde_json::json!({ "id": id, "error": error }).to_string()
 }
+
+#[cfg(test)]
+mod tests {
+    //! Verificación E2E del data-plane: levanta un peer WebRTC "cliente" (el
+    //! mismo stack ICE+DTLS+SCTP que usa el navegador), negocia con el código
+    //! REAL del agente (`negotiate`), abre un DataChannel y hace round-trip de
+    //! write/read/delete sobre un volumen temporal real. Cubre exactamente lo que
+    //! ocurriría navegador↔agente, sin navegador. Solo con `--features webrtc`.
+
+    use super::*;
+    use std::sync::Mutex as StdMutex;
+    use std::time::Duration;
+    use webrtc::api::media_engine::MediaEngine;
+    use webrtc::api::APIBuilder;
+    use webrtc::data_channel::data_channel_message::DataChannelMessage;
+    use webrtc::peer_connection::configuration::RTCConfiguration;
+
+    async fn recv_one(rx: &mut tokio::sync::mpsc::UnboundedReceiver<String>) -> Result<String> {
+        tokio::time::timeout(Duration::from_secs(10), rx.recv())
+            .await
+            .context("timeout esperando respuesta")?
+            .context("canal cerrado")
+    }
+
+    #[tokio::test]
+    async fn direct_roundtrip_write_read_delete() -> Result<()> {
+        // Volumen temporal real (crea noctcom-blobs/ y valida escritura).
+        let dir = std::env::temp_dir().join(format!("noctcom-rtc-test-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir)?;
+        let path = dir.to_string_lossy().to_string();
+        volume::register(&path)?;
+
+        // Peer "cliente" (rol navegador) con un DataChannel.
+        let mut media = MediaEngine::default();
+        let mut reg = Registry::new();
+        reg = register_default_interceptors(reg, &mut media)?;
+        let api = APIBuilder::new()
+            .with_media_engine(media)
+            .with_interceptor_registry(reg)
+            .build();
+        let client = Arc::new(api.new_peer_connection(RTCConfiguration::default()).await?);
+        let dc = client.create_data_channel("noctcom-blobs", None).await?;
+
+        // Señal de "canal abierto".
+        let (open_tx, open_rx) = tokio::sync::oneshot::channel::<()>();
+        let open_tx = Arc::new(StdMutex::new(Some(open_tx)));
+        dc.on_open(Box::new(move || {
+            let open_tx = open_tx.clone();
+            Box::pin(async move {
+                if let Some(tx) = open_tx.lock().unwrap().take() {
+                    let _ = tx.send(());
+                }
+            })
+        }));
+
+        // Cola de respuestas que llegan del agente por el canal.
+        let (msg_tx, mut msg_rx) = tokio::sync::mpsc::unbounded_channel::<String>();
+        dc.on_message(Box::new(move |msg: DataChannelMessage| {
+            let msg_tx = msg_tx.clone();
+            Box::pin(async move {
+                let _ = msg_tx.send(String::from_utf8_lossy(&msg.data).to_string());
+            })
+        }));
+
+        // Oferta del cliente (ICE no-trickle: esperamos a reunir candidatos).
+        let offer = client.create_offer(None).await?;
+        let mut gather = client.gathering_complete_promise().await;
+        client.set_local_description(offer).await?;
+        let _ = gather.recv().await;
+        let offer_sdp = client.local_description().await.context("sin offer local")?.sdp;
+
+        // El AGENTE negocia (código real) y devolvemos su answer al cliente.
+        let answer_sdp = negotiate(offer_sdp).await?;
+        client
+            .set_remote_description(RTCSessionDescription::answer(answer_sdp)?)
+            .await?;
+
+        // El DataChannel debe abrirse (handshake ICE+DTLS+SCTP real).
+        tokio::time::timeout(Duration::from_secs(20), open_rx)
+            .await
+            .context("timeout abriendo el DataChannel")??;
+
+        let key = "ab/test-chunk";
+        let payload: &[u8] = b"hello-ciphertext-blob";
+
+        // WRITE
+        dc.send_text(
+            serde_json::json!({ "id": "1", "op": "write", "path": path, "key": key, "dataB64": util::b64(payload) })
+                .to_string(),
+        )
+        .await?;
+        let r1: serde_json::Value = serde_json::from_str(&recv_one(&mut msg_rx).await?)?;
+        assert_eq!(r1["id"], "1");
+        assert_eq!(r1["ok"], true, "write debe responder ok: {r1}");
+        // El blob existe de verdad en el disco.
+        assert!(dir.join("noctcom-blobs").join("ab").join("test-chunk").exists());
+
+        // READ → mismos bytes.
+        dc.send_text(
+            serde_json::json!({ "id": "2", "op": "read", "path": path, "key": key }).to_string(),
+        )
+        .await?;
+        let r2: serde_json::Value = serde_json::from_str(&recv_one(&mut msg_rx).await?)?;
+        assert_eq!(r2["id"], "2");
+        let got = util::unb64(r2["dataB64"].as_str().context("sin dataB64")?)?;
+        assert_eq!(got, payload, "read debe devolver el ciphertext íntegro");
+
+        // DELETE → el blob desaparece.
+        dc.send_text(
+            serde_json::json!({ "id": "3", "op": "delete", "path": path, "key": key }).to_string(),
+        )
+        .await?;
+        let r3: serde_json::Value = serde_json::from_str(&recv_one(&mut msg_rx).await?)?;
+        assert_eq!(r3["ok"], true);
+        assert!(!dir.join("noctcom-blobs").join("ab").join("test-chunk").exists());
+
+        let _ = client.close().await;
+        let _ = std::fs::remove_dir_all(&dir);
+        Ok(())
+    }
+}
