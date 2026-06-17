@@ -434,6 +434,14 @@
     "choosePlan": "Choose plan",
     "billingSoon": "Paid plans go live shortly. In the meantime, start free with 1 GB.",
     "billingNote": "Monthly billing · No commitment · Taxes apply depending on your country",
+    "unlock": {
+      "title": "Your disks",
+      "lifetime": "Lifetime",
+      "body": "Got your own disks (a server, a Proxmox box, a NAS)? Use them from the managed app with the Noctcom Connector: as many disks as you want, zero-knowledge encryption, no cloud quota. One payment, no monthly fees.",
+      "once": "one-time",
+      "cta": "Unlock",
+      "already": "You already have the unlock"
+    },
     "trust": {
       "intro": "Your keys never leave your device. All the code is public and verifiable."
     },
@@ -913,6 +921,15 @@
       "expandHint": "Add space whenever you need it.",
       "portalError": "Couldn't open the portal"
     },
+    "unlock": {
+      "title": "Your disks · lifetime unlock",
+      "body": "Use your own disks (via Noctcom Connector) from the managed app, with as many disks as you want and no cloud quota. One payment, forever.",
+      "buy": "Unlock",
+      "activeBadge": "Active",
+      "activeBody": "Unlocked for life. Your disks are available via the Connector with no cloud quota, even on the free plan.",
+      "already": "You already have the unlock",
+      "error": "Couldn't start the purchase"
+    },
     "planPicker": {
       "title": "Choose your plan",
       "close": "Close",
@@ -1072,7 +1089,7 @@
       "namePrompt": "Name for this agent (e.g. \"Living room PC\"):",
       "nameDefault": "My computer",
       "pairCodeError": "Couldn't generate the pairing code",
-      "planRequired": "Noctcom Connector unlocks with any paid plan (from €1/month)",
+      "planRequired": "Noctcom Connector unlocks with any paid plan (from €1/month) or with the lifetime “Your disks” unlock (one-time payment)",
       "unlinked": "Agent unlinked",
       "unlinkError": "Couldn't unlink the agent"
     },

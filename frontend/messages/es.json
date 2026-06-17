@@ -434,6 +434,14 @@
     "choosePlan": "Elegir plan",
     "billingSoon": "Los planes de pago se activan en breve. Mientras tanto, empieza gratis con 1 GB.",
     "billingNote": "Facturación mensual · Sin permanencia · Impuestos aplicables según tu país",
+    "unlock": {
+      "title": "Tus discos",
+      "lifetime": "De por vida",
+      "body": "¿Tienes tus propios discos (un servidor, un Proxmox, un NAS)? Úsalos desde la app gestionada con el Noctcom Connector: todos los discos que quieras, cifrado zero-knowledge, sin cuota de nube. Un solo pago, sin mensualidades.",
+      "once": "pago único",
+      "cta": "Desbloquear",
+      "already": "Ya tienes el desbloqueo activo"
+    },
     "trust": {
       "intro": "Tus claves nunca salen de tu dispositivo. Todo el código es público y verificable."
     },
@@ -913,6 +921,15 @@
       "expandHint": "Amplía espacio cuando lo necesites.",
       "portalError": "No se pudo abrir el portal"
     },
+    "unlock": {
+      "title": "Tus discos · desbloqueo de por vida",
+      "body": "Usa tus propios discos (vía Noctcom Connector) desde la app gestionada, con todos los discos que quieras y sin cuota de nube. Un solo pago, para siempre.",
+      "buy": "Desbloquear",
+      "activeBadge": "Activo",
+      "activeBody": "Desbloqueado de por vida. Tus discos están disponibles vía Connector sin cuota de nube, aunque tu plan sea gratuito.",
+      "already": "Ya tienes el desbloqueo activo",
+      "error": "No se pudo iniciar la compra"
+    },
     "planPicker": {
       "title": "Elige tu plan",
       "close": "Cerrar",
@@ -1072,7 +1089,7 @@
       "namePrompt": "Nombre para este agente (p. ej. \"PC del salón\"):",
       "nameDefault": "Mi equipo",
       "pairCodeError": "No se pudo generar el código de emparejamiento",
-      "planRequired": "El Noctcom Connector se desbloquea con cualquier plan de pago (desde 1 €/mes)",
+      "planRequired": "El Noctcom Connector se desbloquea con cualquier plan de pago (desde 1 €/mes) o con el desbloqueo «Tus discos» de por vida (pago único)",
       "unlinked": "Agente desvinculado",
       "unlinkError": "No se pudo desvincular el agente"
     },

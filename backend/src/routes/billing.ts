@@ -18,6 +18,7 @@ import { env } from '../config.js';
 import {
   PLANS, FREE_PLAN, planById, stripePriceId, planByStripePrice,
   isBillingTestMode, isPlanCheckoutAllowed,
+  unlockPriceId, isUnlockPrice, unlockInfo,
 } from '../plans.js';
 import {
   sendPlanActiveEmail, sendPlanCanceledScheduledEmail,
@@ -67,13 +68,17 @@ const billingRoutes: FastifyPluginAsync = async (app) => {
       billingEnabled: !!stripe,
       // En modo de prueba la UI puede avisar de que solo hay planes pequeños.
       testMode: isBillingTestMode(),
+      // Desbloqueo "Tus discos" de por vida (pago único). Si no hay price
+      // configurado, `available=false` y la UI no ofrece la compra.
+      unlock: unlockInfo(!!stripe),
     });
   });
 
   // ─── GET /status (auth) ───────────────────────────────────
   app.get('/status', { onRequest: [app.authenticate] }, async (req, reply) => {
     const r = await db.query(
-      `SELECT plan, subscription_status, current_period_end, cancel_at_period_end, stripe_customer_id
+      `SELECT plan, subscription_status, current_period_end, cancel_at_period_end,
+              stripe_customer_id, agent_unlock
        FROM users WHERE id = $1`,
       [req.user.sub],
     );
@@ -89,6 +94,11 @@ const billingRoutes: FastifyPluginAsync = async (app) => {
       currentPeriodEnd: u.current_period_end ?? null,
       cancelAtPeriodEnd: !!u.cancel_at_period_end,
       hasCustomer: !!u.stripe_customer_id,
+      // Desbloqueo "Tus discos" de por vida: si TRUE, el Connector y los volúmenes
+      // de agente siguen activos aunque el plan sea free (no caduca). La UI lo usa
+      // para mostrar el estado "desbloqueado" y ocultar la compra.
+      agentUnlock: !!u.agent_unlock,
+      unlockAvailable: unlockInfo(!!stripe).available,
     });
   });
 
@@ -162,6 +172,42 @@ const billingRoutes: FastifyPluginAsync = async (app) => {
       automatic_tax: { enabled: env.STRIPE_AUTOMATIC_TAX === 'true' },
       success_url: `${FRONTEND}/vault/settings?billing=success`,
       cancel_url: `${FRONTEND}/precios?billing=cancel`,
+    });
+    return reply.send({ url: session.url });
+  });
+
+  // ─── POST /unlock-checkout (auth) — comprar el desbloqueo de por vida ──
+  // Pago ÚNICO (mode=payment, NO suscripción) del desbloqueo "Tus discos". Al
+  // completarse, el webhook pone users.agent_unlock=TRUE de forma permanente.
+  // El usuario seguido se identifica por client_reference_id + metadata.
+  app.post('/unlock-checkout', { onRequest: [app.authenticate] }, async (req, reply) => {
+    if (!stripe) return reply.code(503).send({ error: 'billing-disabled' });
+    const priceId = unlockPriceId();
+    if (!priceId) return reply.badRequest('el desbloqueo no está disponible');
+
+    const u = await db.query(
+      'SELECT stripe_customer_id, agent_unlock FROM users WHERE id = $1',
+      [req.user.sub],
+    );
+    if (u.rowCount === 0) return reply.notFound();
+    // Idempotente: si ya está desbloqueado, no se vuelve a cobrar.
+    if (u.rows[0].agent_unlock) return reply.send({ alreadyUnlocked: true });
+
+    const customerId = await ensureCustomer(req.user.sub, u.rows[0].stripe_customer_id);
+
+    const session = await stripe.checkout.sessions.create({
+      mode: 'payment',
+      customer: customerId,
+      line_items: [{ price: priceId, quantity: 1 }],
+      client_reference_id: req.user.sub,
+      // El webhook activa el desbloqueo SOLO si ve esta marca (defensa contra
+      // confundirlo con otros pagos one-time futuros). userId también va aquí
+      // por si el client_reference_id se perdiera.
+      metadata: { kind: 'agent_unlock', userId: req.user.sub },
+      payment_intent_data: { metadata: { kind: 'agent_unlock', userId: req.user.sub } },
+      automatic_tax: { enabled: env.STRIPE_AUTOMATIC_TAX === 'true' },
+      success_url: `${FRONTEND}/vault/settings?unlock=success`,
+      cancel_url: `${FRONTEND}/precios?unlock=cancel`,
     });
     return reply.send({ url: session.url });
   });
@@ -248,10 +294,15 @@ const billingRoutes: FastifyPluginAsync = async (app) => {
   // Los datos de esos discos siguen en la máquina del usuario — nada se borra.
   async function revokeAgentsForCustomer(customerId: string): Promise<void> {
     const u = await db.query(
-      'SELECT id, is_admin FROM users WHERE stripe_customer_id = $1', [customerId],
+      'SELECT id, is_admin, agent_unlock FROM users WHERE stripe_customer_id = $1', [customerId],
     );
     const user = u.rows[0];
     if (!user || user.is_admin) return; // admin exento (pruebas)
+    // Desbloqueo de por vida: el Connector NO caduca al bajar de plan. Es el
+    // corazón del "pago único" — conserva agentes y volúmenes de agente aunque
+    // la suscripción de nube termine. (Los volúmenes LOCALES de self-host no
+    // tienen user_id, así que nunca entran aquí.)
+    if (user.agent_unlock) return;
     const revoked = await db.query(
       `UPDATE agents SET revoked_at = now()
         WHERE user_id = $1 AND revoked_at IS NULL RETURNING id`,
@@ -295,6 +346,16 @@ const billingRoutes: FastifyPluginAsync = async (app) => {
     switch (event.type) {
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session;
+        // Desbloqueo "Tus discos" de por vida: Checkout one-time (mode=payment)
+        // marcado con metadata.kind=agent_unlock. Activa el derecho permanente.
+        if (session.mode === 'payment' && session.metadata?.kind === 'agent_unlock') {
+          const userId = session.client_reference_id || session.metadata?.userId;
+          if (userId) {
+            await db.query('UPDATE users SET agent_unlock = TRUE WHERE id = $1', [userId]);
+            app.log.info({ userId }, 'agent_unlock activado (pago único)');
+          }
+          break;
+        }
         if (session.subscription) {
           const sub = await stripe.subscriptions.retrieve(
             typeof session.subscription === 'string' ? session.subscription : session.subscription.id,

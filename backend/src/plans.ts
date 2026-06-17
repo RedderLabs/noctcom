@@ -70,3 +70,40 @@ export function isPlanCheckoutAllowed(id: string): boolean {
   if (!isBillingTestMode()) return true;
   return planRank(id) <= testMaxRank();
 }
+
+// ─── Desbloqueo "Tus discos" de por vida (pago ÚNICO) ─────────────
+// No es un "plan" (no da cuota de nube ni es suscripción): es un derecho
+// ortogonal (users.agent_unlock) que habilita usar los discos propios vía
+// Connector sin límite de discos y para siempre. Se cobra una sola vez con un
+// Checkout de Stripe en mode=payment. A diferencia de un plan mensual, NO te
+// expone a coste recurrente de almacenamiento (los blobs viven en TU disco).
+
+// price ID one-time del desbloqueo (vacío = no se ofrece).
+export function unlockPriceId(): string | null {
+  return process.env.STRIPE_PRICE_UNLOCK || null;
+}
+
+// ¿Coincide un priceId con el del desbloqueo? (defensa extra en el webhook).
+export function isUnlockPrice(priceId: string): boolean {
+  const id = unlockPriceId();
+  return !!id && id === priceId;
+}
+
+// Precio mostrado (€, pago único) para la UI. El cobro real lo fija Stripe.
+export function unlockPriceEur(): number {
+  const n = Number(process.env.UNLOCK_PRICE_EUR);
+  return Number.isFinite(n) && n > 0 ? n : 49;
+}
+
+// Info pública del desbloqueo para /billing/plans. `available` exige Stripe
+// activo + price configurado (en modo test se permite: el desbloqueo no otorga
+// almacenamiento de nube, así que una tarjeta de prueba no genera coste real).
+export function unlockInfo(stripeActive: boolean): {
+  priceEur: number;
+  available: boolean;
+} {
+  return {
+    priceEur: unlockPriceEur(),
+    available: stripeActive && !!unlockPriceId(),
+  };
+}

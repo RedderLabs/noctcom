@@ -81,11 +81,28 @@ const uploadRoutes: FastifyPluginAsync = async (app) => {
     if (vaultRow.rowCount === 0) return reply.notFound('vault not found');
     if (vaultRow.rows[0].owner_id !== userId) return reply.forbidden();
 
-    // Cuota POR USUARIO: solo tiene sentido en la nube (planes de pago). En
-    // self-host (sin Stripe) no hay cuota artificial — la capacidad real es la
-    // de los discos del operador, así que se salta el gate. El tope GLOBAL de
-    // abajo sigue aplicando como protección opcional del operador.
-    if (env.STRIPE_SECRET_KEY) {
+    // ¿La subida irá a un disco del usuario (volumen de agente online)? Si es
+    // así, los bytes viven en SU disco, no en nuestra nube: ni cuenta para la
+    // cuota de plan ni para el tope global (no nos cuesta egress/almacenamiento).
+    // Es lo que hace sostenible el desbloqueo "Tus discos" de por vida: un free
+    // con agent_unlock sube a su disco sin chocar con la cuota de 1 GB. Un disco
+    // de agente activo solo existe si el usuario está habilitado (el gate de
+    // pair/begin y el revocado de billing lo garantizan). Decisión autoritativa
+    // del backend se rehace dentro de la tx; este pre-check solo decide el gate.
+    const preVol = await db.query(
+      `SELECT agent_id FROM storage_volumes
+        WHERE active = true AND (user_id = $1 OR user_id IS NULL)
+        ORDER BY (user_id = $1) DESC NULLS LAST
+        LIMIT 1`,
+      [userId],
+    );
+    const preAgentId = preVol.rows[0]?.agent_id as string | null | undefined;
+    const usingAgentDisk = !!preAgentId && registry.isOnline(preAgentId);
+
+    // Cuota POR USUARIO: solo tiene sentido en la nube (planes de pago) y solo
+    // para lo que guardamos NOSOTROS (S3). En self-host (sin Stripe) no hay cuota
+    // artificial; subiendo a un disco de agente tampoco aplica (su disco).
+    if (env.STRIPE_SECRET_KEY && !usingAgentDisk) {
       const quotaRow = await db.query(
         `SELECT storage_used_bytes, storage_quota_bytes FROM users WHERE id = $1`,
         [userId],
@@ -100,7 +117,8 @@ const uploadRoutes: FastifyPluginAsync = async (app) => {
     // Tope GLOBAL (protección de gasto en B2/MinIO): si está configurado y la
     // suma de TODO el almacenamiento cloud superaría el límite, no admitimos más
     // subidas (507). Acota el coste cuando entra mucha gente. 0 = desactivado.
-    if (env.GLOBAL_STORAGE_CAP_BYTES > 0) {
+    // No aplica a discos de agente (no es almacenamiento nuestro).
+    if (env.GLOBAL_STORAGE_CAP_BYTES > 0 && !usingAgentDisk) {
       const g = await db.query(
         `SELECT COALESCE(SUM(storage_used_bytes), 0)::bigint AS total FROM users`,
       );
@@ -235,6 +253,15 @@ const uploadRoutes: FastifyPluginAsync = async (app) => {
         if (ver.rowCount === 0) throw new Error('version not found');
         if (ver.rows[0].owner_id !== userId) throw new Error('forbidden');
 
+        // ¿La versión vive en disco de agente? init elige un único backend para
+        // todos sus chunks, así que basta mirar uno. Si es disco, NO cuenta para
+        // la cuota cloud (es el disco del usuario).
+        const stRow = await client.query(
+          `SELECT storage_type FROM chunks WHERE version_id = $1 LIMIT 1`,
+          [req.params.versionId],
+        );
+        const isDiskBacked = stRow.rows[0]?.storage_type === 'disk';
+
         for (const t of body.chunkAuthTags) {
           await client.query(
             `UPDATE chunks SET chunk_auth_tag = $1
@@ -255,10 +282,12 @@ const uploadRoutes: FastifyPluginAsync = async (app) => {
           [req.params.versionId, ver.rows[0].total_size, ver.rows[0].node_id],
         );
 
-        await client.query(
-          `UPDATE users SET storage_used_bytes = storage_used_bytes + $1 WHERE id = $2`,
-          [ver.rows[0].total_size, userId],
-        );
+        if (!isDiskBacked) {
+          await client.query(
+            `UPDATE users SET storage_used_bytes = storage_used_bytes + $1 WHERE id = $2`,
+            [ver.rows[0].total_size, userId],
+          );
+        }
       });
 
       publishChange(userId, { resource: 'nodes', action: 'uploaded' });
@@ -350,6 +379,9 @@ const uploadRoutes: FastifyPluginAsync = async (app) => {
         `SELECT s3_key, storage_type, volume_id FROM chunks WHERE version_id = $1`,
         [req.params.versionId],
       );
+      // Si la versión vivía en disco de agente, sus bytes nunca contaron para la
+      // cuota cloud (ver /complete), así que tampoco se descuentan al borrar.
+      const wasDiskBacked = chunks.rows.some((c: any) => c.storage_type === 'disk');
 
       for (const c of chunks.rows) {
         try {
@@ -366,10 +398,12 @@ const uploadRoutes: FastifyPluginAsync = async (app) => {
 
       await tx(async (client) => {
         await client.query(`DELETE FROM file_versions WHERE id = $1`, [req.params.versionId]);
-        await client.query(
-          `UPDATE users SET storage_used_bytes = GREATEST(0, storage_used_bytes - $1) WHERE id = $2`,
-          [own.rows[0].total_size, userId],
-        );
+        if (!wasDiskBacked) {
+          await client.query(
+            `UPDATE users SET storage_used_bytes = GREATEST(0, storage_used_bytes - $1) WHERE id = $2`,
+            [own.rows[0].total_size, userId],
+          );
+        }
       });
 
       return reply.send({ ok: true });

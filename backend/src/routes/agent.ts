@@ -73,9 +73,11 @@ const agentRoutes: FastifyPluginAsync = async (app) => {
     // desde 1€): es lo que el trial promete desbloquear. Admin exento (pruebas).
     // En self-host (sin Stripe) no hay gate: siempre disponible.
     if (env.STRIPE_SECRET_KEY) {
-      const g = await db.query('SELECT plan, is_admin FROM users WHERE id = $1', [req.user.sub]);
+      const g = await db.query('SELECT plan, is_admin, agent_unlock FROM users WHERE id = $1', [req.user.sub]);
       const gu = g.rows[0];
-      if (gu && gu.plan === 'free' && !gu.is_admin) {
+      // El Connector se desbloquea con cualquier plan de pago O con el desbloqueo
+      // "Tus discos" de por vida (agent_unlock). Admin exento (pruebas).
+      if (gu && gu.plan === 'free' && !gu.is_admin && !gu.agent_unlock) {
         return reply.code(403).send({ error: 'plan-required' });
       }
     }

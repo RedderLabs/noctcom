@@ -57,6 +57,8 @@ CREATE TABLE IF NOT EXISTS users (
     -- TRUE = sin trial (cuentas anteriores al lanzamiento del trial); los
     -- registros nuevos entran con FALSE y sí pasan por el periodo de prueba
     trial_exempt         BOOLEAN NOT NULL DEFAULT FALSE,
+    -- Desbloqueo "Tus discos" de por vida (pago único). Ver ALTER de abajo.
+    agent_unlock         BOOLEAN NOT NULL DEFAULT FALSE,
     created_at           TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at           TIMESTAMPTZ NOT NULL DEFAULT now(),
     last_login_at        TIMESTAMPTZ
@@ -85,6 +87,13 @@ ALTER TABLE users ALTER COLUMN onboarded_at DROP DEFAULT;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS trial_started_at TIMESTAMPTZ;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS trial_exempt BOOLEAN NOT NULL DEFAULT TRUE;
 ALTER TABLE users ALTER COLUMN trial_exempt SET DEFAULT FALSE;
+
+-- Desbloqueo "Tus discos" de por vida (pago ÚNICO, no suscripción): habilita usar
+-- los discos propios del usuario vía Connector sin cuota de nube ni plan mensual.
+-- Es ortogonal al `plan`: un usuario en 'free' con agent_unlock=TRUE conserva el
+-- Connector y sus volúmenes de agente para siempre. Lo activa el webhook de Stripe
+-- al completar un Checkout one-time (mode=payment). Ver billing.ts / plans.ts.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS agent_unlock BOOLEAN NOT NULL DEFAULT FALSE;
 
 -- ─── DEVICES ───────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS devices (

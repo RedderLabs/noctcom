@@ -460,6 +460,45 @@ const storageRoutes: FastifyPluginAsync = async (app) => {
     return reply.code(201).send({ id: r.rows[0].id, path: volPath });
   });
 
+  // ─── Señalización WebRTC (vía directa, "Tus discos") ─────────────
+  // El navegador establece un DataChannel P2P con el agente para que los blobs
+  // cifrados viajen DIRECTOS (no relayados por el backend → sin coste de egress
+  // recurrente, lo que hace sostenible el desbloqueo de por vida). El backend
+  // solo hace de señalización: reenvía la oferta SDP al agente y devuelve su
+  // respuesta. Sin trickle: el agente reúne sus candidatos ICE y los incluye en
+  // la SDP de respuesta (mantiene este intercambio en una sola ida y vuelta).
+  //
+  // Degradación: si el agente no soporta WebRTC todavía (responde supported:false)
+  // o falla, el cliente cae al relay HTTP de siempre (PUT/GET /uploads/chunk).
+  const rtcOfferSchema = z.object({
+    agentId: z.string().uuid(),
+    offer: z.string().min(1).max(64 * 1024), // SDP de oferta del navegador
+  });
+
+  app.post('/agent-rtc/offer', { onRequest: [app.authenticate] }, async (req, reply) => {
+    const body = rtcOfferSchema.parse(req.body);
+    if (!(await ownedOnlineAgent(req, reply, body.agentId))) return;
+    let res: { answer?: string; supported?: boolean };
+    try {
+      res = (await registry.sendCommand(
+        body.agentId,
+        'rtc-offer',
+        { offer: body.offer },
+        30_000,
+      )) as { answer?: string; supported?: boolean };
+    } catch (err: any) {
+      req.log.warn({ err: err?.message }, 'rtc-offer vía agente falló');
+      // 502: el cliente caerá al relay.
+      return reply.code(502).send({ error: 'agent-error', message: 'el agente no negoció la conexión directa' });
+    }
+    if (!res?.answer || res.supported === false) {
+      // El agente está conectado pero no habla WebRTC (versión antigua): el
+      // cliente debe usar el relay. 409 = "no disponible, usa el fallback".
+      return reply.code(409).send({ error: 'rtc-unsupported', message: 'el agente no soporta conexión directa' });
+    }
+    return reply.send({ answer: res.answer });
+  });
+
   // ─── Format disk ─────────────────────────────────────────
 
   app.post('/disks/format', { onRequest: [app.authenticate] }, async (req, reply) => {

@@ -10,6 +10,11 @@ export interface PublicPlan {
   available: boolean;
 }
 
+export interface UnlockInfo {
+  priceEur: number;
+  available: boolean;
+}
+
 export interface BillingStatus {
   billingEnabled: boolean;
   plan: string;
@@ -19,10 +24,13 @@ export interface BillingStatus {
   currentPeriodEnd: string | null;
   cancelAtPeriodEnd: boolean;
   hasCustomer: boolean;
+  // Desbloqueo "Tus discos" de por vida (pago único).
+  agentUnlock: boolean;
+  unlockAvailable: boolean;
 }
 
 // Catálogo público (no requiere sesión).
-export async function fetchPlans(): Promise<{ plans: PublicPlan[]; billingEnabled: boolean }> {
+export async function fetchPlans(): Promise<{ plans: PublicPlan[]; billingEnabled: boolean; unlock?: UnlockInfo }> {
   return apiFetch('/api/v1/billing/plans', { skipAuth: true });
 }
 
@@ -37,6 +45,18 @@ export async function startCheckout(planId: string): Promise<{ url?: string; upd
   const res = await apiFetch<{ url?: string; updated?: boolean; unchanged?: boolean }>(
     '/api/v1/billing/checkout',
     { method: 'POST', body: JSON.stringify({ planId }) },
+  );
+  if (res.url) window.location.href = res.url;
+  return res;
+}
+
+// Inicia la compra del desbloqueo "Tus discos" de por vida (pago ÚNICO). Si ya
+// está desbloqueado, el backend responde { alreadyUnlocked: true } sin cobrar.
+// Si no, devuelve la url del Checkout one-time y redirige.
+export async function startUnlockCheckout(): Promise<{ url?: string; alreadyUnlocked?: boolean }> {
+  const res = await apiFetch<{ url?: string; alreadyUnlocked?: boolean }>(
+    '/api/v1/billing/unlock-checkout',
+    { method: 'POST' },
   );
   if (res.url) window.location.href = res.url;
   return res;

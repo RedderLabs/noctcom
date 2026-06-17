@@ -348,6 +348,18 @@ async fn handle_cmd(cmd: &str, args: &serde_json::Value) -> Result<serde_json::V
                 .context("tarea de borrado de chunk")??;
             Ok(serde_json::json!({ "ok": true }))
         }
+        // Vía directa (WebRTC): el backend reenvía aquí la oferta SDP del
+        // navegador para abrir un DataChannel P2P y que los blobs cifrados viajen
+        // DIRECTOS (sin relay → sin coste de egress, sostiene el desbloqueo de
+        // por vida). De momento respondemos supported:false → el navegador cae al
+        // relay HTTP de siempre, sin romperse. La negociación real (crate
+        // `webrtc`: SetRemoteDescription(offer) → answer + ICE → DataChannel con
+        // ops write/read/delete sobre `volume::*`) es el siguiente milestone:
+        // ver SPEC_UNLOCK_LIFETIME_INTERNAL.md §"Vía A — agente".
+        "rtc-offer" => {
+            let _offer = arg_str(args, "offer").ok();
+            Ok(serde_json::json!({ "supported": false }))
+        }
         other => anyhow::bail!("comando no soportado: {other}"),
     }
 }

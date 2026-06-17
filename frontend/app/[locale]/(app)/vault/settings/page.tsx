@@ -25,7 +25,7 @@ import {
 } from '@/lib/recovery';
 import { getPushStatus, isPushChosen, enablePush, disablePush, type PushStatus } from '@/lib/firebase';
 import { changeMasterPassword } from '@/lib/change-password';
-import { fetchBillingStatus, openBillingPortal, fetchPlans, startCheckout, formatBytes, type BillingStatus, type PublicPlan } from '@/lib/billing';
+import { fetchBillingStatus, openBillingPortal, fetchPlans, startCheckout, startUnlockCheckout, formatBytes, type BillingStatus, type PublicPlan } from '@/lib/billing';
 import { cn } from '@/lib/utils';
 import { useRouter } from '@/i18n/navigation';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
@@ -1313,6 +1313,23 @@ function PlanUsageSection() {
     }
   }
 
+  const [unlockWorking, setUnlockWorking] = useState(false);
+  async function buyUnlock() {
+    setUnlockWorking(true);
+    try {
+      const res = await startUnlockCheckout();
+      if (res.alreadyUnlocked) { toast.success(t('unlock.already')); reloadStatus(); }
+      // si hay url, startUnlockCheckout ya redirige a Stripe.
+    } catch (err: any) {
+      toast.error(err?.message ?? t('unlock.error'));
+    } finally {
+      setUnlockWorking(false);
+    }
+  }
+  // El desbloqueo "Tus discos" de por vida solo tiene sentido en la nube
+  // gestionada (en self-host ya es gratis). Se muestra si Stripe lo ofrece.
+  const showUnlock = !isSelfHost && !!status && (status.agentUnlock || status.unlockAvailable);
+
   return (
     <section className="mb-8">
       <div className="flex items-center gap-2 mb-4">
@@ -1375,6 +1392,39 @@ function PlanUsageSection() {
           )}
         </div>
       </div>
+
+      {/* Desbloqueo "Tus discos" de por vida (pago único). Usa tus propios discos
+          vía Connector sin cuota de nube ni suscripción mensual. */}
+      {showUnlock && (
+        <div className={cn(
+          'mt-3 p-4 rounded-xl border bg-bg-surface',
+          status?.agentUnlock ? 'border-emerald-500/40' : 'border-border-faint',
+        )}>
+          <div className="flex items-start justify-between gap-4 flex-wrap">
+            <div className="flex items-start gap-3">
+              <HardDrive className={cn('size-4 mt-0.5', status?.agentUnlock ? 'text-emerald-300' : 'text-amber-300')} />
+              <div>
+                <h3 className="text-sm font-medium flex items-center gap-2">
+                  {t('unlock.title')}
+                  {status?.agentUnlock && (
+                    <span className="text-[10px] font-mono uppercase text-emerald-300 border border-emerald-500/40 rounded px-1.5 py-0.5">
+                      {t('unlock.activeBadge')}
+                    </span>
+                  )}
+                </h3>
+                <p className="text-xs text-text-tertiary mt-1 max-w-md">
+                  {status?.agentUnlock ? t('unlock.activeBody') : t('unlock.body')}
+                </p>
+              </div>
+            </div>
+            {!status?.agentUnlock && (
+              <Button size="sm" variant="primary" loading={unlockWorking} onClick={buyUnlock}>
+                {t('unlock.buy')}
+              </Button>
+            )}
+          </div>
+        </div>
+      )}
 
       {showPlans && (
         <PlanPickerModal

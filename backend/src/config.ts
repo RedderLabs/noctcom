@@ -99,6 +99,14 @@ const envSchema = z.object({
   STRIPE_PRICE_PLUS: z.string().optional().or(z.literal('')),
   STRIPE_PRICE_PRO: z.string().optional().or(z.literal('')),
   STRIPE_PRICE_MAX: z.string().optional().or(z.literal('')),
+  // Precio ONE-TIME del desbloqueo "Tus discos" de por vida (mode=payment, NO
+  // suscripción). Vacío = el desbloqueo no se ofrece (la UI no muestra la compra
+  // y /billing/unlock-checkout responde 400). Ver plans.ts (unlockInfo) y el
+  // webhook de billing.ts (checkout.session.completed con metadata.kind=agent_unlock).
+  STRIPE_PRICE_UNLOCK: z.string().optional().or(z.literal('')),
+  // Precio mostrado del desbloqueo (€, pago único). Solo para la UI/textos; el
+  // cobro real lo define el price de Stripe. Default 49.
+  UNLOCK_PRICE_EUR: z.coerce.number().default(49),
   // Stripe Tax (IVA). 'true' lo activa en el Checkout. Apagado por defecto para
   // que el primer test no falle si los productos aún no tienen código de impuesto.
   STRIPE_AUTOMATIC_TAX: z.string().optional().or(z.literal('')),

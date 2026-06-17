@@ -7,12 +7,13 @@ import { useRouter } from '@/i18n/navigation';
 import {
   Check, ArrowRight, Server, Lock, EyeOff, Share2, Smartphone,
   Download, Github, ShieldCheck, Sparkles, Code2, Fingerprint, KeyRound,
+  HardDrive, Infinity as InfinityIcon,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/Button';
 import { Navbar } from '@/components/ui/Navbar';
 import { useAuth } from '@/lib/auth-store';
-import { fetchPlans, startCheckout, formatBytes, type PublicPlan } from '@/lib/billing';
+import { fetchPlans, startCheckout, startUnlockCheckout, formatBytes, type PublicPlan, type UnlockInfo } from '@/lib/billing';
 import { cn } from '@/lib/utils';
 
 // Plan destacado visualmente (mejor relación espacio/precio).
@@ -60,15 +61,30 @@ export default function PricingPage() {
   const isAuthenticated = useAuth((s) => s.isAuthenticated);
   const [plans, setPlans] = useState<PublicPlan[]>([]);
   const [billingEnabled, setBillingEnabled] = useState(false);
+  const [unlock, setUnlock] = useState<UnlockInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
+  const [unlockBusy, setUnlockBusy] = useState(false);
 
   useEffect(() => {
     fetchPlans()
-      .then((r) => { setPlans(r.plans); setBillingEnabled(r.billingEnabled); })
+      .then((r) => { setPlans(r.plans); setBillingEnabled(r.billingEnabled); setUnlock(r.unlock ?? null); })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
+
+  async function buyUnlock() {
+    if (!isAuthenticated) { router.push('/signup'); return; }
+    setUnlockBusy(true);
+    try {
+      const res = await startUnlockCheckout();
+      if (res.alreadyUnlocked) { toast.success(t('unlock.already')); router.push('/vault/settings'); return; }
+      // Si había url, el navegador ya está redirigiendo a Stripe.
+    } catch (err: any) {
+      toast.error(err?.message ?? t('toast.error'));
+      setUnlockBusy(false);
+    }
+  }
 
   async function choose(plan: PublicPlan) {
     if (plan.priceEurMonth === 0) { router.push('/signup'); return; }
@@ -219,6 +235,40 @@ export default function PricingPage() {
             {t('billingNote')}
           </p>
         </section>
+
+        {/* ─── Desbloqueo "Tus discos" de por vida (pago único) ─ */}
+        {!loading && unlock?.available && (
+          <section className="max-w-4xl mx-auto px-6 py-8">
+            <div className="relative overflow-hidden rounded-2xl border border-amber-500/25 bg-bg-surface p-7 md:p-8">
+              <div className="absolute inset-0 bg-gradient-to-br from-amber-500/[0.07] via-transparent to-transparent pointer-events-none" />
+              <div className="relative flex flex-col md:flex-row items-start md:items-center gap-5">
+                <div className="size-11 rounded-xl bg-amber-500/10 border border-amber-500/25 grid place-items-center shrink-0">
+                  <HardDrive className="size-5 text-amber-300" />
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <h3 className="font-medium tracking-tight text-lg">{t('unlock.title')}</h3>
+                    <span className="inline-flex items-center gap-1 text-[10px] font-mono uppercase tracking-wide text-amber-300 border border-amber-500/30 rounded px-1.5 py-0.5">
+                      <InfinityIcon className="size-3" /> {t('unlock.lifetime')}
+                    </span>
+                  </div>
+                  <p className="text-sm text-text-tertiary leading-relaxed">
+                    {t('unlock.body')}
+                  </p>
+                </div>
+                <div className="flex flex-col items-stretch md:items-end gap-1.5">
+                  <div className="flex items-baseline gap-1 justify-end">
+                    <span className="font-mono text-3xl font-bold tracking-tight text-amber-200">{unlock.priceEur}€</span>
+                    <span className="text-xs text-text-tertiary">{t('unlock.once')}</span>
+                  </div>
+                  <Button variant="primary" size="sm" loading={unlockBusy} onClick={buyUnlock}>
+                    {t('unlock.cta')}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
 
         {/* ─── Franja de confianza ──────────────────────────── */}
         <section className="max-w-5xl mx-auto px-6 py-10">
