@@ -12,9 +12,9 @@ Pick whichever fits you:
 
 ## Requirements
 
-- **Docker** and **Docker Compose v2** (except the Proxmox route, which installs Docker for you).
-- **2 GB of RAM** minimum (Argon2id uses 256 MiB; the frontend build needs >2 GiB — 4 GB recommended).
-- Optional: a **domain** with DNS pointing to the server for automatic TLS. Without a domain, it runs in **LAN mode** by IP (no TLS), ideal for a homelab.
+- **Docker** and **Docker Compose v2** — the one-command installer **installs them for you if missing** (any Linux with apt/dnf/yum/apk/pacman); the Proxmox route also installs Docker inside the LXC.
+- **4 GB of RAM** recommended (the frontend build needs >2 GiB; Argon2id uses 256 MiB at runtime).
+- Optional: a **domain** with DNS pointing to the server for automatic TLS. Without a domain, it runs in **LAN mode** by IP with **internal HTTPS** (self-signed certificate), ideal for a homelab.
 
 ---
 
@@ -27,7 +27,7 @@ curl -fsSL https://raw.githubusercontent.com/RedderLabs/noctcom/main/install.sh 
 ```
 
 - **With a domain:** automatic TLS (Let's Encrypt via Caddy). Point `app.your-domain.com` and `api.your-domain.com` to the server's IP.
-- **Without a domain → LAN mode (same-origin):** the app and the API share `http://<IP>` (the API under `/api`), visible on your network. The frontend uses relative paths, so sign-in works with any IP or hostname, with no CORS, even if it changes via DHCP.
+- **Without a domain → LAN mode (same-origin):** the app and the API share `https://<IP>` (the API under `/api`) with **internal HTTPS** (self-signed certificate: the browser warns the first time — accept it), visible on your network. The frontend uses relative paths, so sign-in works with any IP or hostname, with no CORS, even if it changes via DHCP. (HTTPS is required: plain `http` disables Web Crypto.)
 
 When it finishes, open the URL and **create your account** (the first one is the administrator).
 
@@ -73,6 +73,6 @@ It's possible, but it's an **advanced** route: on a PaaS you don't run the full 
 
 - **Update:** from the project folder, `bash update.sh` (pulls, migrates `.env` and rebuilds, without touching your secrets). On Proxmox: `pct exec <CTID> -- bash -lc 'cd /opt/noctcom && bash update.sh'`.
 - **Email (verification/OTP):** disabled by default. Add `RESEND_API_KEY` or the `SMTP_*` variables to `.env`.
-- **Backups:** back up the PostgreSQL and MinIO volumes. Verified restore guide: [docs/RESTORE.md](https://github.com/RedderLabs/noctcom/blob/main/docs/RESTORE.md).
+- **Backups:** `bash scripts/backup.sh` makes a consistent, restorable copy (database + blobs) in `./backups/`; restore with `bash scripts/restore.sh <file>`. Full guide (and verification): [docs/RESTORE.md](https://github.com/RedderLabs/noctcom/blob/main/docs/RESTORE.md).
 
 Questions or something not adding up? Development is in the open: [github.com/RedderLabs/noctcom](https://github.com/RedderLabs/noctcom).

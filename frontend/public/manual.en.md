@@ -199,7 +199,7 @@ Things worth knowing, with no fine print:
 - **Payments are handled by Stripe.** Noctcom never sees your card details.
 - **Changing plans:** instant and prorated (you only pay the difference).
 - **Cancelling:** from the **Manage** button. You keep your plan until the end of the period you already paid; we'll email you the exact date you go back to the Free plan. **We delete nothing:** if you're over quota when you return to 1 GB, your account goes read-only (you can download and export) until you free up space or reactivate a plan.
-- **Any paid plan unlocks the Noctcom Connector** (see below) to use your own disks.
+- **Any paid plan — or the lifetime "Your disks" unlock (one-time payment) — unlocks the Noctcom Connector** (see below) to use your own disks.
 - **Self-hosting is always free** (see below): same encryption, unlimited capacity, on your own server.
 
 ---
@@ -218,7 +218,7 @@ What matters to you:
 
 > For now it's available for **Windows**. Mac and Linux versions are coming soon.
 
-> On Noctcom's cloud, the Connector unlocks with **any paid plan** (from €1/month). If you cancel your plan, your agents are unlinked — your files stay on your disks, nothing is deleted. On **self-host** the Connector is always available, no plans involved.
+> On Noctcom's cloud, the Connector unlocks with **any paid plan** (from €1/month) **or with the lifetime "Your disks" unlock** (a single payment, no monthly fees, to use your own disks with the managed app). If you cancel a monthly plan, your agents are unlinked — your files stay on your disks, nothing is deleted; with the lifetime unlock they stay active forever. On **self-host** the Connector is always available, no plans involved.
 
 ### 1. Download it
 
@@ -267,7 +267,7 @@ On each disk you'll see a **Use this disk** button. When you click it, Noctcom c
 
 Noctcom is 100% open source (AGPL-3.0 license). If you're comfortable with tech, you can run it on your own server.
 
-**The fast way — a single command.** It downloads the installer, asks for your domain, generates the passwords for you and starts everything. With a domain you get the automatic HTTPS padlock; without one it works just as well on your local network (`http://<server-IP>`):
+**The fast way — a single command.** It downloads the installer, installs Docker if you're missing it, asks for your domain, generates the passwords for you and starts everything. With a domain you get the automatic HTTPS padlock; without one it works just as well on your local network (`https://<server-IP>`, with an internal self-signed padlock — the browser warns the first time, accept it):
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/RedderLabs/noctcom/main/install.sh | bash
@@ -291,9 +291,9 @@ docker compose up -d
 
 ### What you need
 
-- Docker and Docker Compose (or a Proxmox VE host if you go the LXC route).
-- At least 2 GB of RAM (part of it is used by the encryption).
-- A domain pointing to your server for the automatic HTTPS padlock — optional: without a domain it works on your local network by IP, without the padlock.
+- A Linux box with internet — the installer puts Docker in for you if it's missing (or a Proxmox VE host if you go the LXC route).
+- At least 4 GB of RAM recommended (the build needs more than 2 GB; encryption uses part of it).
+- A domain pointing to your server for the automatic HTTPS padlock — optional: without a domain it works on your local network by IP, with an internal self-signed padlock.
 
 ### Adding more disks to your server
 
@@ -354,4 +354,4 @@ Click the collapse button at the top of the sidebar to leave it in "icons only" 
 
 ---
 
-*Last updated: v0.13.0 · June 5, 2026*
+*Last updated: v0.19.0 · June 17, 2026*

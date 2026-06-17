@@ -199,7 +199,7 @@ Cosas que conviene saber, sin letra pequeña:
 - **El pago lo gestiona Stripe.** Noctcom nunca ve los datos de tu tarjeta.
 - **Cambiar de plan:** es instantáneo y con prorrateo (solo pagas la diferencia).
 - **Cancelar:** desde el botón **Gestionar**. Conservas tu plan hasta el final del periodo que ya pagaste; te avisamos por email de la fecha exacta en que vuelves al plan Gratis. **No borramos nada:** si al volver a 1 GB superas la cuota, tu cuenta queda en solo lectura (puedes descargar y exportar) hasta que liberes espacio o reactives un plan.
-- **Cualquier plan de pago desbloquea el Noctcom Connector** (ver más abajo) para usar tus propios discos.
+- **Cualquier plan de pago —o el desbloqueo «Tus discos» de por vida (pago único)— desbloquea el Noctcom Connector** (ver más abajo) para usar tus propios discos.
 - **El self-host es siempre gratis** (ver más abajo): mismo cifrado, capacidad ilimitada, en tu propio servidor.
 
 ---
@@ -218,7 +218,7 @@ Lo importante para ti:
 
 > Por ahora está disponible para **Windows**. Las versiones de Mac y Linux llegan pronto.
 
-> En el cloud de Noctcom, el Connector se desbloquea con **cualquier plan de pago** (desde 1 €/mes). Si cancelas el plan, tus agentes se desvinculan — tus archivos siguen en tus discos, no se borra nada. En el **self-host** el Connector está siempre disponible, sin planes.
+> En el cloud de Noctcom, el Connector se desbloquea con **cualquier plan de pago** (desde 1 €/mes) **o con el desbloqueo «Tus discos» de por vida** (un solo pago, sin mensualidades, para usar tus propios discos con la app gestionada). Si cancelas un plan mensual, tus agentes se desvinculan — tus archivos siguen en tus discos, no se borra nada; con el desbloqueo de por vida siguen activos para siempre. En el **self-host** el Connector está siempre disponible, sin planes.
 
 ### 1. Descárgalo
 
@@ -267,7 +267,7 @@ En cada disco verás el botón **Usar este disco**. Al pulsarlo, Noctcom crea un
 
 Noctcom es 100% código abierto (licencia AGPL-3.0). Si te manejas con la tecnología, puedes tenerlo en tu propio servidor.
 
-**La forma rápida — un solo comando.** Descarga el instalador, te pregunta el dominio, genera las contraseñas por ti y lo arranca todo. Con dominio tendrás el candado HTTPS automático; sin dominio funciona igualmente en tu red local (`http://<IP-del-servidor>`):
+**La forma rápida — un solo comando.** Descarga el instalador, instala Docker si te falta, te pregunta el dominio, genera las contraseñas por ti y lo arranca todo. Con dominio tendrás el candado HTTPS automático; sin dominio funciona igualmente en tu red local (`https://<IP-del-servidor>`, con candado interno autofirmado — el navegador avisa la 1ª vez, acéptalo):
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/RedderLabs/noctcom/main/install.sh | bash
@@ -291,9 +291,9 @@ docker compose up -d
 
 ### Qué necesitas
 
-- Docker y Docker Compose (o un Proxmox VE si usas la vía del LXC).
-- Al menos 2 GB de RAM (una parte la usa el cifrado).
-- Un dominio apuntando a tu servidor para el candado HTTPS automático — opcional: sin dominio funciona en tu red local por IP, sin candado.
+- Un Linux con internet — el instalador pone Docker por ti si te falta (o un Proxmox VE si usas la vía del LXC).
+- Al menos 4 GB de RAM recomendado (el build necesita más de 2 GB; el cifrado usa una parte).
+- Un dominio apuntando a tu servidor para el candado HTTPS automático — opcional: sin dominio funciona en tu red local por IP, con candado interno autofirmado.
 
 ### Añadir más discos en tu servidor
 
@@ -354,4 +354,4 @@ Pulsa el botón de plegar en la parte de arriba del menú para dejarlo en modo "
 
 ---
 
-*Última actualización: v0.13.0 · 5 de junio de 2026*
+*Última actualización: v0.19.0 · 17 de junio de 2026*

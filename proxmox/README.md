@@ -16,7 +16,7 @@ Ejecutar **como root en el host Proxmox VE**:
 bash <(curl -fsSL https://raw.githubusercontent.com/RedderLabs/noctcom/main/proxmox/noctcom-lxc.sh)
 ```
 
-- Sin dominio → **modo LAN**: app en `http://<IP-del-LXC>`, API en `:3000`.
+- Sin dominio → **modo LAN** (same-origin): app y API en `https://<IP-del-LXC>` (la API bajo `/api`) con **HTTPS interno** (certificado autofirmado).
 - Con dominio (`NOCTCOM_DOMAIN=example.com`) → TLS automático con Caddy.
 - Configurable por variables de entorno (`NOCTCOM_CTID`, `NOCTCOM_RAM`,
   `NOCTCOM_DISK`, `NOCTCOM_STORAGE`, `NOCTCOM_BRIDGE`…); ver cabecera del script.
@@ -86,8 +86,10 @@ se cumple, el PR **se cierra sin revisión**. NO depende de la versión (no exig
 - Docker dentro de LXC no privilegiado requiere `--features nesting=1,keyctl=1`
   (ambas rutas lo configuran).
 - El modo LAN lo implementa `install.sh` + `docker-compose.lan.yml` +
-  `docker/caddy/Caddyfile.lan` (raíz del repo): Caddy en HTTP plano, app `:80`
-  y API `:3000`. La URL de la API queda integrada en el build del frontend →
-  conviene reservar la IP del LXC en el DHCP.
+  `docker/caddy/Caddyfile.lan` (raíz del repo): Caddy con **HTTPS interno** (`tls
+  internal`, cert autofirmado por IP), same-origin en `:443` — la app y la API
+  (bajo `/api`) comparten origen, así que el frontend usa rutas relativas y no
+  hornea la IP para el login. `PUBLIC_URL` (subidas de chunks) sí lleva la IP →
+  conviene reservar la IP del LXC en el DHCP (`install.sh` avisa si cambia).
 - `COMPOSE_FILE` en `/opt/noctcom/.env` selecciona los ficheros compose
   correctos (y evita el `docker-compose.override.yml` de desarrollo).
