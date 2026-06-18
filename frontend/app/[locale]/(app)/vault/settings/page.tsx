@@ -2076,9 +2076,10 @@ function ConnectorAgentsSection() {
   const [pairing, setPairing] = useState(false);
   const [pairCode, setPairCode] = useState<string | null>(null);
   const [os, setOs] = useState<'windows' | 'macos' | 'linux' | 'other'>('other');
-  const [release, setRelease] = useState<{ sha256: string | null; virusTotalUrl: string | null }>({
+  const [release, setRelease] = useState<{ sha256: string | null; virusTotalUrl: string | null; available: boolean }>({
     sha256: null,
     virusTotalUrl: null,
+    available: false,
   });
 
   useEffect(() => {
@@ -2091,15 +2092,26 @@ function ConnectorAgentsSection() {
     );
   }, []);
 
-  // SHA256 + enlace a VirusTotal del binario de Windows (transparencia de
-  // descarga). Endpoint público; si no hay hash configurado, no se muestra nada.
+  // Datos de release (disponibilidad + SHA256 + VirusTotal) del binario para el
+  // SO detectado: Windows o Linux. En macOS/otros consultamos Windows (el binario
+  // siempre publicado, que es lo que ofrece el botón por defecto). Endpoint
+  // público; si no hay hash configurado, no se muestra el bloque de checksum.
   useEffect(() => {
-    apiFetch<{ sha256: string | null; virusTotalUrl: string | null }>(
-      '/api/v1/agent/version?platform=windows',
+    const platform = os === 'linux' ? 'linux' : 'windows';
+    apiFetch<{ sha256: string | null; virusTotalUrl: string | null; available: boolean }>(
+      `/api/v1/agent/version?platform=${platform}`,
     )
-      .then((r) => setRelease({ sha256: r.sha256 ?? null, virusTotalUrl: r.virusTotalUrl ?? null }))
+      .then((r) => setRelease({
+        sha256: r.sha256 ?? null,
+        virusTotalUrl: r.virusTotalUrl ?? null,
+        available: Boolean(r.available),
+      }))
       .catch(() => { /* sin datos de release: solo se omite el bloque de checksum */ });
-  }, []);
+  }, [os]);
+
+  // Plataforma cuyo binario ofrece el botón principal. Windows está siempre
+  // publicado; Linux solo cuando su binario está en B2 (release.available).
+  const downloadOs: 'windows' | 'linux' = os === 'linux' && release.available ? 'linux' : 'windows';
 
   const fetchAgents = useCallback(async () => {
     if (!masterKey) return;
@@ -2189,14 +2201,14 @@ function ConnectorAgentsSection() {
             </p>
           </div>
           <a
-            href={`${process.env.NEXT_PUBLIC_API_URL ?? ''}/api/v1/agent/download?platform=windows`}
+            href={`${process.env.NEXT_PUBLIC_API_URL ?? ''}/api/v1/agent/download?platform=${downloadOs}`}
             className="inline-flex items-center gap-2 h-9 px-4 rounded-lg bg-violet-600 hover:bg-violet-500 text-white text-sm font-medium transition-colors shrink-0"
           >
             <Download className="size-4" />
-            {t('connector.downloadWindows')}
+            {downloadOs === 'linux' ? t('connector.downloadLinux') : t('connector.downloadWindows')}
           </a>
         </div>
-        {os === 'linux' && (
+        {os === 'linux' && !release.available && (
           <p className="text-[10px] text-text-muted mt-2">
             {t('connector.linuxSoon')}
           </p>

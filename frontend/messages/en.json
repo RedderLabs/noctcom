@@ -1070,6 +1070,7 @@
       "step1Macos": "We detected macOS. The Connector is only available for Windows and Linux.",
       "step1Generic": "Download the agent for your system (Windows or Linux).",
       "downloadWindows": "Download for Windows",
+      "downloadLinux": "Download for Linux",
       "linuxSoon": "Linux build: coming soon.",
       "macosUnavailable": "The Connector isn't available for macOS.",
       "unsignedNote": "When you open it, Windows may show an \"unknown publisher\" warning: the binary isn't code-signed yet (certificate coming soon). Click <strong>More info → Run anyway</strong>.",

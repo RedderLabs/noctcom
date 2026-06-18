@@ -26,7 +26,25 @@ import { env } from '../config.js';
 // scripts/upload-agent-release.ts). Solo se ofrecen los que existen de verdad.
 const DOWNLOADS: Record<string, string> = {
   windows: 'downloads/noctcom-connector-windows.exe',
+  linux: 'downloads/noctcom-connector-linux',
 };
+
+// SHA256 (hex) del binario servido por plataforma, para transparencia de descarga.
+function sha256For(platform: string): string | null {
+  if (platform === 'windows') return env.AGENT_WINDOWS_SHA256 || null;
+  if (platform === 'linux') return env.AGENT_LINUX_SHA256 || null;
+  return null;
+}
+
+// ¿Está el binario realmente publicado en B2 y se puede ofrecer? Windows ya está
+// publicado desde siempre; Linux solo cuando se ha subido y se ha configurado su
+// SHA (AGENT_LINUX_SHA256 actúa de interruptor). Así nunca ofrecemos un enlace
+// roto: en cuanto subes el binario Linux y pones su hash, la descarga aparece.
+function isPublished(platform: string): boolean {
+  if (!Object.prototype.hasOwnProperty.call(DOWNLOADS, platform)) return false;
+  if (platform === 'linux') return Boolean(env.AGENT_LINUX_SHA256);
+  return true;
+}
 
 const bytesB64 = z.string().regex(/^[A-Za-z0-9_-]+$/, 'base64url required');
 const fromB64 = (s: string) => Buffer.from(s, 'base64url');
@@ -130,10 +148,10 @@ const agentRoutes: FastifyPluginAsync = async (app) => {
   // saber si hay una versión nueva. No expone nada sensible (solo un semver).
   app.get<{ Querystring: { platform?: string } }>('/version', async (req, reply) => {
     const platform = (req.query.platform ?? '').toLowerCase();
-    const available = Object.prototype.hasOwnProperty.call(DOWNLOADS, platform);
-    // Transparencia de descarga: SHA256 del binario y enlace a VirusTotal. Solo
-    // para Windows (es el único binario servido) y solo si hay hash configurado.
-    const sha256 = platform === 'windows' && env.AGENT_WINDOWS_SHA256 ? env.AGENT_WINDOWS_SHA256 : null;
+    const available = isPublished(platform);
+    // Transparencia de descarga: SHA256 del binario y enlace a VirusTotal, por
+    // plataforma y solo si hay hash configurado (nunca un hash inventado).
+    const sha256 = available ? sha256For(platform) : null;
     return reply.send({
       version: env.AGENT_LATEST_VERSION,
       platform: platform || null,
@@ -148,9 +166,8 @@ const agentRoutes: FastifyPluginAsync = async (app) => {
   // Público (es un instalador): redirige a una URL firmada de B2.
   app.get<{ Querystring: { platform?: string } }>('/download', async (req, reply) => {
     const platform = (req.query.platform ?? '').toLowerCase();
-    const key = DOWNLOADS[platform];
-    if (!key) return reply.notFound('no hay binario para esa plataforma todavía');
-    const url = await presignDownload(key, 300);
+    if (!isPublished(platform)) return reply.notFound('no hay binario para esa plataforma todavía');
+    const url = await presignDownload(DOWNLOADS[platform]!, 300);
     return reply.redirect(url, 302);
   });
 

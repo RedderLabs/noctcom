@@ -63,6 +63,11 @@ const envSchema = z.object({
   // no se muestra nada (nunca un hash inventado).
   AGENT_WINDOWS_SHA256: z.string().regex(/^[a-f0-9]{64}$/i).optional().or(z.literal('')).default(''),
 
+  // SHA256 (hex) del binario de Linux. Además de transparencia, actúa como
+  // INTERRUPTOR: hasta que no se sube el binario a B2 y se configura este hash,
+  // la descarga de Linux NO se ofrece (evita un enlace roto). Vacío = oculta.
+  AGENT_LINUX_SHA256: z.string().regex(/^[a-f0-9]{64}$/i).optional().or(z.literal('')).default(''),
+
   // Push (FCM): el service account de Firebase como JSON en base64 — la vía
   // para prod (Render no tiene el archivo). En dev se usa el archivo
   // backend/firebase-service-account.json (gitignored) y esto queda vacío.

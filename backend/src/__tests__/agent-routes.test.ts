@@ -38,6 +38,7 @@ import websocket from '@fastify/websocket';
 import agentRoutes from '../routes/agent.js';
 import { resetDb, seedUser, store } from './fake-db.js';
 import * as registry from '../agents/registry.js';
+import { env } from '../config.js';
 
 const JWT_SECRET = 'test-secret-must-be-at-least-32-chars-long';
 const b64 = (n = 24) => randomBytes(n).toString('base64url');
@@ -171,6 +172,22 @@ describe('GET /version (auto-update)', () => {
     expect(body.version).toBe('9.9.9');
     expect(body.available).toBe(false);
     expect(body.downloadUrl).toBeNull();
+  });
+
+  it('Linux pasa a disponible (con SHA) en cuanto se configura AGENT_LINUX_SHA256', async () => {
+    const sha = 'a'.repeat(64);
+    (env as any).AGENT_LINUX_SHA256 = sha;
+    try {
+      const res = await app.inject({ method: 'GET', url: '/version?platform=linux' });
+      expect(res.statusCode).toBe(200);
+      const body = res.json();
+      expect(body.available).toBe(true);
+      expect(body.downloadUrl).toBe('/api/v1/agent/download?platform=linux');
+      expect(body.sha256).toBe(sha);
+      expect(body.virusTotalUrl).toBe(`https://www.virustotal.com/gui/file/${sha}`);
+    } finally {
+      (env as any).AGENT_LINUX_SHA256 = '';
+    }
   });
 });
 
