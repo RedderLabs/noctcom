@@ -20,7 +20,7 @@ ed25519-dalek = { version = "2", features = ["rand_core"] }
 rand = "0.8"
 base64 = "0.22"
 clap = { version = "4", features = ["derive"] }
-directories = "5"
+directories = "6"
 anyhow = "1"
 
 # Vía directa (WebRTC): transporte P2P navegador↔agente para que los blobs
