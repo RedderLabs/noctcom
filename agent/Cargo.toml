@@ -28,7 +28,7 @@ anyhow = "1"
 # la feature `webrtc`, para no inflar el build por defecto mientras se itera:
 #   cargo build --features webrtc
 # Sin la feature, el handler rtc-offer responde supported:false y todo va por relay.
-webrtc = { version = "0.12", optional = true }
+webrtc = { version = "0.17", optional = true }
 
 [features]
 default = []
