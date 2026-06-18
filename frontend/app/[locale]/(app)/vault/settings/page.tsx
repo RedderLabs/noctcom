@@ -1924,8 +1924,13 @@ function AgentDiskCard({ disk, agentId, onChanged }: {
   const usedPct = disk.totalBytes > 0 ? Math.min(100, (disk.usedBytes / disk.totalBytes) * 100) : 0;
   const [busy, setBusy] = useState(false);
   const [formatOpen, setFormatOpen] = useState(false);
-  // Nunca ofrecemos formatear el disco de sistema (C:); el backend también lo rechaza.
-  const isSystemDrive = /^c[:\\]?/i.test(disk.device || disk.path || '');
+  // Nunca ofrecemos formatear el disco de sistema. En Windows es C:; en Linux,
+  // el que monta la raíz o el arranque (`/`, `/boot…`). El agente lo vuelve a
+  // rechazar comparando el disco padre con el que monta `/` (última palabra).
+  const isSystemDrive =
+    /^c[:\\]?/i.test(disk.device || disk.path || '') ||
+    disk.path === '/' ||
+    disk.path.startsWith('/boot');
 
   async function handleUse() {
     setBusy(true);

@@ -55,7 +55,9 @@ jobs:
 
       - name: Compilar (release)
         working-directory: agent
-        run: cargo build --release --target ${{ matrix.target }}
+        # --features webrtc: incluye la vía directa P2P (DataChannel) que usan
+        # "Tus discos". Sin esto el binario saldría solo con el relay HTTP.
+        run: cargo build --release --features webrtc --target ${{ matrix.target }}
 
       - name: Renombrar artefacto + checksum
         shell: bash

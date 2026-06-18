@@ -314,13 +314,27 @@ async fn handle_cmd(cmd: &str, args: &serde_json::Value) -> Result<serde_json::V
             Ok(serde_json::json!(info))
         }
         "format-volume" => {
-            let drive_letter = arg_str(args, "driveLetter")?;
             let label = arg_str(args, "label")?;
-            println!("{}", i18n::pick(
-                &format!("Formateando volumen '{drive_letter}:' (DESTRUCTIVO)…"),
-                &format!("Formatting volume '{drive_letter}:' (DESTRUCTIVE)…"),
-            ));
-            let info = tokio::task::spawn_blocking(move || format::format_volume(&drive_letter, &label))
+            // Windows manda `driveLetter` ("D"); Linux manda `device` ("/dev/sdb1").
+            #[cfg(windows)]
+            let target = {
+                let dl = arg_str(args, "driveLetter")?;
+                println!("{}", i18n::pick(
+                    &format!("Formateando volumen '{dl}:' (DESTRUCTIVO)…"),
+                    &format!("Formatting volume '{dl}:' (DESTRUCTIVE)…"),
+                ));
+                dl
+            };
+            #[cfg(not(windows))]
+            let target = {
+                let dev = arg_str(args, "device")?;
+                println!("{}", i18n::pick(
+                    &format!("Formateando dispositivo '{dev}' (DESTRUCTIVO)…"),
+                    &format!("Formatting device '{dev}' (DESTRUCTIVE)…"),
+                ));
+                dev
+            };
+            let info = tokio::task::spawn_blocking(move || format::format_volume(&target, &label))
                 .await
                 .context("tarea de formateo")??;
             Ok(serde_json::json!(info))

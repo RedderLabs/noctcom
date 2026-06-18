@@ -382,9 +382,17 @@ const storageRoutes: FastifyPluginAsync = async (app) => {
   // listo como volumen activo. Acotado: nunca el disco de sistema, solo discos
   // vacíos (lo verifica el propio agente), step-up 2FA + confirmación de
   // etiqueta. Los datos que se guarden después van cifrados (zero-knowledge).
+  // El destino del formateo difiere por sistema operativo del agente:
+  //   - Windows: una letra de unidad ("D").
+  //   - Linux:   un dispositivo de bloque ("/dev/sdb1").
+  // El cliente manda EXACTAMENTE uno de los dos (XOR).
+  // driveLetter (Windows) y device (Linux) son ambos opcionales en el schema; la
+  // exclusividad (XOR) y el formato de device se validan abajo a mano para
+  // devolver 400 — el resto del fichero no usa manejador global de ZodError.
   const agentFormatSchema = z.object({
     agentId: z.string().uuid(),
-    driveLetter: z.string().regex(/^[A-Za-z]$/, 'letra de unidad inválida'),
+    driveLetter: z.string().optional(),
+    device: z.string().optional(),
     label: z.string().min(1).max(12).regex(/^[a-zA-Z0-9_-]+$/, 'solo alfanumérico, guion y guion bajo'),
     confirmLabel: z.string(),
     totalBytes: z.number().int().nonnegative().optional(),
@@ -395,7 +403,22 @@ const storageRoutes: FastifyPluginAsync = async (app) => {
     if (body.confirmLabel !== body.label) {
       return reply.badRequest('la etiqueta de confirmación no coincide');
     }
-    const letter = body.driveLetter.toUpperCase();
+    // Debe venir exactamente uno: driveLetter (Windows) o device (Linux).
+    if (Boolean(body.driveLetter) === Boolean(body.device)) {
+      return reply.badRequest('indica driveLetter (Windows) o device (Linux), pero no ambos');
+    }
+    if (body.driveLetter && !/^[A-Za-z]$/.test(body.driveLetter)) {
+      return reply.badRequest('letra de unidad inválida');
+    }
+    if (body.device && !/^\/dev\/[A-Za-z0-9/_-]+$/.test(body.device)) {
+      return reply.badRequest('dispositivo inválido (se esperaba /dev/…)');
+    }
+
+    // El agente vuelve a validar todo (disco de sistema, disco vacío, root). El
+    // chequeo de disco de sistema aquí es solo defensa temprana para Windows; en
+    // Linux no hay equivalente fiable de "letra C" → lo resuelve el agente
+    // comparando el disco padre contra el que monta la raíz `/`.
+    const letter = body.driveLetter?.toUpperCase();
     if (letter === 'C') {
       return reply.badRequest('no se puede formatear el disco del sistema (C:)');
     }
@@ -406,29 +429,41 @@ const storageRoutes: FastifyPluginAsync = async (app) => {
     // Se puede formatear un disco aunque esté EN USO (activo), pero nunca si ya
     // guarda archivos de Noctcom: eso destruiría datos del usuario y dejaría
     // chunks huérfanos. En ese caso hay que eliminarlos / dejar de usar primero.
-    const targetPath = `${letter}:\\`;
-    const existingVol = await db.query(
-      `SELECT id FROM storage_volumes WHERE agent_id = $1 AND path = $2 AND user_id = $3`,
-      [body.agentId, targetPath, req.user.sub],
-    );
-    if (existingVol.rowCount && existingVol.rowCount > 0) {
-      const hasChunks = await db.query(
-        `SELECT 1 FROM chunks WHERE volume_id = $1 LIMIT 1`,
-        [existingVol.rows[0].id],
+    // Solo aplicable en Windows, donde el path es determinista (`D:\`); en Linux
+    // el path es el mountpoint que decide el agente y no lo conocemos hasta que
+    // formatea → ahí la salvaguarda es del agente (solo discos vacíos).
+    if (letter) {
+      const targetPath = `${letter}:\\`;
+      const existingVol = await db.query(
+        `SELECT id FROM storage_volumes WHERE agent_id = $1 AND path = $2 AND user_id = $3`,
+        [body.agentId, targetPath, req.user.sub],
       );
-      if (hasChunks.rowCount && hasChunks.rowCount > 0) {
-        return reply.badRequest(
-          'este disco ya guarda archivos de Noctcom; elimínalos o déjalo de usar antes de formatear',
+      if (existingVol.rowCount && existingVol.rowCount > 0) {
+        const hasChunks = await db.query(
+          `SELECT 1 FROM chunks WHERE volume_id = $1 LIMIT 1`,
+          [existingVol.rows[0].id],
         );
+        if (hasChunks.rowCount && hasChunks.rowCount > 0) {
+          return reply.badRequest(
+            'este disco ya guarda archivos de Noctcom; elimínalos o déjalo de usar antes de formatear',
+          );
+        }
       }
     }
+
+    // Lo que se reenvía al agente: { driveLetter, label } en Windows o
+    // { device, label } en Linux. El agente devuelve el path final (mountpoint
+    // en Linux, raíz de la unidad en Windows) en result.path.
+    const cmdArgs = letter
+      ? { driveLetter: letter, label: body.label }
+      : { device: body.device, label: body.label };
 
     let result: { path?: string; blobPath?: string };
     try {
       result = (await registry.sendCommand(
         body.agentId,
         'format-volume',
-        { driveLetter: letter, label: body.label },
+        cmdArgs,
         180_000,
       )) as { path?: string; blobPath?: string };
     } catch (err: any) {
@@ -439,7 +474,15 @@ const storageRoutes: FastifyPluginAsync = async (app) => {
       });
     }
 
-    const volPath = result?.path ?? `${letter}:\\`;
+    // En Windows tenemos un fallback determinista (`D:\`); en Linux el path lo
+    // define el agente (mountpoint) y debe venir sí o sí en result.path.
+    const volPath = result?.path ?? (letter ? `${letter}:\\` : undefined);
+    if (!volPath) {
+      return reply.code(502).send({
+        error: 'agent-error',
+        message: 'el agente no devolvió la ruta del volumen formateado',
+      });
+    }
     // Idempotente: si ese volumen ya estaba registrado en el agente, reactívalo.
     const existing = await db.query(
       `SELECT id FROM storage_volumes WHERE agent_id = $1 AND path = $2`,

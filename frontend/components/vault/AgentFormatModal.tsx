@@ -42,6 +42,11 @@ function driveLetterOf(disk: AgentDiskLite): string {
   return (src.match(/[A-Za-z]/)?.[0] ?? '').toUpperCase();
 }
 
+/** En Linux el dispositivo es un bloque "/dev/sdX"; en Windows, una letra. */
+function isLinuxDevice(disk: AgentDiskLite): boolean {
+  return (disk.device || '').startsWith('/dev/');
+}
+
 /**
  * Formateo de un disco de la máquina del usuario a través del agente. DESTRUCTIVO
  * pero acotado: el agente solo formatea discos VACÍOS y nunca el de sistema.
@@ -68,7 +73,10 @@ export function AgentFormatModal({ open, onClose, agentId, disk, onFormatted }: 
 
   async function handleFormat() {
     if (!disk || !confirmed) return;
-    const letter = driveLetterOf(disk);
+    // Linux → manda el dispositivo de bloque ("/dev/sdb1"); Windows → la letra.
+    const target = isLinuxDevice(disk)
+      ? { device: disk.device }
+      : { driveLetter: driveLetterOf(disk) };
     setLoading(true);
     try {
       // Re-autenticación obligatoria antes de una operación irreversible.
@@ -78,7 +86,7 @@ export function AgentFormatModal({ open, onClose, agentId, disk, onFormatted }: 
         headers: { 'x-step-up-token': stepUpToken },
         body: JSON.stringify({
           agentId,
-          driveLetter: letter,
+          ...target,
           label,
           confirmLabel: confirmText,
           totalBytes: disk.totalBytes,
@@ -132,7 +140,7 @@ export function AgentFormatModal({ open, onClose, agentId, disk, onFormatted }: 
                   <span className="text-[10px] text-text-muted">·</span>
                   <span className="text-[10px] text-amber-400 font-mono uppercase">{disk.filesystem || t('unformatted')}</span>
                   <span className="text-[10px] text-text-muted">·</span>
-                  <span className="text-[10px] text-text-muted font-mono uppercase">→ NTFS</span>
+                  <span className="text-[10px] text-text-muted font-mono uppercase">→ {isLinuxDevice(disk) ? 'ext4' : 'NTFS'}</span>
                 </div>
               </div>
             </div>

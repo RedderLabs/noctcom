@@ -47,8 +47,13 @@ function connectFormattingAgent(agentId: string, userId: string) {
     send(data: string) {
       const m = JSON.parse(data);
       if (m.type === 'cmd' && m.cmd === 'format-volume') {
-        const root = `${m.args.driveLetter}:\\`;
-        registry.resolveResponse(agentId, m.id, true, { path: root, blobPath: `${root}noctcom-blobs` });
+        // Windows manda driveLetter → path `D:\`; Linux manda device → el agente
+        // monta en `/mnt/noctcom/<label>` y devuelve ese mountpoint.
+        const root = m.args.driveLetter
+          ? `${m.args.driveLetter}:\\`
+          : `/mnt/noctcom/${m.args.label}`;
+        const sep = m.args.driveLetter ? '' : '/';
+        registry.resolveResponse(agentId, m.id, true, { path: root, blobPath: `${root}${sep}noctcom-blobs` });
       }
     },
   });
@@ -162,5 +167,54 @@ describe('POST /storage/disks/agent-format', () => {
     expect(res2.json().alreadyRegistered).toBe(true);
     expect(store.volumes).toHaveLength(1);
     expect(store.volumes[0].label).toBe('datos2');
+  });
+
+  it('Linux: formatea un device y registra el mountpoint devuelto (201)', async () => {
+    seedAgent(agentId, userId);
+    connectFormattingAgent(agentId, userId);
+
+    const res = await app.inject({
+      method: 'POST', url: '/disks/agent-format',
+      headers: { 'x-test-sub': userId, 'x-step-up-token': stepUp },
+      payload: body({ driveLetter: undefined, device: '/dev/sdb1' }),
+    });
+    expect(res.statusCode).toBe(201);
+    // El path registrado es el mountpoint que devuelve el agente, no una letra.
+    expect(res.json().path).toBe('/mnt/noctcom/datos');
+    expect(store.volumes).toHaveLength(1);
+    expect(store.volumes[0]).toMatchObject({ path: '/mnt/noctcom/datos', active: true, label: 'datos' });
+  });
+
+  it('400 si se mandan driveLetter y device a la vez', async () => {
+    seedAgent(agentId, userId);
+    connectFormattingAgent(agentId, userId);
+    const res = await app.inject({
+      method: 'POST', url: '/disks/agent-format',
+      headers: { 'x-test-sub': userId, 'x-step-up-token': stepUp },
+      payload: body({ device: '/dev/sdb1' }), // body() ya trae driveLetter: 'D'
+    });
+    expect(res.statusCode).toBe(400);
+  });
+
+  it('400 si no se manda ni driveLetter ni device', async () => {
+    seedAgent(agentId, userId);
+    connectFormattingAgent(agentId, userId);
+    const res = await app.inject({
+      method: 'POST', url: '/disks/agent-format',
+      headers: { 'x-test-sub': userId, 'x-step-up-token': stepUp },
+      payload: body({ driveLetter: undefined }),
+    });
+    expect(res.statusCode).toBe(400);
+  });
+
+  it('400 si el device no tiene forma /dev/…', async () => {
+    seedAgent(agentId, userId);
+    connectFormattingAgent(agentId, userId);
+    const res = await app.inject({
+      method: 'POST', url: '/disks/agent-format',
+      headers: { 'x-test-sub': userId, 'x-step-up-token': stepUp },
+      payload: body({ driveLetter: undefined, device: 'sdb1' }),
+    });
+    expect(res.statusCode).toBe(400);
   });
 });
