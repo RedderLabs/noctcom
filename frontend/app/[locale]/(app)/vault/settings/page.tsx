@@ -2181,9 +2181,11 @@ function ConnectorAgentsSection() {
             <p className="text-xs text-text-tertiary mt-0.5">
               {os === 'windows'
                 ? t('connector.step1Windows')
-                : os === 'macos' || os === 'linux'
-                  ? t('connector.step1OtherOs', { os: os === 'macos' ? 'macOS' : 'Linux' })
-                  : t('connector.step1Generic')}
+                : os === 'linux'
+                  ? t('connector.step1Linux')
+                  : os === 'macos'
+                    ? t('connector.step1Macos')
+                    : t('connector.step1Generic')}
             </p>
           </div>
           <a
@@ -2194,9 +2196,14 @@ function ConnectorAgentsSection() {
             {t('connector.downloadWindows')}
           </a>
         </div>
-        {(os === 'macos' || os === 'linux') && (
+        {os === 'linux' && (
           <p className="text-[10px] text-text-muted mt-2">
-            {t('connector.buildsSoon')}
+            {t('connector.linuxSoon')}
+          </p>
+        )}
+        {os === 'macos' && (
+          <p className="text-[10px] text-text-muted mt-2">
+            {t('connector.macosUnavailable')}
           </p>
         )}
 
