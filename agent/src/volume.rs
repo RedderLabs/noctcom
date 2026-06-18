@@ -163,6 +163,9 @@ mod tests {
 
         assert!(write_chunk(&path, "../escape", b"x").is_err());
         assert!(read_chunk(&path, "../../etc/passwd").is_err());
+        // El backslash solo es separador (y por tanto vector de traversal) en
+        // Windows; en Linux es un carácter normal que no escapa de la carpeta.
+        #[cfg(windows)]
         assert!(delete_chunk(&path, "..\\..\\windows").is_err());
 
         let _ = std::fs::remove_dir_all(&base);

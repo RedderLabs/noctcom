@@ -9,7 +9,10 @@
 //! sistemas devuelve un error honesto en vez de fingir soporte.
 
 use crate::volume::{self, VolumeInfo};
-use anyhow::{anyhow, bail, Result};
+use anyhow::{bail, Result};
+// El macro `anyhow!` solo lo usa el camino de Windows (letras de unidad).
+#[cfg(windows)]
+use anyhow::anyhow;
 use std::path::Path;
 
 /// Entradas que NO cuentan como "datos del usuario": carpetas del sistema de
@@ -24,7 +27,8 @@ const IGNORABLE: &[&str] = &[
 ];
 
 /// Normaliza la letra de unidad a una mayúscula A–Z. Acepta `"d"`, `"D"`,
-/// `"D:"`, `"D:\\"`… y se queda con la primera letra.
+/// `"D:"`, `"D:\\"`… y se queda con la primera letra. Solo Windows usa letras.
+#[cfg(windows)]
 pub fn validate_drive_letter(s: &str) -> Result<char> {
     let c = s
         .chars()
@@ -43,7 +47,8 @@ pub fn validate_drive_letter(s: &str) -> Result<char> {
 }
 
 /// ¿Es `letter` el disco de sistema? `system_drive` es el valor de la variable
-/// de entorno `%SystemDrive%` (p.ej. `"C:"`).
+/// de entorno `%SystemDrive%` (p.ej. `"C:"`). Solo Windows.
+#[cfg(windows)]
 pub fn is_system_drive(letter: char, system_drive: &str) -> bool {
     system_drive
         .chars()
@@ -272,9 +277,9 @@ pub fn format_volume(device: &str, label: &str) -> Result<VolumeInfo> {
         ));
     }
     let meta = std::fs::metadata(device).with_context(|| crate::i18n::pick(
-        format!("el dispositivo '{device}' no existe o no es accesible"),
-        format!("device '{device}' does not exist or is not accessible"),
-    ))?;
+        &format!("el dispositivo '{device}' no existe o no es accesible"),
+        &format!("device '{device}' does not exist or is not accessible"),
+    ).to_string())?;
     if !meta.file_type().is_block_device() {
         bail!("{}", crate::i18n::pick(
             &format!("'{device}' no es un dispositivo de bloque"),
@@ -359,9 +364,9 @@ pub fn format_volume(device: &str, label: &str) -> Result<VolumeInfo> {
     // Montar en una ruta estable y registrarlo como volumen de Noctcom.
     let mountpoint = format!("/mnt/noctcom/{label}");
     std::fs::create_dir_all(&mountpoint).with_context(|| crate::i18n::pick(
-        format!("no se pudo crear el punto de montaje '{mountpoint}'"),
-        format!("could not create mountpoint '{mountpoint}'"),
-    ))?;
+        &format!("no se pudo crear el punto de montaje '{mountpoint}'"),
+        &format!("could not create mountpoint '{mountpoint}'"),
+    ).to_string())?;
     let out = Command::new("mount").arg(device).arg(&mountpoint).output()
         .context("montando el volumen")?;
     if !out.status.success() {
@@ -389,6 +394,7 @@ pub fn format_volume(_device: &str, _label: &str) -> Result<VolumeInfo> {
 mod tests {
     use super::*;
 
+    #[cfg(windows)]
     #[test]
     fn validate_drive_letter_normalizes() {
         assert_eq!(validate_drive_letter("d").unwrap(), 'D');
@@ -398,6 +404,7 @@ mod tests {
         assert!(validate_drive_letter("1").is_err());
     }
 
+    #[cfg(windows)]
     #[test]
     fn detects_system_drive() {
         assert!(is_system_drive('C', "C:"));
