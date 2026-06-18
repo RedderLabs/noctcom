@@ -1,6 +1,6 @@
 [package]
 name = "noctcom-connector"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 description = "Agente local de Noctcom: gestiona los discos de tu máquina desde la web cloud"
 license = "AGPL-3.0"

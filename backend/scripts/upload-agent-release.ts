@@ -63,7 +63,10 @@ await s3.send(
 
 console.log(`✓ Subido ${file} (${(body.length / 1024 / 1024).toFixed(1)} MB) → ${env.S3_BUCKET}/${t.key}`);
 console.log(`  SHA256: ${sha256}`);
-if (platform === 'windows') {
-  console.log(`  → Pon AGENT_WINDOWS_SHA256=${sha256} en el backend (.env.prod / Render)`);
-  console.log(`    para que la web muestre el checksum y el enlace a VirusTotal.`);
+// El SHA de Windows/Linux, además de transparencia, ACTIVA la descarga en la web
+// (la de Linux no se ofrece hasta que AGENT_LINUX_SHA256 está puesto).
+const envVar = platform === 'windows' ? 'AGENT_WINDOWS_SHA256' : platform === 'linux' ? 'AGENT_LINUX_SHA256' : null;
+if (envVar) {
+  console.log(`  → Pon ${envVar}=${sha256} en el backend (.env.prod / Render)`);
+  console.log(`    para servir la descarga y mostrar el checksum + enlace a VirusTotal.`);
 }
