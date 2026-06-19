@@ -129,7 +129,7 @@ jobs:
 
       - name: Build & push
         id: build
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v7
         with:
           context: ./${{ matrix.target }}
           push: ${{ github.event_name != 'pull_request' }}
