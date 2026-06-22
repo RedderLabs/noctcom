@@ -27,6 +27,28 @@ export default function manifest(): MetadataRoute.Manifest {
       { src: '/icon-maskable-192.png', sizes: '192x192', type: 'image/png', purpose: 'maskable' },
       { src: '/icon-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
     ],
+    // Accesos rápidos (Android: pulsación larga del icono; desktop: menú del
+    // icono). Nombres en español, idioma base del manifest único (ver arriba).
+    shortcuts: [
+      {
+        name: 'Subir archivo',
+        short_name: 'Subir',
+        description: 'Sube un archivo cifrado a tu bóveda',
+        url: '/vault?upload=1',
+      },
+      {
+        name: 'Recientes',
+        short_name: 'Recientes',
+        description: 'Archivos abiertos recientemente',
+        url: '/vault/recent',
+      },
+      {
+        name: 'Favoritos',
+        short_name: 'Favoritos',
+        description: 'Tus archivos destacados',
+        url: '/vault/starred',
+      },
+    ],
     // Share target (Android): Noctcom aparece en el menú "Compartir" del sistema.
     // El POST multipart lo INTERCEPTA el service worker (public/sw.js) antes de
     // tocar la red: guarda el archivo en Cache Storage local y redirige a

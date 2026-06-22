@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useMemo } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useTranslations, useLocale } from 'next-intl';
 import { useDropzone } from 'react-dropzone';
 import {
@@ -211,8 +212,16 @@ export default function VaultPage() {
   const [shareNode, setShareNode] = useState<DecryptedNode | null>(null);
   const [previewNode, setPreviewNode] = useState<DecryptedNode | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const searchParams = useSearchParams();
 
   useEffect(() => { init(); }, [init]);
+
+  // Acceso rápido "Subir archivo" del manifest (?upload=1): abre el selector
+  // al entrar. Best-effort — si el navegador exige activación de usuario más
+  // reciente, simplemente queda el vault abierto con el botón Subir a mano.
+  useEffect(() => {
+    if (searchParams.get('upload') === '1') fileInputRef.current?.click();
+  }, [searchParams]);
 
   useEffect(() => {
     const handler = () => setNewFolderOpen(true);
