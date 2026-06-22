@@ -1665,7 +1665,12 @@
     "close": "Cerrar",
     "heroInstall": "Descarga Noctcom como app en tu móvil u ordenador",
     "heroInstallSub": "Directa desde el navegador, sin tiendas de aplicaciones. Misma bóveda, mismo cifrado.",
-    "heroInstallFallback": "En tu navegador: abre el menú y elige «Instalar aplicación» (Chrome/Edge) o usa Safari en iPhone/iPad."
+    "heroInstallFallback": "En tu navegador: abre el menú y elige «Instalar aplicación» (Chrome/Edge) o usa Safari en iPhone/iPad.",
+    "share": {
+      "receiving": "Recibiendo archivo compartido…",
+      "encrypting": "Cifrando y subiendo a tu bóveda…",
+      "noFiles": "No se recibió ningún archivo para subir"
+    }
   },
   "securityDemo": {
     "brand": "<b>NOCTCOM</b> · PRUEBA DE SEGURIDAD",

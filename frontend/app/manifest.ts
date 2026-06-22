@@ -27,5 +27,21 @@ export default function manifest(): MetadataRoute.Manifest {
       { src: '/icon-maskable-192.png', sizes: '192x192', type: 'image/png', purpose: 'maskable' },
       { src: '/icon-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
     ],
+    // Share target (Android): Noctcom aparece en el menú "Compartir" del sistema.
+    // El POST multipart lo INTERCEPTA el service worker (public/sw.js) antes de
+    // tocar la red: guarda el archivo en Cache Storage local y redirige a
+    // /vault/share, que lo cifra en el dispositivo. El plaintext compartido NUNCA
+    // sale del dispositivo ni llega al servidor — se mantiene el zero-knowledge.
+    share_target: {
+      action: '/vault/share',
+      method: 'POST',
+      enctype: 'multipart/form-data',
+      params: {
+        title: 'title',
+        text: 'text',
+        url: 'url',
+        files: [{ name: 'files', accept: ['*/*'] }],
+      },
+    },
   };
 }

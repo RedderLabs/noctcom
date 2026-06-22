@@ -23,6 +23,7 @@ import { useSync } from '@/lib/sync';
 import { syncPushToken, onForegroundMessage } from '@/lib/firebase';
 import { OnboardingTour } from '@/components/vault/OnboardingTour';
 import { InstallAppButton } from '@/components/pwa/InstallAppButton';
+import { flushSharedUploads } from '@/lib/shared-intake';
 import { TrialWelcomeModal } from '@/components/vault/TrialWelcomeModal';
 import { TrialEndedModal, trialDaysLeft as computeTrialDaysLeft } from '@/components/vault/TrialEndedModal';
 
@@ -71,7 +72,11 @@ export default function AppLayout({ children }: { children: ReactNode }) {
       router.replace('/login'); // replace: el botón "atrás" no vuelve al vault
       return;
     }
-    initVault();
+    // Tras abrir la bóveda, sube cualquier archivo que llegara por el menú
+    // "Compartir" de Android (share target). Cubre el caso de compartir sin
+    // sesión: el SW guardó el archivo y aquí se recoge al desbloquear, aunque
+    // el login haya redirigido a /vault en vez de a /vault/share.
+    initVault().then(() => { void flushSharedUploads(); });
     // Pasivo: solo refresca el token si el usuario YA activó las notificaciones
     // en Ajustes. El diálogo de permiso del navegador nunca sale de un useEffect.
     syncPushToken();
