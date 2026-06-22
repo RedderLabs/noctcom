@@ -18,6 +18,10 @@ export default function manifest(): MetadataRoute.Manifest {
     // coincidir con el fondo de los iconos generados desde logo.png.
     background_color: '#0a0b0d',
     theme_color: '#0f0f17',
+    // Fallback explícito del modo de presentación: si el navegador no soporta
+    // 'standalone', no cae a 'browser' con barra de direcciones (ya cubierto por
+    // display, esto solo lo hace explícito para navegadores que leen el override).
+    display_override: ['standalone'],
     lang: 'es',
     categories: ['productivity', 'security', 'utilities'],
     icons: [
