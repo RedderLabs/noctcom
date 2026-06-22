@@ -27,6 +27,15 @@ export default function manifest(): MetadataRoute.Manifest {
       { src: '/icon-maskable-192.png', sizes: '192x192', type: 'image/png', purpose: 'maskable' },
       { src: '/icon-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
     ],
+    // Capturas (PWA): Android/desktop muestran un diálogo de instalación
+    // enriquecido con estas previews. Son páginas REALES de la app (landing +
+    // login), generadas con scripts/generate-pwa-screenshots.mjs. narrow = móvil,
+    // wide = escritorio.
+    screenshots: [
+      { src: '/screenshots/landing-mobile.png', sizes: '780x1688', type: 'image/png', form_factor: 'narrow' },
+      { src: '/screenshots/login-mobile.png', sizes: '780x1688', type: 'image/png', form_factor: 'narrow' },
+      { src: '/screenshots/landing-wide.png', sizes: '1280x800', type: 'image/png', form_factor: 'wide' },
+    ],
     // Accesos rápidos (Android: pulsación larga del icono; desktop: menú del
     // icono). Nombres en español, idioma base del manifest único (ver arriba).
     shortcuts: [
