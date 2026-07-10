@@ -29,6 +29,18 @@ const nextConfig = {
     NEXT_PUBLIC_APP_VERSION: version,
     NEXT_PUBLIC_BUILT_AT: builtAt,
   },
+  // URLs vanity para los instaladores: cortos, memorables y compartibles
+  // (Reddit, foros, vídeo). `curl -fsSL` incluye -L, así que sigue el redirect
+  // al raw de GitHub sin cambiar el one-liner. temporary (307) para poder
+  // reapuntar a un tag en el futuro sin que quede cacheado de forma permanente.
+  async redirects() {
+    const raw = 'https://raw.githubusercontent.com/RedderLabs/noctcom/main';
+    return [
+      { source: '/lxc.sh', destination: `${raw}/proxmox/noctcom-lxc.sh`, permanent: false },
+      { source: '/install.sh', destination: `${raw}/install.sh`, permanent: false },
+      { source: '/add-disk.sh', destination: `${raw}/proxmox/add-disk.sh`, permanent: false },
+    ];
+  },
   async headers() {
     return [
       {

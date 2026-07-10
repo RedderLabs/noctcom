@@ -13,7 +13,7 @@ levantan el stack con el instalador oficial (`install.sh` de la raíz del repo).
 Ejecutar **como root en el host Proxmox VE**:
 
 ```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/RedderLabs/noctcom/main/proxmox/noctcom-lxc.sh)
+bash <(curl -fsSL https://noctcom.com/lxc.sh)
 ```
 
 - Sin dominio → **modo LAN** (same-origin): app y API en `https://<IP-del-LXC>` (la API bajo `/api`) con **HTTPS interno** (certificado autofirmado).

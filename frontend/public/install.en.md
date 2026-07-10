@@ -23,7 +23,7 @@ Pick whichever fits you:
 Works on a **remote server** (a VPS, a home server) or on **localhost**. A single command downloads the installer, asks for your domain, generates the secrets and brings everything up (PostgreSQL, Redis, MinIO, backend, frontend and Caddy with automatic TLS):
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/RedderLabs/noctcom/main/install.sh | bash
+curl -fsSL https://noctcom.com/install.sh | bash
 ```
 
 - **With a domain:** automatic TLS (Let's Encrypt via Caddy). Point `app.your-domain.com` and `api.your-domain.com` to the server's IP.
@@ -40,7 +40,7 @@ When it finishes, open the URL and **create your account** (the first one is the
 Run this **as root on the Proxmox VE host** (not inside a VM/LXC). It creates an unprivileged Debian LXC, installs Docker inside and brings Noctcom up:
 
 ```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/RedderLabs/noctcom/main/proxmox/noctcom-lxc.sh)
+bash <(curl -fsSL https://noctcom.com/lxc.sh)
 ```
 
 Configurable via variables (`NOCTCOM_RAM`, `NOCTCOM_DISK`, `NOCTCOM_DOMAIN`…). The full step-by-step manual, with the variable table and troubleshooting, lives in the repo: [docs/INSTALL_PROXMOX.md](https://github.com/RedderLabs/noctcom/blob/main/docs/INSTALL_PROXMOX.md).

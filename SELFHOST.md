@@ -18,14 +18,14 @@ Installs Docker if needed, asks for your domain (leave empty for LAN mode),
 generates secrets and brings the whole stack up:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/RedderLabs/noctcom/main/install.sh | bash
+curl -fsSL https://noctcom.com/install.sh | bash
 ```
 
 On **Proxmox VE** (creates a Debian LXC, installs Docker inside, deploys), run as
 root on the PVE host:
 
 ```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/RedderLabs/noctcom/main/proxmox/noctcom-lxc.sh)
+bash <(curl -fsSL https://noctcom.com/lxc.sh)
 ```
 
 Prefer to control every step? The manual quick start follows.

@@ -206,13 +206,13 @@ export default function LandingPage() {
               <div className="w-full md:w-80 shrink-0">
                 <div className="rounded-lg bg-bg-deep border border-border-faint p-4 font-mono text-xs leading-relaxed">
                   <p className="text-text-muted">{t('selfhost.deployComment')}</p>
-                  <p className="text-violet-300 mt-1">curl -fsSL https://raw.</p>
-                  <p className="text-violet-300">githubusercontent.com/RedderLabs/</p>
-                  <p className="text-violet-300">noctcom/main/install.sh | bash</p>
+                  <p className="text-violet-300 mt-1 break-all">
+                    curl -fsSL https://noctcom.com/install.sh | bash
+                  </p>
                   <p className="text-text-muted mt-2">{t('selfhost.proxmoxComment')}</p>
-                  <p className="text-violet-300 mt-1">bash &lt;(curl -fsSL https://raw.</p>
-                  <p className="text-violet-300">githubusercontent.com/RedderLabs/noctcom</p>
-                  <p className="text-violet-300">/main/proxmox/noctcom-lxc.sh)</p>
+                  <p className="text-violet-300 mt-1 break-all">
+                    bash &lt;(curl -fsSL https://noctcom.com/lxc.sh)
+                  </p>
                   <p className="text-text-muted mt-2">{t('selfhost.readyComment')}</p>
                 </div>
               </div>

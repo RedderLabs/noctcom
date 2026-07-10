@@ -53,7 +53,7 @@ Abre una shell **como root en el host Proxmox VE** (no dentro de una VM ni de
 otro contenedor) y ejecuta:
 
 ```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/RedderLabs/noctcom/main/proxmox/noctcom-lxc.sh)
+bash <(curl -fsSL https://noctcom.com/lxc.sh)
 ```
 
 El script:
@@ -80,7 +80,7 @@ ejemplo, un LXC con más RAM y un dominio propio:
 
 ```bash
 NOCTCOM_RAM=6144 NOCTCOM_DOMAIN=noctcom.midominio.com NOCTCOM_EMAIL=tu@correo.com \
-  bash <(curl -fsSL https://raw.githubusercontent.com/RedderLabs/noctcom/main/proxmox/noctcom-lxc.sh)
+  bash <(curl -fsSL https://noctcom.com/lxc.sh)
 ```
 
 | Variable | Por defecto | Para qué sirve |

@@ -18,8 +18,7 @@ import { Button } from '@/components/ui/Button';
 import { CommandBlock } from './CommandBlock';
 
 // Comandos: idénticos en cualquier idioma, viven en el código (no en i18n).
-const INSTALL_CMD =
-  'bash <(curl -fsSL https://raw.githubusercontent.com/RedderLabs/noctcom/main/proxmox/noctcom-lxc.sh)';
+const INSTALL_CMD = 'bash <(curl -fsSL https://noctcom.com/lxc.sh)';
 const UPDATE_CMD = "pct exec <CTID> -- bash -lc 'cd /opt/noctcom && bash update.sh'";
 const STATUS_CMD = "pct exec <CTID> -- bash -lc 'cd /opt/noctcom && docker compose ps'";
 const LOGS_CMD = "pct exec <CTID> -- bash -lc 'cd /opt/noctcom && docker compose logs -f backend'";

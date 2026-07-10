@@ -12,7 +12,7 @@ el dominio, genera los secretos y lo arranca todo. Con dominio: TLS automático;
 sin dominio: modo LAN (`https://<IP>` con certificado interno, ideal para homelab):
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/RedderLabs/noctcom/main/install.sh | bash
+curl -fsSL https://noctcom.com/install.sh | bash
 ```
 
 **En Proxmox VE** — crea un LXC Debian, instala Docker dentro y lo levanta todo
@@ -20,7 +20,7 @@ curl -fsSL https://raw.githubusercontent.com/RedderLabs/noctcom/main/install.sh 
 [`docs/INSTALL_PROXMOX.md`](docs/INSTALL_PROXMOX.md)):
 
 ```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/RedderLabs/noctcom/main/proxmox/noctcom-lxc.sh)
+bash <(curl -fsSL https://noctcom.com/lxc.sh)
 ```
 
 **O a mano**, si prefieres controlar cada paso:

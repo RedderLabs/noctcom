@@ -270,13 +270,13 @@ Noctcom es 100% código abierto (licencia AGPL-3.0). Si te manejas con la tecnol
 **La forma rápida — un solo comando.** Descarga el instalador, instala Docker si te falta, te pregunta el dominio, genera las contraseñas por ti y lo arranca todo. Con dominio tendrás el candado HTTPS automático; sin dominio funciona igualmente en tu red local (`https://<IP-del-servidor>`, con candado interno autofirmado — el navegador avisa la 1ª vez, acéptalo):
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/RedderLabs/noctcom/main/install.sh | bash
+curl -fsSL https://noctcom.com/install.sh | bash
 ```
 
 **¿Usas Proxmox?** Este comando (como root, en el host Proxmox) crea un contenedor LXC y lo deja todo funcionando dentro:
 
 ```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/RedderLabs/noctcom/main/proxmox/noctcom-lxc.sh)
+bash <(curl -fsSL https://noctcom.com/lxc.sh)
 ```
 
 **A mano**, si prefieres controlar cada paso:
