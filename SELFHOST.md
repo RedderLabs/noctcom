@@ -123,6 +123,26 @@ Open `https://app.your-domain.com` and create your first account.
 - **MinIO**: encrypted file blobs (S3-compatible)
 - **Caddy**: automatic TLS, security headers, HTTP/2+3
 
+### About the cache
+
+DragonflyDB holds only ephemeral TTL counters and "something changed" pub/sub
+messages (user id and resource type). **No user content, no filenames, no keys.**
+Zero-knowledge does not depend on it: without a cache the stack still boots, with
+real-time sync and login lockout switched off. `GET /health` reports which of the
+three cases you are in via `cacheState`.
+
+It speaks the Redis protocol, and the backend only reads `CACHE_URL` — it does not
+know which engine is behind it. Swapping the `dragonfly` service for **Valkey**
+(BSD-3) or Redis needs no code change, just a different image and `command` flags.
+
+Worth knowing: Dragonfly is **not open source**. It ships under the Business
+Source License 1.1 and converts to Apache 2.0 on **1 November 2030**. Its
+Additional Use Grant covers production use inside your own product or service, and
+excludes offering it as an in-memory data store or as a commercial competing
+service — so running Noctcom, self-hosted or otherwise, is permitted. Noctcom
+itself stays AGPL-3.0: this repository ships no Dragonfly code, it only references
+the official image, which Docker pulls from DragonflyDB's own registry.
+
 ## Subdomains
 
 | Subdomain | Service |

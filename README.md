@@ -103,6 +103,44 @@ Lo que ve el servidor: tamaño del ciphertext, timestamps, estructura del arbol 
 | Proxy/TLS | Caddy 2 (certificados automaticos) |
 | Cifrado | XChaCha20-Poly1305 + Argon2id + Ed25519 + X25519 |
 
+## Cache (DragonflyDB)
+
+El stack usa **DragonflyDB** para el rate limiting, el lockout de logins fallidos,
+el limite de registros por IP y el pub/sub que alimenta el WebSocket de
+sincronizacion.
+
+**Que guarda:** contadores efimeros con TTL y avisos de "algo cambio"
+(identificador de usuario y tipo de recurso). **Que no guarda:** ningun contenido
+de usuario, ni nombres de archivo, ni claves. Las garantias zero-knowledge no
+dependen de esta pieza — sin cache el stack arranca igual, con la sincronizacion
+en tiempo real y el lockout desactivados.
+
+Dragonfly habla el protocolo Redis (RESP), asi que el backend usa el cliente
+`redis` de npm y una URL `redis://`. El codigo no sabe que motor hay detras: lee
+`CACHE_URL` y punto. Ver [backend/src/db/cache.ts](backend/src/db/cache.ts).
+
+`GET /health` distingue los tres estados posibles en `cacheState`: `connected`,
+`not-configured` (no hay `CACHE_URL`, decision valida en un self-host minimo) y
+`down` (configurada pero inalcanzable).
+
+### Licencia de DragonflyDB
+
+Dragonfly **no es software open source**. Se distribuye bajo **Business Source
+License 1.1** (licenciante: DragonflyDB, Ltd.) y pasa a **Apache 2.0 el 1 de
+noviembre de 2030**. Su Additional Use Grant permite el uso en produccion dentro
+de tu propio producto o servicio, y excluye ofrecerlo como almacen de datos en
+memoria o como servicio comercial que compita con el licenciante. Ejecutar
+Noctcom, en la nube o self-hosted, entra dentro de ese permiso.
+
+Esto no afecta a la licencia de Noctcom, que sigue siendo AGPL-3.0: este
+repositorio no incluye ni redistribuye codigo de Dragonfly. Solo referencia su
+imagen oficial en `docker-compose.yml`, que Docker descarga del registro de
+DragonflyDB.
+
+Si prefieres un stack integramente OSI, la capa de cache es agnostica: cambia la
+imagen del servicio `dragonfly` por **Valkey** (BSD-3) o Redis y ajusta los flags
+del `command`. El backend no cambia.
+
 ## Flujos criptograficos
 
 ### Signup
@@ -192,3 +230,7 @@ Ver [docs/THREAT_MODEL.md](docs/THREAT_MODEL.md) para el modelo de amenazas.
 ## Licencia
 
 [AGPL-3.0](LICENSE) — codigo abierto, auditable, self-hostable.
+
+El stack incluye un componente de terceros que **no** es open source: DragonflyDB
+(Business Source License 1.1). No se redistribuye con este repositorio y es
+sustituible. Ver [Licencia de DragonflyDB](#licencia-de-dragonflydb).

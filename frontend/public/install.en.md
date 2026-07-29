@@ -61,6 +61,8 @@ docker compose up -d
 
 This brings up PostgreSQL, DragonflyDB, MinIO, backend, frontend and Caddy (automatic TLS). Your instance will live at `https://app.your-domain.com`.
 
+> **About DragonflyDB.** It is the stack's cache: TTL counters and sync notifications, never your file contents. Unlike the rest of the stack it is not open source (Business Source License 1.1, converting to Apache 2.0 on 1 November 2030); its licence permits this use, and it is not redistributed with Noctcom — Docker pulls it from the official registry. If you prefer an all-OSI stack you can swap it for Valkey or Redis without touching code: see [the README](https://github.com/RedderLabs/noctcom#licencia-de-dragonflydb).
+
 ---
 
 ## On a managed PaaS (Render, Railway…)?
