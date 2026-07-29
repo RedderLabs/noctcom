@@ -28,7 +28,7 @@ msg_info "Cloning Noctcom"
 $STD git clone --depth 1 https://github.com/RedderLabs/noctcom.git /opt/noctcom
 msg_ok "Cloned Noctcom"
 
-# Zero-knowledge stack (PostgreSQL + Redis + MinIO + Fastify API + Next.js +
+# Zero-knowledge stack (PostgreSQL + DragonflyDB + MinIO + Fastify API + Next.js +
 # Caddy). LAN mode by default: app on http://<IP>, API on http://<IP>:3000, no
 # TLS. The same steps the upstream install.sh runs for the no-domain path.
 msg_info "Configuring Noctcom"
@@ -40,7 +40,7 @@ set_env() { sed -i "s|^$1=.*|$1=$2|" .env; }
 set_env CADDY_DOMAIN localhost
 set_env CADDY_EMAIL admin@localhost
 set_env POSTGRES_PASSWORD "$(openssl rand -hex 24)"
-set_env REDIS_PASSWORD "$(openssl rand -hex 24)"
+set_env CACHE_PASSWORD "$(openssl rand -hex 24)"
 set_env MINIO_ROOT_PASSWORD "$(openssl rand -hex 24)"
 set_env JWT_SECRET "$(openssl rand -base64 64 | tr -d '\n')"
 set_env PUBLIC_URL "http://${LAN_IP}:3000"

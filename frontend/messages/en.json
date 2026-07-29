@@ -1255,7 +1255,7 @@
       },
       "stack": {
         "title": "Brings up the stack",
-        "body": "PostgreSQL, Redis, MinIO, backend, frontend and Caddy with automatic TLS. At the end it gives you the URL and the CTID."
+        "body": "PostgreSQL, Dragonfly, MinIO, backend, frontend and Caddy with automatic TLS. At the end it gives you the URL and the CTID."
       }
     },
     "req": {

@@ -2,22 +2,22 @@
  * Tests del lockout por cuenta tras logins fallidos (login-lockout.ts +
  * integración en /login/finalize de auth.ts).
  *
- * Redis se simula en memoria (incr/expire/ttl/set/del con TTLs falsos por
+ * La caché se simula en memoria (incr/expire/ttl/set/del con TTLs falsos por
  * tiempo virtual) para no necesitar un servidor. El login usa el mismo truco
  * que change-password.test.ts: un par Ed25519 directo como identidad, sin
  * Argon2.
  *
  * Cubre: bloqueo al 5º fallo (429 + Retry-After), cuenta inexistente también
  * cuenta (sin enumeración), expiración del bloqueo, backoff exponencial en el
- * segundo bloqueo, limpieza al login correcto, y no-op sin Redis.
+ * segundo bloqueo, limpieza al login correcto, y no-op sin caché.
  */
 import { describe, it, expect, beforeAll, beforeEach, vi } from 'vitest';
 import { randomUUID, randomBytes } from 'node:crypto';
 
-// ─── Redis fake en memoria con tiempo virtual ────────────────────
+// ─── Caché fake en memoria con tiempo virtual ────────────────────
 let now = 0; // ms virtuales
 const kv = new Map<string, { value: string; expiresAt: number | null }>();
-let redisAvailable = true;
+let cacheAvailable = true;
 
 function alive(key: string) {
   const e = kv.get(key);
@@ -26,7 +26,7 @@ function alive(key: string) {
   return e;
 }
 
-const fakeRedis = {
+const fakeCache = {
   async incr(key: string) {
     const e = alive(key);
     const v = e ? Number(e.value) + 1 : 1;
@@ -67,9 +67,9 @@ vi.mock('../config.js', () => ({
   },
 }));
 
-vi.mock('../db/redis.js', () => ({
-  redis: () => (redisAvailable ? fakeRedis : null),
-  initRedis: vi.fn(async () => null),
+vi.mock('../db/cache.js', () => ({
+  cache: () => (cacheAvailable ? fakeCache : null),
+  initCache: vi.fn(async () => null),
   createSubscriber: vi.fn(async () => null),
   publishChange: vi.fn(async () => {}),
 }));
@@ -121,7 +121,7 @@ describe('lockout de logins fallidos por cuenta', () => {
     resetDb();
     kv.clear();
     now = 0;
-    redisAvailable = true;
+    cacheAvailable = true;
     identityKp = sodium.crypto_sign_keypair();
     emailHash = randomBytes(32);
     seedUser({
@@ -207,8 +207,8 @@ describe('lockout de logins fallidos por cuenta', () => {
     expect((await finalize({ good: true })).statusCode).toBe(200);
   });
 
-  it('sin Redis es no-op: nunca bloquea (queda el rate-limit por IP)', async () => {
-    redisAvailable = false;
+  it('sin caché es no-op: nunca bloquea (queda el rate-limit por IP)', async () => {
+    cacheAvailable = false;
     for (let i = 0; i < env.LOGIN_LOCKOUT_MAX_FAILS * 2; i++) {
       expect((await finalize()).statusCode).toBe(401);
     }

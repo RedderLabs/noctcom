@@ -48,7 +48,7 @@ Replace all placeholder values in `.env`:
 # Generate secure passwords
 openssl rand -base64 32   # for POSTGRES_PASSWORD
 openssl rand -base64 32   # for MINIO_ROOT_PASSWORD
-openssl rand -base64 32   # for REDIS_PASSWORD
+openssl rand -base64 32   # for CACHE_PASSWORD
 openssl rand -base64 64   # for JWT_SECRET
 ```
 
@@ -89,7 +89,7 @@ Caddy automatically provisions TLS certificates via Let's Encrypt.
 
 ```bash
 curl https://api.your-domain.com/health
-# Expected: {"status":"ok","db":true,"redis":true,"s3":true,"ts":...}
+# Expected: {"status":"ok","db":true,"cache":true,"s3":true,"ts":...}
 ```
 
 Open `https://app.your-domain.com` and create your first account.
@@ -108,13 +108,13 @@ Open `https://app.your-domain.com` and create your first account.
          └──────────┘     └────┬─────┘
                           ┌────┼────┐
                           ▼    ▼    ▼
-                     ┌────┐ ┌────┐ ┌────┐
-                     │ PG │ │Redis│ │MinIO│
-                     └────┘ └────┘ └────┘
+                     ┌────┐ ┌────────┐ ┌─────┐
+                     │ PG │ │Dragonfly│ │MinIO│
+                     └────┘ └────────┘ └─────┘
 ```
 
 - **PostgreSQL**: metadata (all sensitive strings encrypted)
-- **Redis**: sessions, rate limiting, real-time pub/sub
+- **DragonflyDB**: rate limiting, login lockout, real-time pub/sub (Redis protocol)
 - **MinIO**: encrypted file blobs (S3-compatible)
 - **Caddy**: automatic TLS, security headers, HTTP/2+3
 
@@ -143,6 +143,24 @@ your secrets:
 
 ```bash
 bash update.sh
+```
+
+### Migrating from the Redis-based stack
+
+The cache engine is now **DragonflyDB** (same Redis protocol, same client). If
+your instance predates the change, `update.sh` handles it: it renames
+`REDIS_PASSWORD` to `CACHE_PASSWORD` in your `.env` — keeping the same secret —
+and `--remove-orphans` retires the old `noctcom-redis` container.
+
+Nothing is lost: that store only ever held TTL counters (rate limit, login
+lockout) and pub/sub messages, never user content.
+
+If you bring the stack up by hand instead of via `update.sh`, rename the
+variable yourself first — Compose will refuse to start without it. The old
+`noctcom_redis_data` volume is left behind untouched; remove it when convenient:
+
+```bash
+docker volume rm noctcom_redis_data
 ```
 
 ## Backups
@@ -177,4 +195,4 @@ bash scripts/restore.sh backups/noctcom-backup-YYYYMMDD-HHMMSS.tar.gz
 - The server never sees plaintext file content, names, or metadata
 - Vault keys are derived from the user's password — the server cannot decrypt anything
 - TLS is enforced by Caddy with HSTS preload
-- Rate limiting is Redis-backed for distributed deployments
+- Rate limiting is backed by the shared cache for distributed deployments

@@ -4,7 +4,7 @@
  * Mapea agentId → socket WS autenticado, y ofrece envío de comandos con
  * correlación request/response (para M1+: list-disks, mount, write-chunk…).
  * El estado es por-proceso: si el backend escala a varias instancias habrá que
- * enrutar por una capa compartida (Redis), pero hoy corre en una sola.
+ * enrutar por una capa compartida (la caché), pero hoy corre en una sola.
  */
 
 // Solo necesitamos esta forma estructural del socket de @fastify/websocket.

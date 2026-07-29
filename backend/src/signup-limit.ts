@@ -7,12 +7,12 @@
  * registros COMPLETADOS, no intentos.
  *
  * Privacidad: la IP nunca se guarda en claro — solo su hash (mismo hashIp de
- * session.ts) como clave de Redis con TTL; caducada la ventana, no queda nada.
+ * session.ts) como clave de la caché con TTL; caducada la ventana, no queda nada.
  *
  * Solo aplica en el cloud gestionado (con Stripe): en self-host/LAN muchas
- * personas legítimas comparten IP. Sin Redis es no-op (como login-lockout).
+ * personas legítimas comparten IP. Sin caché es no-op (como login-lockout).
  */
-import { redis } from './db/redis.js';
+import { cache } from './db/cache.js';
 import { env } from './config.js';
 
 const PREFIX = 'signup:ip:';
@@ -24,20 +24,20 @@ function enabled(): boolean {
 /** ¿Esta IP (hasheada, base64url) ya agotó sus registros de la ventana? */
 export async function signupBlocked(ipHashB64: string): Promise<boolean> {
   if (!enabled()) return false;
-  const r = redis();
+  const r = cache();
   if (!r) return false;
   try {
     const n = await r.get(`${PREFIX}${ipHashB64}`);
     return n !== null && Number(n) >= env.SIGNUP_MAX_PER_IP;
   } catch {
-    return false; // Redis caído: no bloquear registros por ello
+    return false; // Caché caída: no bloquear registros por ello
   }
 }
 
 /** Registro completado: anota la IP (hasheada) en la ventana. */
 export async function recordSignup(ipHashB64: string): Promise<void> {
   if (!enabled()) return;
-  const r = redis();
+  const r = cache();
   if (!r) return;
   try {
     const key = `${PREFIX}${ipHashB64}`;

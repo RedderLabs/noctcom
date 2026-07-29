@@ -21,13 +21,13 @@ import { randomUUID } from 'node:crypto';
 
 import { env } from './config.js';
 import { db, initDb } from './db/pool.js';
-import { initRedis, redis } from './db/redis.js';
+import { initCache, cache } from './db/cache.js';
 import { initS3 } from './storage/s3.js';
 import { ensureDefaultVolume } from './storage/default-volume.js';
 import { initMail } from './mail.js';
 import { initPush } from './push.js';
 import { startJanitor } from './janitor.js';
-import { createRedisRateLimitStore } from './rate-limit-store.js';
+import { createCacheRateLimitStore } from './rate-limit-store.js';
 
 import authRoutes from './routes/auth.js';
 import vaultRoutes from './routes/vaults.js';
@@ -117,13 +117,13 @@ export async function buildServer() {
     methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   });
 
-  const redisClient = redis();
+  const cacheClient = cache();
   await app.register(rateLimit, {
     max: 300,
     timeWindow: 60_000,
     keyGenerator: (req) => req.headers['x-forwarded-for']?.toString() ?? req.ip,
     skipOnError: false,
-    ...(redisClient ? { store: createRedisRateLimitStore(redisClient) as any } : {}),
+    ...(cacheClient ? { store: createCacheRateLimitStore(cacheClient) as any } : {}),
   });
 
   await app.register(jwt, {
@@ -168,15 +168,17 @@ export async function buildServer() {
 
   // ─── Health ────────────────────────────────────────────────
   app.get('/health', async (_req, reply) => {
-    const checks = { db: false, redis: false, s3: false };
+    const checks = { db: false, cache: false, s3: false };
 
     try { await db.query('SELECT 1'); checks.db = true; } catch { /* */ }
 
-    const r = redis();
+    const r = cache();
     if (r) {
-      try { await r.ping(); checks.redis = true; } catch { /* */ }
+      try { await r.ping(); checks.cache = true; } catch { /* */ }
     } else {
-      checks.redis = true;
+      // Sin caché configurada = sincronización desactivada a propósito, no un
+      // fallo del stack.
+      checks.cache = true;
     }
 
     try {
@@ -215,7 +217,7 @@ export async function buildServer() {
 async function main() {
   await initDb();
   await initS3();
-  await initRedis();
+  await initCache();
   initMail();
   initPush();
 
@@ -237,7 +239,7 @@ async function main() {
     app.log.info(`${signal} received, shutting down`);
     await app.close();
     await db.end();
-    const r = redis();
+    const r = cache();
     if (r) await r.quit().catch(() => {});
     process.exit(0);
   }

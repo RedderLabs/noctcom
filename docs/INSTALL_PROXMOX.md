@@ -16,7 +16,7 @@ El script crea un **LXC Debian no privilegiado** (con `nesting` y `keyctl`
 activados para que Docker funcione dentro), instala Docker y levanta el stack
 completo de Noctcom con el instalador oficial (`install.sh`):
 
-- PostgreSQL, Redis, MinIO (object storage), el backend, el frontend y Caddy
+- PostgreSQL, DragonflyDB, MinIO (object storage), el backend, el frontend y Caddy
   (TLS automático) — todo dentro del LXC, aislado del host.
 - **Sin dominio → modo LAN (same-origin):** la app y la API conviven en
   `https://<IP-del-LXC>` (la API bajo `/api`), con **HTTPS interno** (certificado

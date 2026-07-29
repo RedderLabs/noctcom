@@ -15,7 +15,7 @@ export interface StackService {
 // inventar 'ok' — honestidad: un chip verde debe significar comprobado.
 const FALLBACK: StackService[] = [
   { service: 'postgres', status: 'down' },
-  { service: 'redis', status: 'down' },
+  { service: 'cache', status: 'down' },
   { service: 'minio', status: 'down' },
   { service: 'backend', status: 'down' },
   { service: 'caddy', status: 'down' },

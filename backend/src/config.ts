@@ -5,6 +5,11 @@ const envSchema = z.object({
   PORT: z.coerce.number().default(3000),
 
   DATABASE_URL: z.string().url(),
+  // Caché y pub/sub (DragonflyDB, protocolo Redis → esquema redis://).
+  // CACHE_URL es el nombre actual; REDIS_URL se sigue aceptando como alias
+  // heredado para no romper despliegues ya configurados (p. ej. la nube).
+  // Vacío/ausente = sin caché: el stack arranca en modo degradado.
+  CACHE_URL: z.string().url().optional().or(z.literal('')),
   REDIS_URL: z.string().url().optional().or(z.literal('')),
 
   S3_ENDPOINT: z.string().url(),
@@ -46,7 +51,7 @@ const envSchema = z.object({
 
   // Lockout por cuenta tras logins fallidos (ver login-lockout.ts). Tras
   // MAX_FAILS fallos en la ventana, bloqueo de BASE_LOCK_S segundos que se
-  // duplica en bloqueos consecutivos hasta MAX_LOCK_S. Requiere Redis.
+  // duplica en bloqueos consecutivos hasta MAX_LOCK_S. Requiere la caché.
   LOGIN_LOCKOUT_MAX_FAILS: z.coerce.number().int().min(2).default(5),
   LOGIN_LOCKOUT_WINDOW_S: z.coerce.number().int().min(60).default(900),      // 15 min
   LOGIN_LOCKOUT_BASE_LOCK_S: z.coerce.number().int().min(60).default(900),   // 15 min
@@ -89,9 +94,9 @@ const envSchema = z.object({
   // cuota de uploads.ts rechaza subidas, descargar/borrar sigue funcionando).
   BETA_TRIAL_QUOTA_BYTES: z.coerce.number().default(10 * 1024 * 1024 * 1024),
 
-  // Anti-abuso del trial: máximo de registros por IP (hasheada, Redis) en la
-  // ventana. Solo aplica en el cloud (con Stripe): en self-host/LAN muchas
-  // personas legítimas comparten IP. Sin Redis es no-op (queda el rate-limit
+  // Anti-abuso del trial: máximo de registros por IP (hasheada, en la caché) en
+  // la ventana. Solo aplica en el cloud (con Stripe): en self-host/LAN muchas
+  // personas legítimas comparten IP. Sin caché es no-op (queda el rate-limit
   // por IP de @fastify/rate-limit).
   SIGNUP_MAX_PER_IP: z.coerce.number().int().min(1).default(2),
   SIGNUP_IP_WINDOW_S: z.coerce.number().int().min(60).default(604800), // 7 días

@@ -20,7 +20,7 @@ import { generateDiskKey } from '../storage/disk.js';
 import { writeChunk, readChunk, deleteChunk, type VolumeRef } from '../storage/volume-io.js';
 import * as registry from '../agents/registry.js';
 import { env } from '../config.js';
-import { publishChange } from '../db/redis.js';
+import { publishChange } from '../db/cache.js';
 
 const bytesB64 = z.string().regex(/^[A-Za-z0-9_-]+$/);
 

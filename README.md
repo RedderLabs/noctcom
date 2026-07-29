@@ -33,7 +33,7 @@ cp .env.example .env
 docker compose up -d
 ```
 
-Esto levanta PostgreSQL, Redis, MinIO, Backend, Frontend y Caddy (TLS automático).
+Esto levanta PostgreSQL, DragonflyDB, MinIO, Backend, Frontend y Caddy (TLS automático).
 Tu instancia estará en `https://app.tu-dominio.com`.
 
 ### Requisitos
@@ -85,7 +85,7 @@ Lo que ve el servidor: tamaño del ciphertext, timestamps, estructura del arbol 
 - **Actividad cifrada** — log de eventos descifrado solo en el cliente
 - **Papelera** — soft delete con restauracion
 - **Destacados** — archivos favoritos
-- **Sync real-time** — Redis pub/sub + WebSocket + BroadcastChannel
+- **Sync real-time** — pub/sub + WebSocket + BroadcastChannel
 - **Notificaciones push** — FCM (Firebase Cloud Messaging)
 - **Accesibilidad** — escala de fuente, sidebar colapsable, tema claro/oscuro
 - **Bilingue** — espanol e ingles en web, app, emails y agente
@@ -99,7 +99,7 @@ Lo que ve el servidor: tamaño del ciphertext, timestamps, estructura del arbol 
 | Frontend | Next.js 15 + Tailwind v4 + Zustand |
 | Base de datos | PostgreSQL 16 |
 | Object storage | MinIO (S3 API) / Backblaze B2 |
-| Cache/PubSub | Redis 7 |
+| Cache/PubSub | DragonflyDB (protocolo Redis) |
 | Proxy/TLS | Caddy 2 (certificados automaticos) |
 | Cifrado | XChaCha20-Poly1305 + Argon2id + Ed25519 + X25519 |
 
@@ -146,7 +146,7 @@ docker pull topgambajrjdeveloper/noctcom-api:latest
 
 ```bash
 # Servicios de infraestructura
-docker compose up -d postgres redis minio minio-init
+docker compose up -d postgres dragonfly minio minio-init
 
 # Backend (puerto 3000)
 cd backend && npm install && npm run dev
@@ -162,7 +162,7 @@ noctcom/
 ├── backend/          # API Fastify + TypeScript
 │   ├── src/routes/   # auth, uploads, nodes, storage, admin, shares...
 │   ├── src/crypto/   # libsodium wrappers
-│   └── src/db/       # PostgreSQL pool + Redis
+│   └── src/db/       # PostgreSQL pool + caché (Dragonfly)
 ├── frontend/         # Next.js 15 App Router
 │   ├── app/(app)/    # Vault, settings, profile, manual...
 │   ├── app/(auth)/   # Login, signup, recovery, verify

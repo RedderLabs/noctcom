@@ -5,7 +5,7 @@
  */
 
 import type { FastifyPluginAsync } from 'fastify';
-import { createSubscriber } from '../db/redis.js';
+import { createSubscriber } from '../db/cache.js';
 
 const wsRoutes: FastifyPluginAsync = async (app) => {
 
@@ -49,7 +49,7 @@ const wsRoutes: FastifyPluginAsync = async (app) => {
       });
     } else {
       socket.on('close', () => {
-        app.log.info({ userId }, 'ws disconnected (no redis)');
+        app.log.info({ userId }, 'ws disconnected (no cache)');
       });
     }
 

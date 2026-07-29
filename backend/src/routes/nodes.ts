@@ -1,7 +1,7 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 import { db, tx } from '../db/pool.js';
-import { publishChange } from '../db/redis.js';
+import { publishChange } from '../db/cache.js';
 import { subtreeCloudBytes, purgeSubtree } from '../storage/purge.js';
 
 const bytesB64 = z.string().regex(/^[A-Za-z0-9_-]+$/);

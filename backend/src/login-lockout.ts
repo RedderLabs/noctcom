@@ -13,23 +13,23 @@
  * siempre temporal: un atacante no puede dejar una cuenta inutilizada para
  * siempre (DoS), solo ralentizada.
  *
- * Sin Redis (self-host mínimo) es no-op y queda el rate-limit por IP.
+ * Sin caché (self-host mínimo) es no-op y queda el rate-limit por IP.
  * Prometido en la propuesta de auditoría (NLnet 2026-08-018, punto 3 de "Use").
  */
-import { redis } from './db/redis.js';
+import { cache } from './db/cache.js';
 import { env } from './config.js';
 
 const PREFIX = 'lockout:';
 
 /** Segundos de bloqueo restantes para esta cuenta (0 = no bloqueada). */
 export async function lockedSeconds(emailHashB64: string): Promise<number> {
-  const r = redis();
+  const r = cache();
   if (!r) return 0;
   try {
     const ttl = await r.ttl(`${PREFIX}lock:${emailHashB64}`);
     return ttl > 0 ? ttl : 0;
   } catch {
-    return 0; // Redis caído: no bloquear el login por ello.
+    return 0; // Caché caída: no bloquear el login por ello.
   }
 }
 
@@ -40,7 +40,7 @@ export async function lockedSeconds(emailHashB64: string): Promise<number> {
 export async function recordLoginFailure(
   emailHashB64: string,
 ): Promise<{ lockedFor: number } | null> {
-  const r = redis();
+  const r = cache();
   if (!r) return null;
   try {
     const failsKey = `${PREFIX}fails:${emailHashB64}`;
@@ -67,7 +67,7 @@ export async function recordLoginFailure(
 
 /** Login correcto: limpia el contador de fallos y la racha de bloqueos. */
 export async function clearLoginFailures(emailHashB64: string): Promise<void> {
-  const r = redis();
+  const r = cache();
   if (!r) return;
   try {
     await r.del([`${PREFIX}fails:${emailHashB64}`, `${PREFIX}strikes:${emailHashB64}`]);

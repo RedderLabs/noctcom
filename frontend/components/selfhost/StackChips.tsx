@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils';
 // Nombre bonito por servicio (el endpoint usa el id en minúsculas).
 const LABELS: Record<string, string> = {
   postgres: 'PostgreSQL',
-  redis: 'Redis',
+  cache: 'Dragonfly',
   minio: 'MinIO',
   backend: 'Backend',
   caddy: 'Caddy',
@@ -32,7 +32,7 @@ function Chip({ svc }: { svc: StackService }) {
 }
 
 /**
- * Chips de salud del stack LXC (Postgres/Redis/MinIO/Backend/Caddy). Sondea el
+ * Chips de salud del stack LXC (Postgres/Dragonfly/MinIO/Backend/Caddy). Sondea el
  * backend cada 15 s. Honestidad: backend/caddy se infieren "arriba" (la
  * petición llegó por ellos); el resto se comprueba de verdad por red.
  */

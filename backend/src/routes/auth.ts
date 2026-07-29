@@ -93,7 +93,7 @@ const authRoutes: FastifyPluginAsync = async (app) => {
     const body = signupSchema.parse(req.body);
 
     // Anti-abuso del trial: tope de cuentas por IP (hasheada) en ventana.
-    // Solo cloud; en self-host y sin Redis es no-op (ver signup-limit.ts).
+    // Solo cloud; en self-host y sin caché es no-op (ver signup-limit.ts).
     const ipHashB64 = hashIp(req.ip).toString('base64url');
     if (await signupBlocked(ipHashB64)) {
       return reply.code(429).send({ error: 'too-many-signups' });
@@ -250,8 +250,8 @@ const authRoutes: FastifyPluginAsync = async (app) => {
     const row = r.rows[0];
     const challenge = randomBytes(32);
 
-    // Guarda el challenge en Redis con TTL corto (60s)
-    // (omitido: ver redis.ts; producción debe vincularlo a IP/user)
+    // Guarda el challenge en la caché con TTL corto (60s)
+    // (omitido: ver db/cache.ts; producción debe vincularlo a IP/user)
 
     return reply.send({
       kdfSalt: toB64(row.kdf_salt),

@@ -29,7 +29,7 @@ vi.mock('../db/pool.js', async () => {
   const f = await import('./fake-db.js');
   return { db: f.db, tx: f.tx };
 });
-vi.mock('../db/redis.js', () => ({ publishChange: vi.fn(() => {}) }));
+vi.mock('../db/cache.js', () => ({ publishChange: vi.fn(() => {}) }));
 
 import Fastify, { type FastifyInstance } from 'fastify';
 import sensible from '@fastify/sensible';

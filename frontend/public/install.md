@@ -20,7 +20,7 @@ Elige la vía que más te encaje:
 
 ## Opción 1 — Docker en un servidor o en tu PC (recomendada)
 
-Sirve para un **servidor remoto** (un VPS, un servidor en casa) o para **localhost**. Un solo comando descarga el instalador, te pregunta el dominio, genera los secretos y levanta todo (PostgreSQL, Redis, MinIO, backend, frontend y Caddy con TLS automático):
+Sirve para un **servidor remoto** (un VPS, un servidor en casa) o para **localhost**. Un solo comando descarga el instalador, te pregunta el dominio, genera los secretos y levanta todo (PostgreSQL, DragonflyDB, MinIO, backend, frontend y Caddy con TLS automático):
 
 ```bash
 curl -fsSL https://noctcom.com/install.sh | bash
@@ -59,13 +59,13 @@ cp .env.example .env
 docker compose up -d
 ```
 
-Esto levanta PostgreSQL, Redis, MinIO, backend, frontend y Caddy (TLS automático). Tu instancia quedará en `https://app.tu-dominio.com`.
+Esto levanta PostgreSQL, DragonflyDB, MinIO, backend, frontend y Caddy (TLS automático). Tu instancia quedará en `https://app.tu-dominio.com`.
 
 ---
 
 ## ¿En un PaaS gestionado (tipo Render, Railway…)?
 
-Es posible, pero es una vía **avanzada**: en un PaaS no corres el `docker-compose` completo, sino que construyes y despliegas las **imágenes** del repo (`<tu-usuario>/noctcom` y `<tu-usuario>/noctcom-api`) y aportas tú los servicios gestionados —PostgreSQL, Redis y un almacenamiento S3 (p. ej. Backblaze B2)— con sus variables de entorno. Para la mayoría de la gente, un servidor con Docker (Opción 1) es más sencillo y barato. Si aun así quieres ese camino, parte del [docker-compose.yml](https://github.com/RedderLabs/noctcom/blob/main/docker-compose.yml) y la guía de [self-hosting](https://github.com/RedderLabs/noctcom/blob/main/SELFHOST.md) del repositorio.
+Es posible, pero es una vía **avanzada**: en un PaaS no corres el `docker-compose` completo, sino que construyes y despliegas las **imágenes** del repo (`<tu-usuario>/noctcom` y `<tu-usuario>/noctcom-api`) y aportas tú los servicios gestionados —PostgreSQL, una caché que hable el protocolo Redis (DragonflyDB, Valkey, el Key Value de Render…) y un almacenamiento S3 (p. ej. Backblaze B2)— con sus variables de entorno. Para la mayoría de la gente, un servidor con Docker (Opción 1) es más sencillo y barato. Si aun así quieres ese camino, parte del [docker-compose.yml](https://github.com/RedderLabs/noctcom/blob/main/docker-compose.yml) y la guía de [self-hosting](https://github.com/RedderLabs/noctcom/blob/main/SELFHOST.md) del repositorio.
 
 ---
 

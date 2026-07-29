@@ -16,7 +16,7 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 import { db } from '../db/pool.js';
-import { publishChange } from '../db/redis.js';
+import { publishChange } from '../db/cache.js';
 import { sendPushToUser } from '../push.js';
 
 const toB64 = (b: Buffer | Uint8Array) => Buffer.from(b).toString('base64url');

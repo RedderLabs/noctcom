@@ -40,7 +40,7 @@ npm-debug.log*
 # Docker volumes
 postgres/data/
 minio/data/
-redis/data/
+dragonfly/data/
 
 # Temp
 *.tmp

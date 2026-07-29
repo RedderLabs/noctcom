@@ -17,7 +17,7 @@ import { z } from 'zod';
 import { createHash, randomBytes } from 'node:crypto';
 import sodium from 'libsodium-wrappers-sumo';
 import { db } from '../db/pool.js';
-import { publishChange } from '../db/redis.js';
+import { publishChange } from '../db/cache.js';
 import { presignDownload } from '../storage/s3.js';
 import * as registry from '../agents/registry.js';
 import { env } from '../config.js';

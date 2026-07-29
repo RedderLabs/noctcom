@@ -73,24 +73,52 @@ services:
     restart: "no"
 
   # ─────────────────────────────────────────────────────────────
-  # Redis — sesiones, rate limit, pub/sub para WebSocket
+  # DragonflyDB — rate limit, lockout de logins, pub/sub del WebSocket
+  #
+  # Habla el protocolo Redis (RESP), así que el backend sigue usando el cliente
+  # 'redis' de npm y una URL redis://. Aquí no se guarda contenido de usuario:
+  # solo contadores con TTL y avisos de "algo cambió".
   # ─────────────────────────────────────────────────────────────
-  redis:
-    image: redis:7-alpine
-    container_name: noctcom-redis
+  dragonfly:
+    image: docker.dragonflydb.io/dragonflydb/dragonfly:latest
+    container_name: noctcom-dragonfly
     restart: unless-stopped
-    command: >
-      redis-server
-      --requirepass ${REDIS_PASSWORD:?redis password required}
-      --maxmemory 256mb
-      --maxmemory-policy allkeys-lru
-      --appendonly yes
+    # Dragonfly necesita memoria bloqueable al arrancar (crítico en kernels
+    # < 5.12). Es lo que recomienda su compose oficial.
+    ulimits:
+      memlock: -1
+    # Lista explícita (no cadena): cada flag es un argumento, sin sorpresas de
+    # word-splitting.
+    command:
+      - dragonfly
+      - --requirepass=${CACHE_PASSWORD:?falta CACHE_PASSWORD en .env — si vienes de una versión con Redis, renombra REDIS_PASSWORD a CACHE_PASSWORD (o ejecuta 'bash update.sh', que lo migra solo)}
+      # Tope de memoria: es un límite, no una reserva. Equivalente al maxmemory
+      # que tenía Redis, con margen porque Dragonfly reparte por hilo.
+      - --maxmemory=${CACHE_MAXMEMORY:-512mb}
+      # Se comporta como caché: al acercarse al tope desaloja en vez de fallar
+      # (equivalente a maxmemory-policy allkeys-lru).
+      - --cache_mode
+      # Un hilo sobra para esta carga (contadores y pub/sub) y mantiene el
+      # consumo bajo en homelab/LXC. Súbelo si algún día hace falta.
+      - --proactor_threads=1
+      # io_uring no siempre está disponible dentro de un LXC de Proxmox (el
+      # perfil seccomp lo puede bloquear). epoll arranca en cualquier sitio y a
+      # esta carga la diferencia no se mide.
+      - --force_epoll
+      # Sin consola HTTP en el puerto de datos (el stack no la usa).
+      - --primary_port_http_enabled=false
+      # Snapshot al apagar ordenadamente: los bloqueos de login sobreviven a un
+      # 'compose restart'. Un corte brusco solo pierde caché, nada crítico.
+      - --dir=/data
+      - --dbfilename=dump
     volumes:
-      - redis_data:/data
+      - dragonfly_data:/data
     networks:
       - noctcom-internal
+    # La imagen oficial (ubuntu-prod) trae redis-tools, así que redis-cli existe
+    # y comprobamos RESP de verdad, no solo que el puerto acepte conexiones.
     healthcheck:
-      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      test: ["CMD", "redis-cli", "-a", "${CACHE_PASSWORD}", "ping"]
       interval: 10s
       timeout: 3s
       retries: 5
@@ -107,7 +135,7 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      redis:
+      dragonfly:
         condition: service_healthy
       minio:
         condition: service_healthy
@@ -116,7 +144,8 @@ services:
       PORT: 3000
       # sslmode=disable: el postgres del stack no habla TLS (red interna).
       DATABASE_URL: postgres://${POSTGRES_USER:-noctcom}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-noctcom}?sslmode=disable
-      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
+      # Dragonfly habla RESP → el esquema sigue siendo redis://.
+      CACHE_URL: redis://:${CACHE_PASSWORD}@dragonfly:6379
       S3_ENDPOINT: http://minio:9000
       S3_ACCESS_KEY: ${MINIO_ROOT_USER}
       S3_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
@@ -204,14 +233,14 @@ services:
 networks:
   noctcom-internal:
     driver: bridge
-    internal: false  # cambia a true en prod para aislar postgres/redis/minio
+    internal: false  # cambia a true en prod para aislar postgres/dragonfly/minio
   noctcom-public:
     driver: bridge
 
 volumes:
   postgres_data:
   minio_data:
-  redis_data:
+  dragonfly_data:
   caddy_data:
   caddy_config:
   blob_data:        # blobs cifrados en disco (self-host)

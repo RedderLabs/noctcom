@@ -18,7 +18,7 @@ vi.mock('../db/pool.js', async () => {
   return { db: f.db, tx: f.tx };
 });
 // auth.ts importa login-lockout.ts, que arrastra config.ts (valida process.env
-// entero) y db/redis.js. Mock mínimo: sin Redis el lockout es no-op.
+// entero) y db/cache.js. Mock mínimo: sin caché el lockout es no-op.
 vi.mock('../config.js', () => ({
   env: {
     LOGIN_LOCKOUT_MAX_FAILS: 5,
@@ -27,9 +27,9 @@ vi.mock('../config.js', () => ({
     LOGIN_LOCKOUT_MAX_LOCK_S: 14400,
   },
 }));
-vi.mock('../db/redis.js', () => ({
-  redis: () => null,
-  initRedis: vi.fn(async () => null),
+vi.mock('../db/cache.js', () => ({
+  cache: () => null,
+  initCache: vi.fn(async () => null),
   createSubscriber: vi.fn(async () => null),
   publishChange: vi.fn(async () => {}),
 }));

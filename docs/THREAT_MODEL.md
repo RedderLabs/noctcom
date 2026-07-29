@@ -23,7 +23,7 @@ En orden de prioridad:
 **Descripción:** un empleado, contratista o socio de Noctcom con acceso a infraestructura producción intenta leer datos de usuarios.
 
 **Capacidades asumidas:**
-- Acceso de lectura/escritura a PostgreSQL, MinIO, Redis
+- Acceso de lectura/escritura a PostgreSQL, MinIO, DragonflyDB
 - Acceso a logs de aplicación
 - Capacidad de modificar el código del backend
 - Acceso al filesystem de los servidores
@@ -173,11 +173,11 @@ Si alguna de estas se rompe (ej. quantum computing real), **migraremos a primiti
 - Nuevos dispositivos se notifican por WebSocket a los existentes
 
 ### Rate limiting distribuido (Fase 11)
-- Rate limiting usa Redis como store compartido (fallback a in-memory si Redis no disponible)
+- Rate limiting usa la caché (DragonflyDB) como store compartido (fallback a in-memory si no está disponible)
 - Contramedida contra ataques de fuerza bruta distribuidos
 
 ### Health check
-- `GET /health` expone el estado de DB, Redis y S3
+- `GET /health` expone el estado de DB, caché y S3
 - Este endpoint es público y podría revelar información sobre la infraestructura a un adversario
 - Mitigación: solo devuelve booleanos (up/down), no versiones ni detalles de conexión
 

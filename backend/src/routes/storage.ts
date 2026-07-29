@@ -5,7 +5,7 @@ import { promisify } from 'node:util';
 import os from 'node:os';
 import { z } from 'zod';
 import { db } from '../db/pool.js';
-import { redis } from '../db/redis.js';
+import { cache } from '../db/cache.js';
 import { activeDiskUsage } from '../storage/capacity.js';
 import { validateVolumePath } from '../storage/disk.js';
 import { env } from '../config.js';
@@ -763,7 +763,7 @@ const storageRoutes: FastifyPluginAsync = async (app) => {
   //
   // Honestidad: el backend NO tiene docker.sock montado, así que no puede
   // inspeccionar contenedores. Comprueba de verdad lo que sí alcanza por red
-  // (Postgres, Redis, MinIO) e infiere los dos restantes:
+  // (Postgres, Dragonfly, MinIO) e infiere los dos restantes:
   //   · backend → ok (si corre este handler, está vivo).
   //   · caddy   → ok (la petición llegó por su reverse proxy).
   app.get('/stack-health', { onRequest: [app.authenticate] }, async (_req, reply) => {
@@ -773,10 +773,10 @@ const storageRoutes: FastifyPluginAsync = async (app) => {
 
     const postgres = await check(() => db.query('SELECT 1'));
 
-    const r = redis();
-    // Redis ausente (REDIS_URL sin configurar) = sync desactivado a propósito,
+    const r = cache();
+    // Caché ausente (CACHE_URL sin configurar) = sync desactivado a propósito,
     // no es un fallo del stack → ok, igual que en /health.
-    const redisStatus = r ? await check(() => r.ping()) : 'ok';
+    const cacheStatus = r ? await check(() => r.ping()) : 'ok';
 
     const minio = await check(async () => {
       const { HeadBucketCommand } = await import('@aws-sdk/client-s3');
@@ -786,7 +786,7 @@ const storageRoutes: FastifyPluginAsync = async (app) => {
 
     return reply.send([
       { service: 'postgres', status: postgres },
-      { service: 'redis', status: redisStatus },
+      { service: 'cache', status: cacheStatus },
       { service: 'minio', status: minio },
       { service: 'backend', status: 'ok' },
       { service: 'caddy', status: 'ok' },

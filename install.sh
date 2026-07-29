@@ -5,8 +5,8 @@
 #   curl -fsSL https://raw.githubusercontent.com/RedderLabs/noctcom/main/install.sh | bash
 #
 # Clona el repo, genera un .env con secretos seguros y levanta el stack con
-# Docker Compose (PostgreSQL + Redis + MinIO + backend + frontend + Caddy con
-# TLS automático). Idempotente: si ya existe un .env, conserva tus secretos.
+# Docker Compose (PostgreSQL + DragonflyDB + MinIO + backend + frontend + Caddy
+# con TLS automático). Idempotente: si ya existe un .env, conserva tus secretos.
 #
 # Variables de entorno opcionales (para instalación no interactiva):
 #   NOCTCOM_DIR=noctcom         carpeta destino
@@ -48,7 +48,7 @@ ask() { # ask <prompt> <default> <var>
   printf -v "$__var" '%s' "${reply:-$default}"
 }
 
-# Secreto seguro y URL-safe (sin caracteres que rompan DATABASE_URL/REDIS_URL).
+# Secreto seguro y URL-safe (sin caracteres que rompan DATABASE_URL/CACHE_URL).
 secret() { openssl rand -hex 24; }
 
 printf "\n${V}${B}  Noctcom${N} ${DIM}· self-host installer${N}\n"
@@ -143,7 +143,15 @@ if [ -f .env ]; then
   warn ".env ya existe — conservo tus secretos y no lo toco."
   if ! grep -q '^COMPOSE_FILE=' .env; then
     printf '\n# Fijado por install.sh: evita cargar docker-compose.override.yml (solo desarrollo).\nCOMPOSE_FILE=docker-compose.yml\n' >> .env
-    warn "Añadido COMPOSE_FILE a .env (el override de desarrollo publicaba puertos de postgres/redis/minio al host)."
+    warn "Añadido COMPOSE_FILE a .env (el override de desarrollo publicaba puertos de postgres/dragonfly/minio al host)."
+  fi
+  # Migración Redis → DragonflyDB: cambia el motor de la caché, no el secreto.
+  # Renombramos la clave conservando su valor para que un .env anterior siga
+  # sirviendo (compose exige CACHE_PASSWORD). Lo que había dentro era caché
+  # (contadores con TTL), así que no hay nada que trasladar.
+  if grep -q '^REDIS_PASSWORD=' .env && ! grep -q '^CACHE_PASSWORD=' .env; then
+    sed -i.bak -E 's|^REDIS_PASSWORD=|CACHE_PASSWORD=|' .env && rm -f .env.bak
+    warn "Caché migrada a DragonflyDB (REDIS_PASSWORD → CACHE_PASSWORD en .env)."
   fi
   # Modo self-host: si falta, lo añadimos para que el frontend se hornee con el
   # panel operativo (capacidad por disco + salud del stack + '/' al login). Las
@@ -198,7 +206,7 @@ else
   sed_i '^CADDY_DOMAIN=.*'        "CADDY_DOMAIN=$DOMAIN"
   sed_i '^CADDY_EMAIL=.*'         "CADDY_EMAIL=$EMAIL"
   sed_i '^POSTGRES_PASSWORD=.*'   "POSTGRES_PASSWORD=$(secret)"
-  sed_i '^REDIS_PASSWORD=.*'      "REDIS_PASSWORD=$(secret)"
+  sed_i '^CACHE_PASSWORD=.*'      "CACHE_PASSWORD=$(secret)"
   sed_i '^MINIO_ROOT_PASSWORD=.*' "MINIO_ROOT_PASSWORD=$(secret)"
   sed_i '^JWT_SECRET=.*'          "JWT_SECRET=$(openssl rand -base64 64 | tr -d '\n')"
   sed_i '^PUBLIC_URL=.*'          "PUBLIC_URL=$APIBASE"
@@ -259,7 +267,10 @@ if [ "${NOCTCOM_NO_START:-0}" = "1" ]; then
 fi
 say ""
 say "${B}4. Construyendo y levantando (la primera vez tarda unos minutos)…${N}"
-$DC up -d --build
+# --remove-orphans: retira contenedores del proyecto que ya no existen en el
+# compose. Es lo que se lleva el antiguo 'noctcom-redis' al actualizar a
+# DragonflyDB (si no, seguiría corriendo y comiendo memoria sin que nadie lo use).
+$DC up -d --build --remove-orphans
 # Caddy NO se recrea cuando solo cambia el Caddyfile montado (no su imagen), así
 # que se quedaría con la config vieja (p. ej. el enrutado /api del modo LAN). Lo
 # reiniciamos para que cargue siempre la configuración actual.

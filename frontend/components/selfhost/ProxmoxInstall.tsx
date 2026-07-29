@@ -41,7 +41,7 @@ const REQ_KEYS = [
 // Nodos del stack del LXC — nombres propios, no traducibles.
 const STACK_NODES = [
   { name: 'PostgreSQL', roleKey: 'db', icon: Database },
-  { name: 'Redis', roleKey: 'cache', icon: Database },
+  { name: 'Dragonfly', roleKey: 'cache', icon: Database },
   { name: 'MinIO', roleKey: 'storage', icon: HardDrive },
   { name: 'Backend', roleKey: 'api', icon: Boxes },
   { name: 'Frontend', roleKey: 'web', icon: Layers },

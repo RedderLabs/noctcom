@@ -24,6 +24,10 @@ services:
         value: "10000"
       - key: DATABASE_URL
         sync: false
+      # Caché/pub-sub. El self-host usa DragonflyDB; aquí vale cualquier
+      # servicio que hable el protocolo Redis. El backend prefiere CACHE_URL y
+      # acepta REDIS_URL como alias heredado — que es el que ya está puesto en
+      # el dashboard, así que se deja tal cual para no tocar producción.
       - key: REDIS_URL
         sync: false
       - key: S3_ENDPOINT

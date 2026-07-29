@@ -10,7 +10,7 @@
 #   · minio_data  → blobs cifrados que fueron a object storage (MinIO).
 #   · blob_data   → blobs cifrados guardados en disco (BLOB_VOLUME_PATH=/data).
 #   · EXTRA_DATA_DIR → discos extra del backend (si los hay).
-# (redis_data = caché y caddy_data = certificados se regeneran solos: no se copian.)
+# (dragonfly_data = caché y caddy_data = certificados se regeneran solos: no se copian.)
 #
 # Restaurar:  bash scripts/restore.sh <fichero.tar.gz>
 #

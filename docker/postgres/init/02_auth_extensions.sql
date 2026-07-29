@@ -49,7 +49,7 @@ CREATE TABLE webauthn_credentials (
 );
 CREATE INDEX webauthn_user_idx ON webauthn_credentials(user_id) WHERE revoked_at IS NULL;
 
--- ─── WebAuthn challenges (en Redis en prod; aquí fallback DB) ────
+-- ─── WebAuthn challenges (en la caché en prod; aquí fallback DB) ────
 CREATE TABLE webauthn_challenges (
     id                   UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id              UUID REFERENCES users(id) ON DELETE CASCADE,

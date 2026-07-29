@@ -1,7 +1,7 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 import { db } from '../db/pool.js';
-import { publishChange } from '../db/redis.js';
+import { publishChange } from '../db/cache.js';
 
 const bytesB64 = z.string().regex(/^[A-Za-z0-9_-]+$/, 'base64url required');
 const pubKey32 = bytesB64.min(1).max(Math.ceil(32 * 4 / 3) + 4);

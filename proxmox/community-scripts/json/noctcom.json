@@ -14,7 +14,7 @@
     "documentation": "https://github.com/RedderLabs/noctcom#readme",
     "website": "https://noctcom.com/",
     "logo": "https://raw.githubusercontent.com/RedderLabs/noctcom/main/frontend/public/logo.png",
-    "description": "Noctcom is an open-source, zero-knowledge encrypted file storage platform. All files are encrypted in the browser before upload — the server only ever stores ciphertext, and the encryption password never leaves your device. Self-hosting is free forever (AGPL-3.0). The stack runs on Docker Compose: PostgreSQL, Redis, MinIO (S3-compatible blob storage), a Fastify API, a Next.js frontend and Caddy.",
+    "description": "Noctcom is an open-source, zero-knowledge encrypted file storage platform. All files are encrypted in the browser before upload — the server only ever stores ciphertext, and the encryption password never leaves your device. Self-hosting is free forever (AGPL-3.0). The stack runs on Docker Compose: PostgreSQL, DragonflyDB, MinIO (S3-compatible blob storage), a Fastify API, a Next.js frontend and Caddy.",
     "install_methods": [
         {
             "type": "default",
