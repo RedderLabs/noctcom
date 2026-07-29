@@ -1,12 +1,14 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import {
-  Trash2, FileText, File, Image, RotateCcw, AlertTriangle, Loader2, Folder,
+  Trash2, FileText, File, Image, RotateCcw, AlertTriangle, Loader2, Folder, Check, X,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 import { useVault, type DecryptedNode } from '@/lib/vault-store';
+import { Button } from '@/components/ui/Button';
 import { CardActionsMenu } from '@/components/vault/CardActionsMenu';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 
@@ -34,12 +36,51 @@ function getIcon(node: DecryptedNode) {
   return File;
 }
 
+/**
+ * Casilla de selección. No usamos <input type="checkbox"> nativo porque su
+ * apariencia no es estilable de forma consistente entre navegadores; este es un
+ * checkbox real de accesibilidad (role + aria-checked + teclado) con el aspecto
+ * del sistema: 4px de radio, borde sutil en reposo, relleno de acento al marcar.
+ */
+function Checkbox({
+  checked, indeterminate, onChange, label,
+}: {
+  checked: boolean;
+  indeterminate?: boolean;
+  onChange: () => void;
+  label: string;
+}) {
+  const active = checked || indeterminate;
+  return (
+    <button
+      type="button"
+      role="checkbox"
+      aria-checked={indeterminate ? 'mixed' : checked}
+      aria-label={label}
+      onClick={(e) => { e.stopPropagation(); onChange(); }}
+      className={cn(
+        'size-4 shrink-0 grid place-items-center rounded-[4px] border transition-all duration-150 ease-out',
+        active
+          ? 'bg-violet-600 border-violet-500 text-white'
+          : 'bg-transparent border-border-subtle hover:border-border-strong',
+      )}
+    >
+      {indeterminate
+        ? <span className="block w-2 h-px bg-current" />
+        : checked && <Check className="size-3" strokeWidth={3} />}
+    </button>
+  );
+}
+
 export default function TrashPage() {
   const t = useTranslations('trash');
-  const { loadTrash, restoreNode, purgeNode } = useVault();
+  const { loadTrash, restoreNode, purgeNode, restoreNodes, purgeNodes } = useVault();
   const [items, setItems] = useState<DecryptedNode[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [busy, setBusy] = useState(false);
   const [confirmNode, setConfirmNode] = useState<DecryptedNode | null>(null);
+  const [confirmBulk, setConfirmBulk] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -50,19 +91,68 @@ export default function TrashPage() {
     })();
   }, [loadTrash]);
 
+  const allSelected = items.length > 0 && selected.size === items.length;
+  const someSelected = selected.size > 0 && !allSelected;
+
+  const selectedItems = useMemo(
+    () => items.filter((i) => selected.has(i.id)),
+    [items, selected],
+  );
+
+  const toggleOne = useCallback((id: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }, []);
+
+  const toggleAll = useCallback(() => {
+    setSelected((prev) => (prev.size === items.length ? new Set() : new Set(items.map((i) => i.id))));
+  }, [items]);
+
+  const clearSelection = useCallback(() => setSelected(new Set()), []);
+
   async function handleRestore(nodeId: string) {
     const item = items.find((i) => i.id === nodeId);
-    await restoreNode(nodeId);
-    setItems((prev) => prev.filter((i) => i.id !== nodeId));
-    if (item) toast.success(t('toastRestored', { name: item.name }));
+    try {
+      await restoreNode(nodeId);
+      setItems((prev) => prev.filter((i) => i.id !== nodeId));
+      setSelected((prev) => { const n = new Set(prev); n.delete(nodeId); return n; });
+      if (item) toast.success(t('toastRestored', { name: item.name }));
+    } catch { /* el toast de error ya se muestra en el store */ }
   }
 
   async function handlePurge(node: DecryptedNode) {
     try {
       await purgeNode(node.id);
       setItems((prev) => prev.filter((i) => i.id !== node.id));
+      setSelected((prev) => { const n = new Set(prev); n.delete(node.id); return n; });
     } catch { /* el toast de error ya se muestra en el store */ }
     setConfirmNode(null);
+  }
+
+  async function handleBulkRestore() {
+    const ids = [...selected];
+    setBusy(true);
+    try {
+      await restoreNodes(ids);
+      setItems((prev) => prev.filter((i) => !selected.has(i.id)));
+      clearSelection();
+    } catch { /* el toast de error ya se muestra en el store */ }
+    setBusy(false);
+  }
+
+  async function handleBulkPurge() {
+    const ids = [...selected];
+    setBusy(true);
+    try {
+      await purgeNodes(ids);
+      setItems((prev) => prev.filter((i) => !selected.has(i.id)));
+      clearSelection();
+    } catch { /* el toast de error ya se muestra en el store */ }
+    setBusy(false);
+    setConfirmBulk(false);
   }
 
   return (
@@ -92,41 +182,105 @@ export default function TrashPage() {
         </div>
       )}
 
-      {!loading && (
-        <div className="space-y-1">
-          {items.map((item) => {
-            const Icon = getIcon(item);
-            return (
-              <div
-                key={item.id}
-                className="flex items-center gap-4 px-4 py-3 rounded-lg hover:bg-bg-surface transition-colors group"
-              >
-                <div className="size-10 rounded-lg bg-red-500/10 border border-red-500/20 grid place-items-center shrink-0">
-                  <Icon className="size-4 text-red-300" />
+      {!loading && items.length > 0 && (
+        <>
+          {/* Cabecera de selección: seleccionar todo a la izquierda, acciones del
+              lote a la derecha. Ocupa siempre el mismo alto para que la lista no
+              salte al entrar o salir de la selección. */}
+          <div className="flex items-center gap-3 h-10 px-4 mb-1 border-b border-border-faint">
+            <Checkbox
+              checked={allSelected}
+              indeterminate={someSelected}
+              onChange={toggleAll}
+              label={allSelected ? t('deselectAll') : t('selectAll')}
+            />
+            {selected.size === 0 ? (
+              <span className="text-[10px] font-mono uppercase tracking-wider text-text-tertiary">
+                {t('selectAll')}
+              </span>
+            ) : (
+              <>
+                <span className="text-[10px] font-mono uppercase tracking-wider text-violet-300">
+                  {t('selectedCount', { count: selected.size })}
+                </span>
+                <div className="flex-1" />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  disabled={busy}
+                  leftIcon={<RotateCcw className="size-3.5" />}
+                  onClick={handleBulkRestore}
+                >
+                  {t('restoreSelected')}
+                </Button>
+                <Button
+                  variant="danger"
+                  size="sm"
+                  loading={busy}
+                  leftIcon={busy ? undefined : <Trash2 className="size-3.5" />}
+                  onClick={() => setConfirmBulk(true)}
+                >
+                  {t('deleteSelected')}
+                </Button>
+                <button
+                  type="button"
+                  onClick={clearSelection}
+                  aria-label={t('clearSelection')}
+                  className="p-1.5 rounded-md text-text-muted hover:text-text-secondary hover:bg-bg-surface transition-colors"
+                >
+                  <X className="size-3.5" />
+                </button>
+              </>
+            )}
+          </div>
+
+          <div className="space-y-1">
+            {items.map((item) => {
+              const Icon = getIcon(item);
+              const isSelected = selected.has(item.id);
+              return (
+                <div
+                  key={item.id}
+                  onClick={() => toggleOne(item.id)}
+                  className={cn(
+                    'flex items-center gap-4 px-4 py-3 rounded-lg transition-colors group cursor-pointer',
+                    isSelected ? 'bg-violet-500/5' : 'hover:bg-bg-surface',
+                  )}
+                >
+                  <Checkbox
+                    checked={isSelected}
+                    onChange={() => toggleOne(item.id)}
+                    label={t('selectItem', { name: item.name })}
+                  />
+                  <div className="size-10 rounded-lg bg-red-500/10 border border-red-500/20 grid place-items-center shrink-0">
+                    <Icon className="size-4 text-red-300" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-sm font-medium truncate line-through text-text-secondary">
+                      {item.name}
+                    </h3>
+                    <span className="text-[10px] text-text-tertiary font-mono uppercase tracking-wider">
+                      {item.kind === 'folder' ? t('folder') : formatSize(item.size)} · {(() => {
+                        const days = daysUntilExpiry(item.deletedAt);
+                        return days === null
+                          ? t('expiry', { days: 0, hasDate: 'no' })
+                          : t('expiry', { days, hasDate: 'yes' });
+                      })()}
+                    </span>
+                  </div>
+                  <div onClick={(e) => e.stopPropagation()}>
+                    <CardActionsMenu
+                      actions={[
+                        { label: t('restore'), icon: RotateCcw, onSelect: () => handleRestore(item.id) },
+                        { label: t('deleteForever'), icon: Trash2, onSelect: () => setConfirmNode(item), danger: true },
+                      ]}
+                    />
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="text-sm font-medium truncate line-through text-text-secondary">
-                    {item.name}
-                  </h3>
-                  <span className="text-[10px] text-text-tertiary font-mono uppercase tracking-wider">
-                    {item.kind === 'folder' ? t('folder') : formatSize(item.size)} · {(() => {
-                      const days = daysUntilExpiry(item.deletedAt);
-                      return days === null
-                        ? t('expiry', { days: 0, hasDate: 'no' })
-                        : t('expiry', { days, hasDate: 'yes' });
-                    })()}
-                  </span>
-                </div>
-                <CardActionsMenu
-                  actions={[
-                    { label: t('restore'), icon: RotateCcw, onSelect: () => handleRestore(item.id) },
-                    { label: t('deleteForever'), icon: Trash2, onSelect: () => setConfirmNode(item), danger: true },
-                  ]}
-                />
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        </>
       )}
 
       {!loading && items.length === 0 && (
@@ -150,6 +304,20 @@ export default function TrashPage() {
         cancelLabel={t('cancelLabel')}
         onConfirm={() => { if (confirmNode) handlePurge(confirmNode); }}
         onCancel={() => setConfirmNode(null)}
+      />
+
+      <ConfirmDialog
+        open={confirmBulk}
+        danger
+        title={t('confirmBulkTitle')}
+        message={t('confirmBulkMessage', {
+          count: selectedItems.length,
+          size: formatSize(selectedItems.reduce((acc, i) => acc + (i.size ?? 0), 0)),
+        })}
+        confirmLabel={t('confirmLabel')}
+        cancelLabel={t('cancelLabel')}
+        onConfirm={handleBulkPurge}
+        onCancel={() => setConfirmBulk(false)}
       />
     </div>
   );

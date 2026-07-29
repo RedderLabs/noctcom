@@ -2,8 +2,7 @@ import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 import { db, tx } from '../db/pool.js';
 import { publishChange } from '../db/redis.js';
-import { deleteBlob } from '../storage/s3.js';
-import { deleteFromDisk } from '../storage/disk.js';
+import { subtreeCloudBytes, purgeSubtree } from '../storage/purge.js';
 
 const bytesB64 = z.string().regex(/^[A-Za-z0-9_-]+$/);
 const fromB64 = (s: string) => Buffer.from(s, 'base64url');
@@ -27,6 +26,12 @@ const renameSchema = z.object({
 
 const moveSchema = z.object({
   newParentId: z.string().uuid().nullable(),
+});
+
+// Tope de 500 por lote: suficiente para «seleccionar todo» en una papelera real
+// y bajo de sobra para que una petición no se eternice ni sirva de amplificador.
+const trashBatchSchema = z.object({
+  ids: z.array(z.string().uuid()).min(1).max(500),
 });
 
 const nodeRoutes: FastifyPluginAsync = async (app) => {
@@ -192,8 +197,23 @@ const nodeRoutes: FastifyPluginAsync = async (app) => {
       if (own.rowCount === 0) return reply.notFound();
       if (own.rows[0].owner_id !== userId) return reply.forbidden();
 
-      await db.query(`UPDATE nodes SET deleted_at = now() WHERE id = $1`, [req.params.id]);
+      // La papelera no ocupa cuota: los bytes se liberan al enviar aquí y se
+      // vuelven a cobrar al restaurar. Se descuenta el subárbol entero porque al
+      // marcar una carpeta sus descendientes dejan de ser accesibles aunque
+      // conserven `deleted_at NULL`.
+      const freed = await subtreeCloudBytes(db, req.params.id);
+      await tx(async (client) => {
+        await client.query(`UPDATE nodes SET deleted_at = now() WHERE id = $1`, [req.params.id]);
+        if (freed > 0) {
+          await client.query(
+            `UPDATE users SET storage_used_bytes = GREATEST(0, storage_used_bytes - $1) WHERE id = $2`,
+            [freed, userId],
+          );
+        }
+      });
+
       publishChange(userId, { resource: 'nodes', action: 'deleted' });
+      if (freed > 0) publishChange(userId, { resource: 'storage', action: 'update' });
       return reply.send({ ok: true });
     },
   );
@@ -214,52 +234,12 @@ const nodeRoutes: FastifyPluginAsync = async (app) => {
       if (!own.rows[0].deleted_at) return reply.badRequest('el nodo no está en la papelera');
 
       // El nodo (y sus descendientes si es carpeta) se borran en cascada en la
-      // DB; los blobs en almacenamiento hay que borrarlos a mano antes.
-      const subtree = `
-        WITH RECURSIVE tree AS (
-          SELECT id FROM nodes WHERE id = $1
-          UNION ALL
-          SELECT n.id FROM nodes n JOIN tree t ON n.parent_id = t.id
-        )`;
-
-      const chunks = await db.query(
-        `${subtree}
-         SELECT c.s3_key, c.storage_type, c.volume_id
-         FROM chunks c
-         JOIN file_versions fv ON fv.id = c.version_id
-         WHERE fv.node_id IN (SELECT id FROM tree)`,
-        [req.params.id],
-      );
-
-      for (const c of chunks.rows) {
-        try {
-          if (c.storage_type === 'disk' && c.volume_id) {
-            const vol = await db.query(`SELECT path FROM storage_volumes WHERE id = $1`, [c.volume_id]);
-            if (vol.rows[0]) await deleteFromDisk(vol.rows[0].path, c.s3_key);
-          } else {
-            await deleteBlob(c.s3_key);
-          }
-        } catch { /* ignore cleanup errors */ }
-      }
-
-      const sizeRes = await db.query(
-        `${subtree}
-         SELECT COALESCE(SUM(ciphertext_size), 0)::bigint AS total
-         FROM nodes WHERE id IN (SELECT id FROM tree) AND kind = 'file'`,
-        [req.params.id],
-      );
-      const freed = sizeRes.rows[0]?.total ?? 0;
-
-      await tx(async (client) => {
-        await client.query(`DELETE FROM nodes WHERE id = $1`, [req.params.id]);
-        await client.query(
-          `UPDATE users SET storage_used_bytes = GREATEST(0, storage_used_bytes - $1) WHERE id = $2`,
-          [freed, userId],
-        );
-      });
+      // DB; los blobs hay que borrarlos a mano antes. Viene de la papelera, así
+      // que sus bytes ya se descontaron al enviarlo allí: aquí no se vuelven a
+      // restar (`alreadyDiscounted`).
+      await purgeSubtree(req.params.id, userId, { alreadyDiscounted: true });
 
       publishChange(userId, { resource: 'nodes', action: 'deleted' });
-      publishChange(userId, { resource: 'storage', action: 'update' });
       return reply.send({ ok: true });
     },
   );
@@ -430,8 +410,134 @@ const nodeRoutes: FastifyPluginAsync = async (app) => {
       if (own.rowCount === 0) return reply.notFound();
       if (own.rows[0].owner_id !== userId) return reply.forbidden();
 
-      await db.query(`UPDATE nodes SET deleted_at = NULL WHERE id = $1`, [req.params.id]);
+      // Restaurar vuelve a ocupar cuota. Si mientras estaba en la papelera el
+      // usuario llenó el hueco, el archivo se queda donde está: es preferible a
+      // dejar la cuenta por encima de su límite.
+      const cost = await subtreeCloudBytes(db, req.params.id);
+      if (cost > 0) {
+        const q = await db.query(
+          `SELECT storage_used_bytes, storage_quota_bytes FROM users WHERE id = $1`,
+          [userId],
+        );
+        const used = BigInt(q.rows[0].storage_used_bytes);
+        const quota = BigInt(q.rows[0].storage_quota_bytes);
+        if (quota > 0n && used + BigInt(cost) > quota) {
+          return reply.code(413).send({
+            error: 'quota_exceeded',
+            message: 'no hay espacio para restaurar este elemento',
+            requiredBytes: cost,
+            availableBytes: Number(quota - used > 0n ? quota - used : 0n),
+          });
+        }
+      }
+
+      await tx(async (client) => {
+        await client.query(`UPDATE nodes SET deleted_at = NULL WHERE id = $1`, [req.params.id]);
+        if (cost > 0) {
+          await client.query(
+            `UPDATE users SET storage_used_bytes = storage_used_bytes + $1 WHERE id = $2`,
+            [cost, userId],
+          );
+        }
+      });
+
+      publishChange(userId, { resource: 'nodes', action: 'restored' });
+      if (cost > 0) publishChange(userId, { resource: 'storage', action: 'update' });
       return reply.send({ ok: true });
+    },
+  );
+
+  // ─── POST /trash/purge ─ borrado definitivo en lote ───────
+  // Vaciar la papelera de un tirón sin N peticiones. Los ids ajenos o que no
+  // estén en la papelera se ignoran en silencio: el cliente pide sobre lo que ve
+  // y una carrera con otra pestaña no debe romper la operación entera.
+  app.post<{ Body: { ids: string[] } }>(
+    '/trash/purge',
+    { onRequest: [app.authenticate] },
+    async (req, reply) => {
+      const userId = req.user.sub;
+      const parsed = trashBatchSchema.safeParse(req.body);
+      if (!parsed.success) return reply.badRequest('ids inválidos');
+
+      const owned = await db.query(
+        `SELECT n.id FROM nodes n
+         JOIN vaults v ON v.id = n.vault_id
+         WHERE n.id = ANY($1::uuid[]) AND v.owner_id = $2 AND n.deleted_at IS NOT NULL`,
+        [parsed.data.ids, userId],
+      );
+
+      let purged = 0;
+      for (const row of owned.rows) {
+        try {
+          await purgeSubtree(row.id, userId, { alreadyDiscounted: true });
+          purged++;
+        } catch (err) {
+          req.log.warn({ err, nodeId: row.id }, 'purga en lote: un nodo falló');
+        }
+      }
+
+      if (purged > 0) publishChange(userId, { resource: 'nodes', action: 'deleted' });
+      return reply.send({ ok: true, purged, skipped: parsed.data.ids.length - purged });
+    },
+  );
+
+  // ─── POST /trash/restore ─ restauración en lote ───────────
+  // La cuota se comprueba sobre el total del lote: o entra entero o no se
+  // restaura nada. Restaurar la mitad y dejar el resto sin explicación sería
+  // peor que fallar claro.
+  app.post<{ Body: { ids: string[] } }>(
+    '/trash/restore',
+    { onRequest: [app.authenticate] },
+    async (req, reply) => {
+      const userId = req.user.sub;
+      const parsed = trashBatchSchema.safeParse(req.body);
+      if (!parsed.success) return reply.badRequest('ids inválidos');
+
+      const owned = await db.query(
+        `SELECT n.id FROM nodes n
+         JOIN vaults v ON v.id = n.vault_id
+         WHERE n.id = ANY($1::uuid[]) AND v.owner_id = $2 AND n.deleted_at IS NOT NULL`,
+        [parsed.data.ids, userId],
+      );
+      if (owned.rowCount === 0) return reply.send({ ok: true, restored: 0, skipped: 0 });
+
+      let total = 0;
+      for (const row of owned.rows) total += await subtreeCloudBytes(db, row.id);
+
+      if (total > 0) {
+        const q = await db.query(
+          `SELECT storage_used_bytes, storage_quota_bytes FROM users WHERE id = $1`,
+          [userId],
+        );
+        const used = BigInt(q.rows[0].storage_used_bytes);
+        const quota = BigInt(q.rows[0].storage_quota_bytes);
+        if (quota > 0n && used + BigInt(total) > quota) {
+          return reply.code(413).send({
+            error: 'quota_exceeded',
+            message: 'no hay espacio para restaurar la selección',
+            requiredBytes: total,
+            availableBytes: Number(quota - used > 0n ? quota - used : 0n),
+          });
+        }
+      }
+
+      const ids = owned.rows.map((r: any) => r.id);
+      await tx(async (client) => {
+        await client.query(
+          `UPDATE nodes SET deleted_at = NULL WHERE id = ANY($1::uuid[])`,
+          [ids],
+        );
+        if (total > 0) {
+          await client.query(
+            `UPDATE users SET storage_used_bytes = storage_used_bytes + $1 WHERE id = $2`,
+            [total, userId],
+          );
+        }
+      });
+
+      publishChange(userId, { resource: 'nodes', action: 'restored' });
+      if (total > 0) publishChange(userId, { resource: 'storage', action: 'update' });
+      return reply.send({ ok: true, restored: ids.length, skipped: parsed.data.ids.length - ids.length });
     },
   );
 

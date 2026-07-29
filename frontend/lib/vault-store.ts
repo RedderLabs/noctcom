@@ -117,6 +117,10 @@ interface VaultActions {
   loadTrash: () => Promise<DecryptedNode[]>;
   restoreNode: (nodeId: string) => Promise<void>;
   purgeNode: (nodeId: string) => Promise<void>;
+  // Operaciones en lote de la papelera. Devuelven cuántos elementos se
+  // procesaron de verdad: el servidor ignora los ids que ya no están.
+  restoreNodes: (nodeIds: string[]) => Promise<number>;
+  purgeNodes: (nodeIds: string[]) => Promise<number>;
   toggleStar: (nodeId: string) => Promise<void>;
   loadRecent: () => Promise<DecryptedNode[]>;
   loadStarred: () => Promise<DecryptedNode[]>;
@@ -733,14 +737,51 @@ export const useVault = create<VaultState & VaultActions>((set, get) => ({
   },
 
   restoreNode: async (nodeId) => {
-    await apiFetch(`/api/v1/nodes/${nodeId}/restore`, { method: 'POST' });
-    toast.success(rt('toasts.restored'));
+    try {
+      await apiFetch(`/api/v1/nodes/${nodeId}/restore`, { method: 'POST' });
+      toast.success(rt('toasts.restored'));
+    } catch (err: any) {
+      if (err?.status === 413) toast.error(rt('toasts.restoreNoSpace'));
+      else toast.error(rt('toasts.restoreFailed', { error: err.message }));
+      throw err;
+    }
   },
 
   purgeNode: async (nodeId) => {
     try {
       await apiFetch(`/api/v1/nodes/${nodeId}/permanent`, { method: 'DELETE' });
       toast.success(rt('toasts.deletedForever'));
+    } catch (err: any) {
+      toast.error(rt('toasts.deleteFailed', { error: err.message }));
+      throw err;
+    }
+  },
+
+  restoreNodes: async (nodeIds) => {
+    try {
+      const { restored } = await apiFetch<{ restored: number }>(
+        '/api/v1/nodes/trash/restore',
+        { method: 'POST', body: JSON.stringify({ ids: nodeIds }) },
+      );
+      toast.success(rt('toasts.restoredMany', { count: restored }));
+      return restored;
+    } catch (err: any) {
+      // 413 = la selección no cabe en la cuota. Restaurar devuelve los bytes a
+      // la cuenta, así que puede fallar aunque borrar nunca falle.
+      if (err?.status === 413) toast.error(rt('toasts.restoreNoSpace'));
+      else toast.error(rt('toasts.restoreFailed', { error: err.message }));
+      throw err;
+    }
+  },
+
+  purgeNodes: async (nodeIds) => {
+    try {
+      const { purged } = await apiFetch<{ purged: number }>(
+        '/api/v1/nodes/trash/purge',
+        { method: 'POST', body: JSON.stringify({ ids: nodeIds }) },
+      );
+      toast.success(rt('toasts.deletedForeverMany', { count: purged }));
+      return purged;
     } catch (err: any) {
       toast.error(rt('toasts.deleteFailed', { error: err.message }));
       throw err;
