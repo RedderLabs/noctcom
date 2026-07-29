@@ -167,18 +167,32 @@ export async function buildServer() {
   });
 
   // ─── Health ────────────────────────────────────────────────
+  // `cache` es el booleano de alerta: false SOLO si hay caché configurada y no
+  // responde. No tener caché es una decisión válida (self-host mínimo), así que
+  // no debe despertar a nadie de madrugada.
+  //
+  // Pero ese booleano por sí solo esconde la diferencia entre "conectada" y "no
+  // configurada", y un despliegue puede pasarse meses sin caché —sin lockout de
+  // login, sin sync por WebSocket, sin anti-abuso de registros— pareciendo sano.
+  // Por eso `cacheState` dice cuál de los tres casos es.
   app.get('/health', async (_req, reply) => {
     const checks = { db: false, cache: false, s3: false };
+    let cacheState: 'connected' | 'not-configured' | 'down' = 'not-configured';
 
     try { await db.query('SELECT 1'); checks.db = true; } catch { /* */ }
 
     const r = cache();
     if (r) {
-      try { await r.ping(); checks.cache = true; } catch { /* */ }
+      try {
+        await r.ping();
+        checks.cache = true;
+        cacheState = 'connected';
+      } catch {
+        cacheState = 'down';
+      }
     } else {
-      // Sin caché configurada = sincronización desactivada a propósito, no un
-      // fallo del stack.
       checks.cache = true;
+      cacheState = 'not-configured';
     }
 
     try {
@@ -190,7 +204,7 @@ export async function buildServer() {
 
     const status = checks.db ? 'ok' : 'degraded';
     const code = checks.db ? 200 : 503;
-    return reply.code(code).send({ status, ...checks, ts: Date.now() });
+    return reply.code(code).send({ status, ...checks, cacheState, ts: Date.now() });
   });
 
   // ─── Routes ────────────────────────────────────────────────

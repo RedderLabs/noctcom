@@ -89,7 +89,12 @@ Caddy automatically provisions TLS certificates via Let's Encrypt.
 
 ```bash
 curl https://api.your-domain.com/health
-# Expected: {"status":"ok","db":true,"cache":true,"s3":true,"ts":...}
+# Expected: {"status":"ok","db":true,"cache":true,"cacheState":"connected","s3":true,"ts":...}
+#
+# cacheState tells the three cases apart: "connected", "not-configured"
+# (no CACHE_URL — sync, login lockout and signup limits are off by design)
+# and "down" (configured but unreachable). The `cache` boolean is only false
+# for "down", so alerting on it never fires for a deliberate no-cache setup.
 ```
 
 Open `https://app.your-domain.com` and create your first account.
